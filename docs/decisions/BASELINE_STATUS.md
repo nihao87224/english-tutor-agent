@@ -12,4 +12,5 @@
 | Architecture | Modular monolith | Accepted |
 | Voice | Half-duplex Push-to-Talk | Accepted |
 | M0/M1 providers | Fake first | Accepted |
+| Android DI | Hilt | Accepted |
 | Actual Git initialization | `git@gitee.com:flyPanda/english-tutor-agent.git` (`main`) | Done |

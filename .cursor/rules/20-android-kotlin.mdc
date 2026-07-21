@@ -7,7 +7,7 @@ globs:
 alwaysApply: false
 ---
 
-- Use Kotlin, Jetpack Compose and Material 3.
+- Use Kotlin, Jetpack Compose, Material 3 and Hilt.
 - Follow unidirectional data flow: UI event -> ViewModel -> use case/repository -> immutable UI state.
 - Composables must not call network or database APIs directly.
 - Keep navigation arguments minimal; load business data through ViewModel/use cases.

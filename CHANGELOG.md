@@ -10,6 +10,9 @@ All notable project changes are recorded here.
 - Changed Java root package to `cn.forever24.tutor`.
 - Updated PRD phase metadata without changing the v1.0.0 product baseline.
 - Added Cursor review and formal resolution records.
+- Synced merged design doc milestone numbering with TASK_BACKLOG.
+- Extended design architecture decisions through ADR-012.
+- Locked Android DI to Hilt; disallowed Java/Spring stack downgrade without decision.
 
 
 ### Added

@@ -13,8 +13,13 @@
 
 ## Rationale
 
-Spring Boot 4.1.0 官方支持 Java 17–26；Spring AI 2.0 系列官方支持
-Spring Boot 4.0 与 4.1 系列。选择 Java 21 兼顾 LTS、现代语言能力和部署稳定性。
+Spring Boot 4.1.0 官方兼容 Java 17–26，但本项目**锁定 Java 21 LTS**，不将 Java 17 作为可接受回退版本。Spring AI 2.0 系列官方支持 Spring Boot 4.0 与 4.1 系列。
+
+## Constraints
+
+- 不得回退到 Java 17 或其他更低 Java 版本；
+- 不得擅自降级 Spring Boot 或 Spring AI 主版本；
+- 若制品源暂不可用，标记为 `BLOCKED_BY_DECISION`，先解决镜像/仓库问题。
 
 ## Verification gate
 

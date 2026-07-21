@@ -74,13 +74,37 @@
 
 **状态：接受**
 
-这是新项目的当前稳定基线。若部署环境无法使用 Java 21，可退至 Java 17，但不建议继续使用 Spring Boot 2.x。
+这是新项目的锁定技术基线。项目统一使用 **Java 21 LTS**；不得因环境便利回退到 Java 17 或其他更低版本，也不得擅自降级 Spring Boot 或 Spring AI 主版本。若企业镜像暂时无法解析这些版本，应标记为 `BLOCKED_BY_DECISION` 并先解决制品源问题。
 
 ## ADR-008：Android Compose + UDF
 
 **状态：接受**
 
 原因：符合当前 Android 推荐架构，适合复杂状态和动态任务页面。
+
+## ADR-009：AI Provider 抽象
+
+**状态：接受**
+
+LLM、ASR、TTS 通过项目自有接口接入。业务层不得依赖供应商专用请求/响应类。统一接口至少表达 Provider 与模型标识、能力、超时和错误分类、使用量与成本、ASR/评估置信度、trace 信息和结构化输出结果。
+
+## ADR-010：M0/M1 优先使用 Fake Provider
+
+**状态：接受**
+
+在真实 LLM、ASR、TTS 接入前，先使用固定、可重复的 Fake Provider 跑通初始评估、能力画像、今日计划、文字/语音状态流程、JSON Schema/重试/降级和 Android 端到端路径。真实 Provider 选择不阻塞 M0，也不阻塞 M1 的确定性业务闭环。
+
+## ADR-011：Java 根包名 `cn.forever24.tutor`
+
+**状态：接受**
+
+后端 Java 根包名固定为 `cn.forever24.tutor`，与组织域名 `forever24.cn` 反向命名一致。所有后端模块在该根包下组织，不再使用 `com.forever24`。
+
+## ADR-012：Android 使用 Hilt 依赖注入
+
+**状态：接受**
+
+Android 客户端统一使用 **Hilt** 管理 Application、ViewModel、Repository 和基础设施依赖。首版不采用 Koin 或其他 DI 框架，以避免双轨依赖装配和测试替身分裂。
 
 ---
 

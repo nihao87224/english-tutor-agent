@@ -6,6 +6,7 @@ Android 工程将在 M0-T03 初始化。
 
 - Kotlin
 - Jetpack Compose + Material 3
+- Hilt
 - Navigation Compose
 - ViewModel + StateFlow
 - Repository + UDF

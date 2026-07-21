@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 > 编号规则：本目录中的 `ADR-000x` 与 `docs/design/08_ARCHITECTURE_DECISIONS_AND_RISKS.md`
-> 的 `ADR-00x` 语义一一对应。新增实施决策从 ADR-0009 起编号。
+> 的 `ADR-00x` 语义一一对应。新增实施决策从 ADR-0012 起编号。
 
 | ADR | 决策 | 状态 |
 |---|---|---|
@@ -16,3 +16,4 @@
 | ADR-0009 | LLM / ASR / TTS 使用项目自有 Provider 抽象 | Accepted |
 | ADR-0010 | M0/M1 优先使用 Fake Provider 跑通确定性闭环 | Accepted |
 | ADR-0011 | Java 根包名使用 `cn.forever24.tutor` | Accepted |
+| ADR-0012 | Android 使用 Hilt 依赖注入 | Accepted |

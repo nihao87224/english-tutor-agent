@@ -90,7 +90,7 @@
 - MediaRecorder / AudioRecord；
 - AndroidX Media3 ExoPlayer；
 - Retrofit/OkHttp 或同等 HTTP 客户端；
-- Hilt 或 Koin 依赖注入。
+- Hilt 依赖注入。
 
 > 依赖的小版本在初始化项目时统一锁定到版本目录中，不在业务代码分散声明。
 
