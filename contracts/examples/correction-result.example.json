@@ -1,0 +1,25 @@
+{
+  "hasError": true,
+  "corrections": [
+    {
+      "original": "I very like this movie.",
+      "corrected": "I really like this movie.",
+      "errorType": "word_order",
+      "severity": "MEDIUM",
+      "explanationZh": "very 不能直接修饰动词 like，really 更自然。",
+      "shouldInterrupt": false,
+      "memoryWorthy": true,
+      "naturalSuggestions": [
+        {
+          "sentence": "I really like this movie.",
+          "style": "NEUTRAL"
+        },
+        {
+          "sentence": "I'm a big fan of this movie.",
+          "style": "CASUAL"
+        }
+      ]
+    }
+  ],
+  "overallFeedback": "表达清楚，重点调整副词与动词的搭配。"
+}

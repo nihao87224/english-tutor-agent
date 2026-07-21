@@ -1,0 +1,14 @@
+---
+description: Global English Tutor Agent project rules
+alwaysApply: true
+---
+
+- Read `AGENTS.md` before modifying files.
+- Treat the PRD as the product source of truth.
+- Implement one task card at a time.
+- Before editing, state the plan and expected changed files.
+- Do not silently change product rules, architecture decisions, API contracts or database semantics.
+- Prefer a minimal working vertical slice over broad scaffolding.
+- Do not add unapproved dependencies.
+- Update tests and affected documentation in the same task.
+- Never commit secrets, real user audio, tokens or private conversation data.

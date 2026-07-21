@@ -1,0 +1,53 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+local.properties
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Java / Gradle
+target/
+build/
+.gradle/
+out/
+*.class
+*.jar
+*.war
+
+# Android
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Logs and runtime
+logs/
+*.log
+tmp/
+.cache/
+
+# Test and coverage
+coverage/
+jacoco.exec
+test-results/
+
+# Audio and user data
+*.wav
+*.mp3
+*.m4a
+*.ogg
+user-data/
+recordings/
+
+# MinIO / MySQL local volumes
+.infrastructure-data/

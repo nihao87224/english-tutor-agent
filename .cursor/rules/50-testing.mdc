@@ -1,0 +1,18 @@
+---
+description: Testing and quality rules
+globs:
+  - "**/*Test.java"
+  - "**/*Tests.java"
+  - "**/*Test.kt"
+  - "**/test/**"
+  - "evaluation/**"
+alwaysApply: false
+---
+
+- Tests verify behavior, not implementation details.
+- Cover normal, boundary, failure, authorization and duplicate-request cases.
+- Use fixed clocks, deterministic IDs and fake providers where time/AI is involved.
+- Do not assert only HTTP 200; assert the business result and persisted state.
+- Contract tests must validate OpenAPI and JSON Schema examples.
+- AI regression cases must be versioned and reproducible.
+- A task is not complete until declared test commands have actually run.

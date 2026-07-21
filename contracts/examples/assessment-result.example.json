@@ -1,0 +1,81 @@
+{
+  "overallLevel": "B1",
+  "skills": {
+    "listening": {
+      "score": 45,
+      "level": "A2-B1",
+      "confidence": 0.68,
+      "evidence": [
+        "能理解慢速工作对话的大意"
+      ]
+    },
+    "speaking": {
+      "score": 40,
+      "level": "A2",
+      "confidence": 0.65,
+      "evidence": [
+        "能完成短回答，但组织速度较慢"
+      ]
+    },
+    "reading": {
+      "score": 70,
+      "level": "B1-B2",
+      "confidence": 0.8,
+      "evidence": [
+        "能理解常见技术与日常文本"
+      ]
+    },
+    "writing": {
+      "score": 55,
+      "level": "B1",
+      "confidence": 0.72,
+      "evidence": [
+        "能写完整句子，搭配仍不稳定"
+      ]
+    },
+    "grammar": {
+      "score": 52,
+      "level": "B1",
+      "confidence": 0.7,
+      "evidence": [
+        "基础时态可用，冠词容易遗漏"
+      ]
+    },
+    "vocabulary": {
+      "score": 60,
+      "level": "B1",
+      "confidence": 0.72,
+      "evidence": [
+        "被动词汇高于主动词汇"
+      ]
+    },
+    "fluency": {
+      "score": 38,
+      "level": "A2",
+      "confidence": 0.6,
+      "evidence": [
+        "开放表达时停顿较多"
+      ]
+    },
+    "naturalness": {
+      "score": 35,
+      "level": "A2",
+      "confidence": 0.62,
+      "evidence": [
+        "存在中式搭配"
+      ]
+    }
+  },
+  "strengths": [
+    "阅读理解",
+    "技术词汇识别"
+  ],
+  "priorities": [
+    "听后回应",
+    "口语流畅度",
+    "自然搭配"
+  ],
+  "confidence": 0.71,
+  "summaryZh": "当前阅读能力明显高于即时听说能力，建议以短听力、工作场景回应和高频表达迁移为主。",
+  "recommendedStartingDifficulty": "MEDIUM"
+}

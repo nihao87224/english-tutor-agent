@@ -1,0 +1,12 @@
+{
+  "taskType": "CONTEXT_RESPONSE",
+  "prompt": "Your manager asks: What did you work on today? 请用英文自然回答你修复了数据库连接问题。",
+  "expectedAnswer": "I fixed a database connection issue today.",
+  "acceptableAlternatives": [
+    "Today, I fixed an issue with the database connection."
+  ],
+  "focus": "work_update.fix_a_bug",
+  "difficulty": "MEDIUM",
+  "masteryStage": "TRANSFER",
+  "explanationZh": "在工作场景中使用 fix an issue / fix a bug 比 solve a bug 更自然。"
+}

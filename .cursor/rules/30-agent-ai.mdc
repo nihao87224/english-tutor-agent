@@ -1,0 +1,20 @@
+---
+description: AI, Agent, ASR and TTS development rules
+globs:
+  - "server/**/agent/**"
+  - "server/**/ai/**"
+  - "server/**/provider/**"
+  - "contracts/schemas/**"
+  - "evaluation/**"
+alwaysApply: false
+---
+
+- AI providers are replaceable adapters behind project-owned interfaces.
+- Prompt templates are versioned and cannot be embedded as long ad-hoc strings in business code.
+- Model output must be parsed, validated against JSON Schema and then validated by business rules.
+- Never use real provider calls in deterministic unit tests.
+- Log provider, model, latency, token/cost metadata and validation outcome without exposing secrets.
+- Retry only transient failures and invalid structured output within a bounded count.
+- Provide a graceful fallback when correction, planning or evaluation generation fails.
+- Learning priority and mastery transitions must not be delegated solely to an LLM.
+- Any evaluation score must include confidence and explainable evidence.

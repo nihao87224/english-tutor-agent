@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/review-task/1.0.0",
+  "title": "ReviewTask",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "taskType",
+    "prompt",
+    "expectedAnswer",
+    "focus",
+    "difficulty",
+    "masteryStage"
+  ],
+  "properties": {
+    "taskType": {
+      "type": "string",
+      "enum": [
+        "ERROR_CORRECTION",
+        "SENTENCE_REWRITE",
+        "TRANSLATION",
+        "CONTEXT_RESPONSE",
+        "LISTEN_AND_RESPOND",
+        "RETELL",
+        "DELAYED_CHECK"
+      ]
+    },
+    "prompt": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "expectedAnswer": {
+      "type": "string",
+      "maxLength": 1500
+    },
+    "acceptableAlternatives": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
+    "focus": {
+      "type": "string",
+      "maxLength": 150
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "EASY",
+        "MEDIUM",
+        "HARD"
+      ]
+    },
+    "masteryStage": {
+      "type": "string",
+      "enum": [
+        "RECOGNITION",
+        "SUPPORTED_USE",
+        "INDEPENDENT_USE",
+        "TRANSFER",
+        "DELAYED_RECALL"
+      ]
+    },
+    "explanationZh": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+}

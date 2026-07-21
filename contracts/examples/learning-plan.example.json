@@ -1,0 +1,65 @@
+{
+  "planTheme": "工作进度表达与听后回应",
+  "tasks": [
+    {
+      "type": "REVIEW",
+      "title": "复习 yesterday / today 的工作汇报",
+      "instruction": "完成三句工作进度改写。",
+      "durationMinutes": 4,
+      "difficulty": "EASY",
+      "skillFocus": [
+        "GRAMMAR",
+        "SPEAKING"
+      ],
+      "knowledgeFocus": [
+        "past_tense",
+        "work_update"
+      ],
+      "reasonZh": "最近两次训练中时态切换不稳定。"
+    },
+    {
+      "type": "LISTENING",
+      "title": "听懂简短 stand-up",
+      "instruction": "听两遍并选择主要任务、问题和下一步。",
+      "durationMinutes": 6,
+      "difficulty": "MEDIUM",
+      "skillFocus": [
+        "LISTENING"
+      ],
+      "knowledgeFocus": [
+        "work_update"
+      ],
+      "reasonZh": "听力是当前优先能力。"
+    },
+    {
+      "type": "CONVERSATION",
+      "title": "模拟每日站会",
+      "instruction": "用英文回答完成了什么、遇到什么问题、下一步是什么。",
+      "durationMinutes": 8,
+      "difficulty": "MEDIUM",
+      "skillFocus": [
+        "SPEAKING",
+        "FLUENCY",
+        "NATURALNESS"
+      ],
+      "knowledgeFocus": [
+        "work_update",
+        "collocation"
+      ],
+      "reasonZh": "将输入转化为真实主动输出。"
+    },
+    {
+      "type": "SUMMARY",
+      "title": "今日总结",
+      "instruction": "查看一个高频问题和一个值得记住的表达。",
+      "durationMinutes": 2,
+      "difficulty": "EASY",
+      "skillFocus": [
+        "REFLECTION"
+      ],
+      "knowledgeFocus": [],
+      "reasonZh": "形成清晰反馈。"
+    }
+  ],
+  "explanationZh": "今天先复习最近出现的问题，再通过短听力和站会对话完成迁移。"
+}

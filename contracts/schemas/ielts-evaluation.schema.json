@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/ielts-evaluation/1.0.0",
+  "title": "IeltsSpeakingEvaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode",
+    "estimatedBand",
+    "confidence",
+    "scores",
+    "evidence",
+    "summaryZh",
+    "nextActions",
+    "disclaimerZh"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "PART_1",
+        "PART_2",
+        "PART_3",
+        "FULL"
+      ]
+    },
+    "estimatedBand": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 9,
+      "multipleOf": 0.5
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fluencyAndCoherence",
+        "lexicalResource",
+        "grammaticalRangeAndAccuracy",
+        "pronunciation"
+      ],
+      "properties": {
+        "fluencyAndCoherence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9,
+          "multipleOf": 0.5
+        },
+        "lexicalResource": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9,
+          "multipleOf": 0.5
+        },
+        "grammaticalRangeAndAccuracy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9,
+          "multipleOf": 0.5
+        },
+        "pronunciation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9,
+          "multipleOf": 0.5
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dimension",
+          "observation"
+        ],
+        "properties": {
+          "dimension": {
+            "type": "string"
+          },
+          "observation": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "excerpt": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "summaryZh": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "nextActions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "string"
+      }
+    },
+    "disclaimerZh": {
+      "type": "string",
+      "const": "该结果仅用于练习参考，不是 IELTS 官方成绩。"
+    }
+  }
+}

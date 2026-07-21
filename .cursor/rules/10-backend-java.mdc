@@ -1,0 +1,21 @@
+---
+description: Java backend rules
+globs:
+  - "server/**/*.java"
+  - "server/**/*.xml"
+  - "server/**/*.yml"
+  - "server/**/*.yaml"
+alwaysApply: false
+---
+
+- Use Java 21 and the approved Spring Boot baseline.
+- Prefer constructor injection.
+- Controllers only validate transport input and map output.
+- Application services orchestrate use cases and transactions.
+- Domain objects contain business rules and must not depend on Spring Web, JPA implementations or AI SDK classes.
+- Infrastructure implements ports declared by the application/domain layers.
+- External provider requests require connect/read timeouts and bounded retry.
+- Use typed configuration properties instead of scattered environment lookups.
+- Public write endpoints must support authorization, ownership validation and idempotency where applicable.
+- Use RFC 7807-compatible problem responses or the project-standard error envelope.
+- Add unit tests for domain logic and integration tests for persistence/API boundaries.

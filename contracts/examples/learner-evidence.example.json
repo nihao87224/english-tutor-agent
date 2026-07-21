@@ -1,0 +1,11 @@
+{
+  "skill": "SPEAKING",
+  "knowledgeKey": "work_update.fix_a_bug",
+  "evidenceType": "INDEPENDENT_USE",
+  "result": "CORRECT",
+  "score": 85,
+  "confidence": 0.88,
+  "observedAt": "2026-07-21T07:00:00Z",
+  "sourceRef": "training-session/session_demo/attempt_03",
+  "notes": "用户在无提示情况下正确使用 fixed a database connection issue。"
+}

@@ -1,0 +1,20 @@
+---
+description: Database, Redis and object storage rules
+globs:
+  - "server/**/db/**"
+  - "server/**/repository/**"
+  - "server/src/main/resources/db/migration/**"
+  - "infrastructure/**"
+alwaysApply: false
+---
+
+- MySQL is the source of truth for persistent business data.
+- Redis keys require a documented prefix, TTL and invalidation rule.
+- Do not store permanent learner state only in Redis.
+- Database changes require a new forward-only Flyway migration.
+- Never edit an already released migration.
+- Add indexes based on documented access patterns, not speculation.
+- Use unique constraints for business idempotency where possible.
+- Store audio metadata in MySQL and binary objects in S3-compatible storage.
+- Avoid N+1 queries and unbounded list endpoints.
+- Integration tests should use Testcontainers when practical.

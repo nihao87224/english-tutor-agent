@@ -1,0 +1,2 @@
+{"caseId": "IELTS-001", "mode": "PART_1", "answer": "Yes, I do. I like my hometown because it has many parks and the pace of life is comfortable.", "expectations": {"estimatedBandRange": [5.5, 7.0], "mustMentionEvidence": true}}
+{"caseId": "IELTS-002", "mode": "PART_2", "answer": "The place I want talk is East Lake. I go there last year with my family...", "expectations": {"mustFlag": ["grammar", "fluency"], "mustIncludeDisclaimer": true}}

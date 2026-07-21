@@ -1,0 +1,853 @@
+openapi: 3.1.0
+info:
+  title: English Tutor Agent API
+  version: 1.0.0-draft
+  description: |
+    Initial machine-readable contract aligned with the PRD and design baseline.
+    The contract is intentionally focused on P0/P1 user flows and must evolve
+    through reviewed changes.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Profile
+  - name: Assessment
+  - name: Planning
+  - name: Training
+  - name: Conversation
+  - name: Audio
+  - name: IELTS
+  - name: Privacy
+
+paths:
+  /api/v1/profile/primary-goal:
+    put:
+      tags: [Profile]
+      summary: Create or replace the user's only primary learning goal
+      operationId: putPrimaryGoal
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrimaryGoalRequest'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileSummary'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/profile/preferences:
+    put:
+      tags: [Profile]
+      summary: Save learning and correction preferences
+      operationId: putPreferences
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceRequest'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileSummary'
+        '400':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/onboarding/progress:
+    get:
+      tags: [Profile]
+      summary: Get resumable onboarding progress
+      operationId: getOnboardingProgress
+      responses:
+        '200':
+          description: Progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingProgress'
+
+  /api/v1/assessments/self:
+    post:
+      tags: [Assessment]
+      summary: Submit skill self-assessment
+      operationId: submitSelfAssessment
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfAssessmentRequest'
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelfAssessmentResponse'
+
+  /api/v1/assessments:
+    post:
+      tags: [Assessment]
+      summary: Start a lightweight adaptive assessment
+      operationId: startAssessment
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetMinutes:
+                  type: integer
+                  minimum: 5
+                  maximum: 15
+                  default: 9
+      responses:
+        '201':
+          description: Assessment started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentSession'
+
+  /api/v1/assessments/{assessmentId}/next:
+    get:
+      tags: [Assessment]
+      summary: Get the next adaptive assessment item
+      operationId: getNextAssessmentItem
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+      responses:
+        '200':
+          description: Next item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentItem'
+        '204':
+          description: No more items
+
+  /api/v1/assessments/{assessmentId}/answers:
+    post:
+      tags: [Assessment]
+      summary: Submit an assessment answer
+      operationId: submitAssessmentAnswer
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentAnswerRequest'
+      responses:
+        '200':
+          description: Answer accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerReceipt'
+
+  /api/v1/assessments/{assessmentId}/complete:
+    post:
+      tags: [Assessment]
+      summary: Complete the assessment and generate an initial learner profile
+      operationId: completeAssessment
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Completion accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [assessmentId, status]
+                properties:
+                  assessmentId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [PROCESSING, COMPLETED]
+
+  /api/v1/assessments/{assessmentId}/result:
+    get:
+      tags: [Assessment]
+      summary: Get assessment result
+      operationId: getAssessmentResult
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentResult'
+
+  /api/v1/plans/today:
+    get:
+      tags: [Planning]
+      summary: Get or generate today's personalized plan
+      operationId: getTodayPlan
+      responses:
+        '200':
+          description: Today's plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningPlan'
+
+  /api/v1/plans/today/adjustments:
+    post:
+      tags: [Planning]
+      summary: Temporarily adjust today's plan without replacing long-term goals
+      operationId: adjustTodayPlan
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanAdjustmentRequest'
+      responses:
+        '200':
+          description: Adjusted plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningPlan'
+
+  /api/v1/training-sessions:
+    post:
+      tags: [Training]
+      summary: Start a training session from a plan
+      operationId: startTrainingSession
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planId]
+              properties:
+                planId:
+                  type: string
+      responses:
+        '201':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingSession'
+
+  /api/v1/training-sessions/{sessionId}/tasks/{taskId}/attempts:
+    post:
+      tags: [Training]
+      summary: Submit a text or audio task attempt
+      operationId: submitTaskAttempt
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskAttemptRequest'
+      responses:
+        '202':
+          description: Attempt accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskAttemptReceipt'
+
+  /api/v1/conversations/{sessionId}/messages/stream:
+    post:
+      tags: [Conversation]
+      summary: Send a text message and receive server-sent events
+      operationId: streamConversationMessage
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+      responses:
+        '200':
+          description: SSE stream with reply chunks, correction and completion events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/v1/audio/uploads:
+    post:
+      tags: [Audio]
+      summary: Create a presigned upload for user audio
+      operationId: createAudioUpload
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contentType, sizeBytes, durationMs, purpose]
+              properties:
+                contentType:
+                  type: string
+                  enum: [audio/wav, audio/m4a, audio/mp4, audio/ogg]
+                sizeBytes:
+                  type: integer
+                  minimum: 1
+                  maximum: 52428800
+                durationMs:
+                  type: integer
+                  minimum: 100
+                  maximum: 600000
+                purpose:
+                  type: string
+                  enum: [ASSESSMENT, TRAINING, IELTS]
+      responses:
+        '201':
+          description: Upload reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AudioUploadReservation'
+
+  /api/v1/profile/learner-summary:
+    get:
+      tags: [Profile]
+      summary: Get a simplified learner profile and trends
+      operationId: getLearnerSummary
+      responses:
+        '200':
+          description: Learner summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearnerSummary'
+
+  /api/v1/ielts/simulations:
+    post:
+      tags: [IELTS]
+      summary: Start IELTS Speaking Part 1, 2, 3 or a full simulation
+      operationId: startIeltsSimulation
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  type: string
+                  enum: [PART_1, PART_2, PART_3, FULL]
+      responses:
+        '201':
+          description: Started
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [simulationId, mode, status]
+                properties:
+                  simulationId:
+                    type: string
+                  mode:
+                    type: string
+                  status:
+                    type: string
+
+  /api/v1/settings/privacy:
+    get:
+      tags: [Privacy]
+      summary: Get privacy settings
+      operationId: getPrivacySettings
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacySettings'
+    put:
+      tags: [Privacy]
+      summary: Update privacy settings
+      operationId: putPrivacySettings
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacySettings'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacySettings'
+
+  /api/v1/data-privacy/deletion-requests:
+    post:
+      tags: [Privacy]
+      summary: Request deletion of learner data
+      operationId: createDeletionRequest
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requestId, status]
+                properties:
+                  requestId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    AssessmentId:
+      name: assessmentId
+      in: path
+      required: true
+      schema:
+        type: string
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Problem:
+      description: Problem response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    PrimaryGoalRequest:
+      type: object
+      additionalProperties: false
+      required: [goal]
+      properties:
+        goal:
+          type: string
+          enum: [WORKPLACE, GENERAL, IELTS]
+
+    PreferenceRequest:
+      type: object
+      additionalProperties: false
+      required: [dailyMinutes, correctionStyle, reminderEnabled, saveRawText, saveRawAudio]
+      properties:
+        dailyMinutes:
+          type: integer
+          enum: [5, 10, 20, 30, 45]
+        correctionStyle:
+          type: string
+          enum: [LIGHT, STANDARD, STRICT]
+        reminderEnabled:
+          type: boolean
+        saveRawText:
+          type: boolean
+        saveRawAudio:
+          type: boolean
+
+    ProfileSummary:
+      type: object
+      required: [primaryGoal, dailyMinutes, correctionStyle]
+      properties:
+        primaryGoal:
+          type: string
+        dailyMinutes:
+          type: integer
+        correctionStyle:
+          type: string
+        onboardingCompleted:
+          type: boolean
+
+    OnboardingProgress:
+      type: object
+      required: [step, completed]
+      properties:
+        step:
+          type: string
+          enum: [GOAL, PREFERENCES, SELF_ASSESSMENT, ASSESSMENT, RESULT, COMPLETE]
+        completed:
+          type: boolean
+        assessmentId:
+          type: [string, 'null']
+
+    SelfAssessmentRequest:
+      type: object
+      additionalProperties: false
+      required: [listening, speaking, reading, writing]
+      properties:
+        listening:
+          $ref: '#/components/schemas/SelfRating'
+        speaking:
+          $ref: '#/components/schemas/SelfRating'
+        reading:
+          $ref: '#/components/schemas/SelfRating'
+        writing:
+          $ref: '#/components/schemas/SelfRating'
+
+    SelfRating:
+      type: string
+      enum: [BEGINNER, BASIC, INTERMEDIATE, UPPER_INTERMEDIATE, ADVANCED]
+
+    SelfAssessmentResponse:
+      type: object
+      required: [selfAssessmentId, estimatedBand]
+      properties:
+        selfAssessmentId:
+          type: string
+        estimatedBand:
+          type: string
+
+    AssessmentSession:
+      type: object
+      required: [assessmentId, status, targetMinutes]
+      properties:
+        assessmentId:
+          type: string
+        status:
+          type: string
+          enum: [IN_PROGRESS, PAUSED, PROCESSING, COMPLETED]
+        targetMinutes:
+          type: integer
+        estimatedRemainingMinutes:
+          type: integer
+
+    AssessmentItem:
+      type: object
+      required: [itemId, skill, type, prompt]
+      properties:
+        itemId:
+          type: string
+        skill:
+          type: string
+          enum: [LISTENING, SPEAKING, READING, WRITING]
+        type:
+          type: string
+          enum: [MULTIPLE_CHOICE, SHORT_TEXT, AUDIO_RESPONSE, REPEAT, RETELL]
+        prompt:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        audioAssetId:
+          type: [string, 'null']
+        timeLimitSeconds:
+          type: [integer, 'null']
+
+    AssessmentAnswerRequest:
+      type: object
+      additionalProperties: false
+      required: [itemId, answerType]
+      properties:
+        itemId:
+          type: string
+        answerType:
+          type: string
+          enum: [OPTION, TEXT, AUDIO]
+        option:
+          type: [string, 'null']
+        text:
+          type: [string, 'null']
+        audioAssetId:
+          type: [string, 'null']
+        clientDurationMs:
+          type: [integer, 'null']
+
+    AnswerReceipt:
+      type: object
+      required: [answerId, accepted]
+      properties:
+        answerId:
+          type: string
+        accepted:
+          type: boolean
+
+    AssessmentResult:
+      type: object
+      required: [assessmentId, overallLevel, skills, confidence, summaryZh]
+      properties:
+        assessmentId:
+          type: string
+        overallLevel:
+          type: string
+        skills:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SkillScore'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        summaryZh:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        priorities:
+          type: array
+          items:
+            type: string
+
+    SkillScore:
+      type: object
+      required: [score, level, confidence]
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        level:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    LearningPlan:
+      type: object
+      required: [planId, date, totalMinutes, tasks, reasons]
+      properties:
+        planId:
+          type: string
+        date:
+          type: string
+          format: date
+        totalMinutes:
+          type: integer
+        tasks:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PlanTask'
+        reasons:
+          type: array
+          items:
+            type: string
+        temporaryAdjustment:
+          type: boolean
+
+    PlanTask:
+      type: object
+      required: [taskId, type, title, durationMinutes, skillFocus, difficulty]
+      properties:
+        taskId:
+          type: string
+        type:
+          type: string
+          enum: [REVIEW, LISTENING, SPEAKING, READING, WRITING, CONVERSATION, IELTS, SUMMARY]
+        title:
+          type: string
+        durationMinutes:
+          type: integer
+        skillFocus:
+          type: array
+          items:
+            type: string
+        difficulty:
+          type: string
+          enum: [EASY, MEDIUM, HARD]
+        reason:
+          type: string
+
+    PlanAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        availableMinutes:
+          type: integer
+          enum: [5, 10, 20, 30, 45]
+        preferredSkill:
+          type: [string, 'null']
+        temporaryScenario:
+          type: [string, 'null']
+        textOnly:
+          type: boolean
+
+    TrainingSession:
+      type: object
+      required: [sessionId, planId, status, currentTaskIndex]
+      properties:
+        sessionId:
+          type: string
+        planId:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, COMPLETED, ABANDONED]
+        currentTaskIndex:
+          type: integer
+
+    TaskAttemptRequest:
+      type: object
+      additionalProperties: false
+      required: [inputType]
+      properties:
+        inputType:
+          type: string
+          enum: [TEXT, AUDIO, OPTION]
+        text:
+          type: [string, 'null']
+        audioAssetId:
+          type: [string, 'null']
+        option:
+          type: [string, 'null']
+        clientStartedAt:
+          type: [string, 'null']
+          format: date-time
+        clientCompletedAt:
+          type: [string, 'null']
+          format: date-time
+
+    TaskAttemptReceipt:
+      type: object
+      required: [attemptId, status]
+      properties:
+        attemptId:
+          type: string
+        status:
+          type: string
+          enum: [ACCEPTED, PROCESSING, COMPLETED, FAILED]
+        feedbackAvailable:
+          type: boolean
+
+    AudioUploadReservation:
+      type: object
+      required: [uploadId, uploadUrl, expiresAt]
+      properties:
+        uploadId:
+          type: string
+        uploadUrl:
+          type: string
+          format: uri
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    LearnerSummary:
+      type: object
+      required: [overallLevel, strengths, currentPriorities, trends]
+      properties:
+        overallLevel:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        currentPriorities:
+          type: array
+          items:
+            type: string
+        trends:
+          type: object
+          additionalProperties:
+            type: number
+
+    PrivacySettings:
+      type: object
+      additionalProperties: false
+      required: [saveRawText, saveRawAudio]
+      properties:
+        saveRawText:
+          type: boolean
+        saveRawAudio:
+          type: boolean
+        rawAudioRetentionDays:
+          type: integer
+          minimum: 0
+          maximum: 365
+
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        traceId:
+          type: string

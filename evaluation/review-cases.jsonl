@@ -1,0 +1,3 @@
+{"caseId": "REV-001", "knowledgeKey": "articles.countable_singular", "history": ["INCORRECT", "INCORRECT", "SUPPORTED_CORRECT"], "expectedNextStage": "INDEPENDENT_USE"}
+{"caseId": "REV-002", "knowledgeKey": "work_update.fix_a_bug", "history": ["INDEPENDENT_CORRECT", "TRANSFER_CORRECT"], "daysSinceLastReview": 7, "expectedNextStage": "DELAYED_RECALL"}
+{"caseId": "REV-003", "knowledgeKey": "past_tense.irregular", "history": ["DELAYED_CORRECT", "DELAYED_CORRECT", "DELAYED_CORRECT"], "expectedPriority": "LOWER"}

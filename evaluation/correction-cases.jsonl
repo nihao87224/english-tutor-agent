@@ -1,0 +1,5 @@
+{"caseId": "COR-001", "input": "I very like this movie.", "expectedErrorTypes": ["word_order"], "acceptableCorrections": ["I really like this movie."], "mustInterrupt": false}
+{"caseId": "COR-002", "input": "Today I solved a bug about database connect.", "expectedErrorTypes": ["collocation", "part_of_speech"], "acceptableCorrections": ["Today I fixed a bug related to the database connection."], "mustInterrupt": false}
+{"caseId": "COR-003", "input": "Yesterday I go to the office.", "expectedErrorTypes": ["tense"], "acceptableCorrections": ["Yesterday I went to the office."], "mustInterrupt": false}
+{"caseId": "COR-004", "input": "Could you explain me this issue?", "expectedErrorTypes": ["collocation"], "acceptableCorrections": ["Could you explain this issue to me?"], "mustInterrupt": false}
+{"caseId": "COR-005", "input": "The server down because memory not enough.", "expectedErrorTypes": ["sentence_fragment", "chinese_english"], "acceptableCorrections": ["The server went down because it ran out of memory."], "mustInterrupt": true}

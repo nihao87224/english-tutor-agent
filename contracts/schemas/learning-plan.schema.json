@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/learning-plan/1.0.0",
+  "title": "LearningPlanContent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "planTheme",
+    "tasks",
+    "explanationZh"
+  ],
+  "properties": {
+    "planTheme": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "instruction",
+          "durationMinutes",
+          "difficulty",
+          "skillFocus",
+          "knowledgeFocus"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "REVIEW",
+              "LISTENING",
+              "SPEAKING",
+              "READING",
+              "WRITING",
+              "CONVERSATION",
+              "IELTS",
+              "SUMMARY"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "instruction": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "EASY",
+              "MEDIUM",
+              "HARD"
+            ]
+          },
+          "skillFocus": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "knowledgeFocus": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string"
+            }
+          },
+          "reasonZh": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "explanationZh": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+}

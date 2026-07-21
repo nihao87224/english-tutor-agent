@@ -1,0 +1,17 @@
+---
+description: Security and privacy rules
+globs:
+  - "server/**"
+  - "android/**"
+  - "infrastructure/**"
+alwaysApply: false
+---
+
+- Enforce user ownership on every learner-specific resource.
+- Do not trust userId supplied in request bodies when identity is available from authentication.
+- Validate audio type, duration and size before processing.
+- Secrets come from environment or secret managers only.
+- Redact authorization headers, API keys and sensitive text from logs.
+- Respect privacy settings for raw text and audio persistence.
+- Data deletion must be auditable, idempotent and include object storage cleanup.
+- Generated content must be treated as untrusted input before rendering.

@@ -1,0 +1,3 @@
+{"caseId": "PLAN-001", "profile": {"goal": "WORKPLACE", "dailyMinutes": 20, "priorities": ["LISTENING", "SPEAKING"], "dueReviews": ["articles"]}, "expected": {"totalMinutes": 20, "mustInclude": ["REVIEW", "LISTENING", "SPEAKING"], "reasonMentions": ["articles"]}}
+{"caseId": "PLAN-002", "profile": {"goal": "IELTS", "dailyMinutes": 10, "priorities": ["FLUENCY"], "dueReviews": []}, "expected": {"totalMinutes": 10, "mustInclude": ["IELTS"], "maxTasks": 3}}
+{"caseId": "PLAN-003", "profile": {"goal": "GENERAL", "dailyMinutes": 5, "temporaryTextOnly": true, "priorities": ["SPEAKING"]}, "expected": {"totalMinutes": 5, "mustNotInclude": ["AUDIO_REQUIRED"]}}

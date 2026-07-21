@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/correction-result/1.0.0",
+  "title": "CorrectionResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hasError",
+    "corrections",
+    "overallFeedback"
+  ],
+  "properties": {
+    "hasError": {
+      "type": "boolean"
+    },
+    "corrections": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "original",
+          "corrected",
+          "errorType",
+          "severity",
+          "explanationZh",
+          "shouldInterrupt",
+          "memoryWorthy"
+        ],
+        "properties": {
+          "original": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "corrected": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "errorType": {
+            "type": "string",
+            "enum": [
+              "articles",
+              "tense",
+              "preposition",
+              "word_order",
+              "subject_verb_agreement",
+              "plural",
+              "part_of_speech",
+              "collocation",
+              "chinese_english",
+              "unnatural_expression",
+              "pronoun",
+              "sentence_fragment",
+              "run_on_sentence",
+              "pronunciation",
+              "fluency"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "explanationZh": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "shouldInterrupt": {
+            "type": "boolean"
+          },
+          "memoryWorthy": {
+            "type": "boolean"
+          },
+          "naturalSuggestions": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sentence",
+                "style"
+              ],
+              "properties": {
+                "sentence": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "style": {
+                  "type": "string",
+                  "enum": [
+                    "CASUAL",
+                    "NEUTRAL",
+                    "FORMAL"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "overallFeedback": {
+      "type": "string",
+      "maxLength": 300
+    }
+  }
+}

@@ -1,0 +1,3 @@
+{"caseId": "ASM-001", "selfRating": "INTERMEDIATE", "goal": "WORKPLACE", "expected": {"targetMinutes": [8, 10], "objectiveQuestionRatioMin": 0.55, "skills": ["LISTENING", "SPEAKING", "READING", "WRITING"]}}
+{"caseId": "ASM-002", "selfRating": "ADVANCED", "goal": "IELTS", "expected": {"openResponseRatioMin": 0.4, "mustInclude": ["RETELL", "AUDIO_RESPONSE"]}}
+{"caseId": "ASM-003", "selfRating": "BASIC", "goal": "GENERAL", "expected": {"openResponseRatioMax": 0.25, "mustAvoid": ["LONG_ESSAY"]}}

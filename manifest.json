@@ -1,0 +1,376 @@
+{
+  "package": "english-tutor-agent-vibe-coding-starter",
+  "version": "1.0.1",
+  "generatedAt": "2026-07-21",
+  "previousVersion": "1.0.0",
+  "reviewResolution": "docs/reviews/CURSOR_REVIEW_RESOLUTION_2026-07-21.md",
+  "technologyBaseline": {
+    "java": "21",
+    "springBoot": "4.1.0",
+    "springAI": "2.0.0",
+    "javaPackage": "cn.forever24.tutor"
+  },
+  "fileCount": 90,
+  "files": [
+    {
+      "path": ".cursor/commands/implement-task.md",
+      "size": 544
+    },
+    {
+      "path": ".cursor/commands/plan-task.md",
+      "size": 619
+    },
+    {
+      "path": ".cursor/commands/review-task.md",
+      "size": 790
+    },
+    {
+      "path": ".cursor/commands/update-docs.md",
+      "size": 332
+    },
+    {
+      "path": ".cursor/commands/verify-milestone.md",
+      "size": 524
+    },
+    {
+      "path": ".cursor/commands/write-tests.md",
+      "size": 494
+    },
+    {
+      "path": ".cursor/rules/00-project-general.mdc",
+      "size": 613
+    },
+    {
+      "path": ".cursor/rules/10-backend-java.mdc",
+      "size": 993
+    },
+    {
+      "path": ".cursor/rules/20-android-kotlin.mdc",
+      "size": 948
+    },
+    {
+      "path": ".cursor/rules/30-agent-ai.mdc",
+      "size": 973
+    },
+    {
+      "path": ".cursor/rules/40-database.mdc",
+      "size": 828
+    },
+    {
+      "path": ".cursor/rules/50-testing.mdc",
+      "size": 660
+    },
+    {
+      "path": ".cursor/rules/60-security-privacy.mdc",
+      "size": 696
+    },
+    {
+      "path": ".editorconfig",
+      "size": 268
+    },
+    {
+      "path": ".env.example",
+      "size": 880
+    },
+    {
+      "path": ".github/workflows/baseline-validation.yml",
+      "size": 341
+    },
+    {
+      "path": ".gitignore",
+      "size": 491
+    },
+    {
+      "path": "AGENTS.md",
+      "size": 3719
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size": 661
+    },
+    {
+      "path": "Makefile",
+      "size": 727
+    },
+    {
+      "path": "README.md",
+      "size": 2313
+    },
+    {
+      "path": "android/README.md",
+      "size": 413
+    },
+    {
+      "path": "contracts/examples/assessment-result.example.json",
+      "size": 1715
+    },
+    {
+      "path": "contracts/examples/correction-result.example.json",
+      "size": 676
+    },
+    {
+      "path": "contracts/examples/ielts-evaluation.example.json",
+      "size": 924
+    },
+    {
+      "path": "contracts/examples/learner-evidence.example.json",
+      "size": 356
+    },
+    {
+      "path": "contracts/examples/learning-plan.example.json",
+      "size": 1781
+    },
+    {
+      "path": "contracts/examples/review-task.example.json",
+      "size": 514
+    },
+    {
+      "path": "contracts/openapi/english-tutor-api.yaml",
+      "size": 22678
+    },
+    {
+      "path": "contracts/schemas/assessment-result.schema.json",
+      "size": 7839
+    },
+    {
+      "path": "contracts/schemas/correction-result.schema.json",
+      "size": 2764
+    },
+    {
+      "path": "contracts/schemas/ielts-evaluation.schema.json",
+      "size": 2508
+    },
+    {
+      "path": "contracts/schemas/learner-evidence.schema.json",
+      "size": 1592
+    },
+    {
+      "path": "contracts/schemas/learning-plan.schema.json",
+      "size": 2119
+    },
+    {
+      "path": "contracts/schemas/review-task.schema.json",
+      "size": 1381
+    },
+    {
+      "path": "docker-compose.yml",
+      "size": 1670
+    },
+    {
+      "path": "docs/decisions/ADR-0001-modular-monolith.md",
+      "size": 713
+    },
+    {
+      "path": "docs/decisions/ADR-0002-half-duplex-voice.md",
+      "size": 566
+    },
+    {
+      "path": "docs/decisions/ADR-0003-rule-plus-llm.md",
+      "size": 634
+    },
+    {
+      "path": "docs/decisions/ADR-0004-server-source-of-truth-offline-cache.md",
+      "size": 718
+    },
+    {
+      "path": "docs/decisions/ADR-0005-structured-ai-validation.md",
+      "size": 389
+    },
+    {
+      "path": "docs/decisions/ADR-0006-data-storage-baseline.md",
+      "size": 442
+    },
+    {
+      "path": "docs/decisions/ADR-0007-java-spring-baseline.md",
+      "size": 588
+    },
+    {
+      "path": "docs/decisions/ADR-0008-android-compose-udf.md",
+      "size": 316
+    },
+    {
+      "path": "docs/decisions/ADR-0009-provider-abstraction.md",
+      "size": 363
+    },
+    {
+      "path": "docs/decisions/ADR-0010-fake-provider-first.md",
+      "size": 407
+    },
+    {
+      "path": "docs/decisions/ADR-0011-package-namespace.md",
+      "size": 412
+    },
+    {
+      "path": "docs/decisions/ADR_INDEX.md",
+      "size": 1030
+    },
+    {
+      "path": "docs/decisions/BASELINE_STATUS.md",
+      "size": 571
+    },
+    {
+      "path": "docs/design/00_README.md",
+      "size": 5382
+    },
+    {
+      "path": "docs/design/01_HIGH_LEVEL_DESIGN.md",
+      "size": 14554
+    },
+    {
+      "path": "docs/design/02_DETAILED_DESIGN_BACKEND.md",
+      "size": 13680
+    },
+    {
+      "path": "docs/design/03_DETAILED_DESIGN_ANDROID.md",
+      "size": 11521
+    },
+    {
+      "path": "docs/design/04_DETAILED_DESIGN_AGENT_LEARNING_ENGINE.md",
+      "size": 14472
+    },
+    {
+      "path": "docs/design/05_DATA_MODEL_AND_API_SPEC.md",
+      "size": 18448
+    },
+    {
+      "path": "docs/design/06_SECURITY_OBSERVABILITY_TESTING.md",
+      "size": 9491
+    },
+    {
+      "path": "docs/design/07_REQUIREMENTS_TRACEABILITY.md",
+      "size": 6199
+    },
+    {
+      "path": "docs/design/08_ARCHITECTURE_DECISIONS_AND_RISKS.md",
+      "size": 5081
+    },
+    {
+      "path": "docs/design/09_VIBE_CODING_EXECUTION_GUIDE.md",
+      "size": 6707
+    },
+    {
+      "path": "docs/design/10_REFERENCES.md",
+      "size": 1587
+    },
+    {
+      "path": "docs/design/ENGLISH_TUTOR_AGENT_DESIGN_v1.0.0.md",
+      "size": 106086
+    },
+    {
+      "path": "docs/plans/CURRENT_TASK.md",
+      "size": 1241
+    },
+    {
+      "path": "docs/plans/IMPLEMENTATION_PLAN.md",
+      "size": 3307
+    },
+    {
+      "path": "docs/plans/TASK_BACKLOG.md",
+      "size": 2622
+    },
+    {
+      "path": "docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md",
+      "size": 49111
+    },
+    {
+      "path": "docs/process/CHANGE_MANAGEMENT.md",
+      "size": 1080
+    },
+    {
+      "path": "docs/process/DEFINITION_OF_DONE.md",
+      "size": 1757
+    },
+    {
+      "path": "docs/process/LOCAL_DEVELOPMENT.md",
+      "size": 1768
+    },
+    {
+      "path": "docs/process/REVIEW_CHECKLIST.md",
+      "size": 1652
+    },
+    {
+      "path": "docs/process/VIBE_CODING_WORKFLOW.md",
+      "size": 1247
+    },
+    {
+      "path": "docs/release/RELEASE_CHECKLIST.md",
+      "size": 953
+    },
+    {
+      "path": "docs/release/VERSIONING.md",
+      "size": 715
+    },
+    {
+      "path": "docs/reviews/CURSOR_REVIEW_2026-07-21.md",
+      "size": 14623
+    },
+    {
+      "path": "docs/reviews/CURSOR_REVIEW_RESOLUTION_2026-07-21.md",
+      "size": 1315
+    },
+    {
+      "path": "docs/test/ACCEPTANCE_SCENARIOS.md",
+      "size": 3679
+    },
+    {
+      "path": "docs/test/AI_EVALUATION_GUIDE.md",
+      "size": 1222
+    },
+    {
+      "path": "docs/test/TEST_STRATEGY.md",
+      "size": 1480
+    },
+    {
+      "path": "docs/ui/README.md",
+      "size": 973
+    },
+    {
+      "path": "docs/ui/english-tutor-agent-ui-prototype-v1.html",
+      "size": 48956
+    },
+    {
+      "path": "evaluation/README.md",
+      "size": 361
+    },
+    {
+      "path": "evaluation/assessment-cases.jsonl",
+      "size": 497
+    },
+    {
+      "path": "evaluation/correction-cases.jsonl",
+      "size": 1046
+    },
+    {
+      "path": "evaluation/ielts-speaking-cases.jsonl",
+      "size": 444
+    },
+    {
+      "path": "evaluation/planning-cases.jsonl",
+      "size": 657
+    },
+    {
+      "path": "evaluation/review-cases.jsonl",
+      "size": 514
+    },
+    {
+      "path": "infrastructure/README.md",
+      "size": 426
+    },
+    {
+      "path": "manifest.json",
+      "size": 6950
+    },
+    {
+      "path": "scripts/README.md",
+      "size": 393
+    },
+    {
+      "path": "scripts/validate_project.py",
+      "size": 3074
+    },
+    {
+      "path": "server/README.md",
+      "size": 425
+    }
+  ]
+}

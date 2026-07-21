@@ -1,0 +1,20 @@
+---
+description: Android Kotlin and Compose rules
+globs:
+  - "android/**/*.kt"
+  - "android/**/*.kts"
+  - "android/**/*.xml"
+alwaysApply: false
+---
+
+- Use Kotlin, Jetpack Compose and Material 3.
+- Follow unidirectional data flow: UI event -> ViewModel -> use case/repository -> immutable UI state.
+- Composables must not call network or database APIs directly.
+- Keep navigation arguments minimal; load business data through ViewModel/use cases.
+- Every screen must define loading, content, empty and recoverable error states.
+- Preserve unfinished assessment/training state across process recreation where feasible.
+- Audio recording uses an explicit state machine.
+- Request microphone permission only when the user starts a voice action.
+- Put user-visible strings in Android resources.
+- Accessibility: meaningful content descriptions, minimum touch targets and readable contrast.
+- Add ViewModel tests and Compose UI tests for critical flows.

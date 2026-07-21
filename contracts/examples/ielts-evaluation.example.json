@@ -1,0 +1,30 @@
+{
+  "mode": "PART_2",
+  "estimatedBand": 6.0,
+  "confidence": 0.64,
+  "scores": {
+    "fluencyAndCoherence": 6.0,
+    "lexicalResource": 6.0,
+    "grammaticalRangeAndAccuracy": 5.5,
+    "pronunciation": 6.0
+  },
+  "evidence": [
+    {
+      "dimension": "fluencyAndCoherence",
+      "observation": "能够持续表达，但中间存在几次明显停顿。",
+      "excerpt": "The place I want to talk about is..."
+    },
+    {
+      "dimension": "grammaticalRangeAndAccuracy",
+      "observation": "主要使用简单句，时态有少量不一致。",
+      "excerpt": "I go there last year."
+    }
+  ],
+  "summaryZh": "回答能够完成任务并保持基本连贯，下一步应增加句型变化并稳定过去时。",
+  "nextActions": [
+    "使用时间顺序组织 Part 2",
+    "练习过去时叙事",
+    "减少填充停顿"
+  ],
+  "disclaimerZh": "该结果仅用于练习参考，不是 IELTS 官方成绩。"
+}

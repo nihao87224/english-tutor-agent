@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/learner-evidence/1.0.0",
+  "title": "LearnerEvidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "skill",
+    "knowledgeKey",
+    "evidenceType",
+    "result",
+    "confidence",
+    "observedAt",
+    "sourceRef"
+  ],
+  "properties": {
+    "skill": {
+      "type": "string",
+      "enum": [
+        "LISTENING",
+        "SPEAKING",
+        "READING",
+        "WRITING",
+        "GRAMMAR",
+        "VOCABULARY",
+        "FLUENCY",
+        "NATURALNESS",
+        "PRONUNCIATION"
+      ]
+    },
+    "knowledgeKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 150
+    },
+    "evidenceType": {
+      "type": "string",
+      "enum": [
+        "RECOGNITION",
+        "SUPPORTED_CORRECTION",
+        "INDEPENDENT_USE",
+        "TRANSFER",
+        "DELAYED_RECALL",
+        "COMPREHENSION",
+        "PRONUNCIATION",
+        "FLUENCY"
+      ]
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "CORRECT",
+        "PARTIAL",
+        "INCORRECT",
+        "NOT_OBSERVED"
+      ]
+    },
+    "score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sourceRef": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 500
+    }
+  }
+}
