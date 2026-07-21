@@ -8,13 +8,13 @@
 
 ## Status
 
-`TODO`
+`DONE`
 
 ## Goal
 
 确认并提交编码启动目录、规则、文档、契约和本地基础设施模板，使 Cursor 能够进入 M0-T02/M0-T03 的工程初始化。
 
-启动包 v1.0.1 已修复任务编号、ADR、阶段门禁、技术版本和 Java 包名冲突；Git 初始化与基线提交仍需在实际项目目录中执行。
+启动包 v1.0.1 已完成 Git 初始化、基线提交，并推送到 `git@gitee.com:flyPanda/english-tutor-agent.git`（`main`）。
 
 ## In scope
 
