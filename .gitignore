@@ -21,6 +21,7 @@ build/
 out/
 *.class
 *.jar
+!android/gradle/wrapper/gradle-wrapper.jar
 *.war
 
 # Android
@@ -40,6 +41,10 @@ tmp/
 coverage/
 jacoco.exec
 test-results/
+node_modules/
+.pnpm-store/
+dist/
+playwright-report/
 
 # Audio and user data
 *.wav
