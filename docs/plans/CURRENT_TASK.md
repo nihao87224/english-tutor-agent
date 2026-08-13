@@ -4,7 +4,7 @@
 
 ## Task
 
-`DOCS-T01 Professional README Refresh`
+`DOCS-T02 README Open Source Layout Review`
 
 ## Status
 
@@ -12,23 +12,27 @@
 
 ## Goal
 
-Rewrite the root README into a professional open-source project landing page that quickly explains what English Tutor Agent does, what problem it solves, its advantages, current status, quick start and deployment path.
+Refine the root README against common high-star open-source README conventions, remove milestone-progress reporting, fix the unreliable overview image usage, and add future screenshot placeholders for Web and Android.
+Declare the repository license as MIT.
 
 ## Related documents
 
 - `README.md`
-- `docs/assets/project-overview.svg`
+- `docs/assets/screenshots/.gitkeep`
+- `LICENSE`
 - `docs/plans/TASK_BACKLOG.md`
 - `docs/deploy/PRODUCTION_DEPLOYMENT.md`
 - `docs/process/DEFINITION_OF_DONE.md`
 
 ## In Scope
 
-- Replace the outdated starter README.
-- Add a project overview image.
+- Review high-star open-source README structure.
+- Replace the unreliable SVG overview image usage.
+- Add screenshot placeholder section for Web, Android and summary screens.
 - Include a demo URL placeholder for future production deployment.
-- Explain current M3 Web Expression Coach status.
-- Add quick-start, architecture, roadmap, security and documentation links.
+- Remove the current-progress table from README.
+- Add the MIT license file and README license link.
+- Keep quick-start, architecture, roadmap, security and documentation links.
 - Update changelog and task record.
 
 ## Out of Scope
@@ -39,16 +43,18 @@ Rewrite the root README into a professional open-source project landing page tha
 
 ## Acceptance Criteria
 
-1. README clearly explains product purpose, target problem, advantages and current status.
-2. README includes a visual overview image stored in the repository.
+1. README clearly explains product purpose, target problem and advantages without a milestone progress table.
+2. README includes screenshot placeholders with future replacement paths.
 3. README includes a demo URL placeholder that can be updated after production deployment.
 4. Documentation-only changes pass project validation and diff checks.
+5. Repository license is declared as MIT.
 
 ## Verification Record
 
-- Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS.
+- Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS after README and MIT license updates.
 - `git diff --check` - PASS. Only Git line-ending conversion warnings were reported.
 
 ## Review Status
 
-Completed for README content and repository-local overview image.
+Completed for README structure review, screenshot placeholders and removal of unreliable SVG hero usage.
+MIT license declaration added.

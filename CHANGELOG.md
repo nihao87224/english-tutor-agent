@@ -5,6 +5,7 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Refined the README toward a high-star open-source layout, removed the progress table, replaced the unreliable SVG hero with screenshot placeholders, and documented future screenshot paths.
 - Rewrote the root README as a professional open-source landing page with demo placeholder, overview graphic, project positioning, quick start and deployment links.
 - Rebaselined V1.0 direction to Web-first English Expression Coach, moving Android voice/listening to a later milestone and updating PRD, design, backlog and UI prototype docs.
 - Expanded baseline validation to check JSON Schema contracts and examples.
@@ -20,6 +21,7 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the MIT license file and linked it from the README.
 - Added production deployment documentation, environment template, systemd/Nginx templates and Linux/PowerShell deployment scripts.
 - Added M3-T08 Playwright E2E coverage for the complete Web Expression Coach path.
 - Added the M3-T07 Web daily summary and next-focus completion view.
