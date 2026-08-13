@@ -1,563 +1,321 @@
-# 后端生产部署指南
+# 后端 Docker + Jenkins 生产部署指南
 
-本文档只覆盖 English Tutor Agent 后端服务的生产部署。前端 Web 静态资源、Android 安装包发布与前端反向代理细节会拆到单独文档。
+本文档说明如何用 Jenkins 构建后端 Docker 镜像，并通过 Docker Compose 在 VPS 上部署 English Tutor Agent 后端。前端 Web 静态资源和 Android 发布不在本文档范围内。
 
-后端当前形态：
+## 1. 部署文件
 
-- Java 21 + Spring Boot 4.1.0；
-- 模块化单体，启动模块为 `server/tutor-bootstrap`；
-- 构建产物为可执行 Jar：`tutor-bootstrap-0.1.0-SNAPSHOT.jar`；
-- 运行方式建议为 Linux + systemd；
-- 数据库使用 MySQL 8.x，通过 Flyway 前向迁移；
-- 短期状态、幂等、锁和缓存使用 Redis 7.x；
-- 音频/文件类资源按设计放入 S3 兼容对象存储；
-- 生产环境敏感信息全部通过环境变量或 systemd `EnvironmentFile` 注入，不写入代码仓库。
-
-推荐部署拓扑：
+仓库内与后端容器化部署相关的文件：
 
 ```text
-用户 / 前端
+Jenkinsfile
+server/Dockerfile
+.dockerignore
+scripts/deploy/docker-compose.backend.yml
+scripts/deploy/deploy_backend_container_with_jenkins.sh
+scripts/deploy/rollback_backend_container.sh
+scripts/deploy/production.env.example
+docs/deploy/BACKEND_PRODUCTION_DEPLOYMENT.md
+```
+
+职责说明：
+
+- `Jenkinsfile`：Jenkins Pipeline 单一事实来源。负责后端测试、构建 Jar、构建 Docker 镜像、调用受控部署脚本。
+- `server/Dockerfile`：后端运行镜像定义。镜像只包含 Java 运行时、应用 Jar 和健康检查需要的 `curl`，不包含生产密钥。
+- `.dockerignore`：限制 Docker build context，避免把 `.git`、本地数据、密钥和无关构建产物带进镜像上下文。
+- `scripts/deploy/docker-compose.backend.yml`：生产后端 Compose 文件，只启动后端容器。
+- `scripts/deploy/deploy_backend_container_with_jenkins.sh`：受控发布脚本。切换到指定镜像、执行 `docker compose up -d`、健康检查，失败自动回滚到上一镜像。
+- `scripts/deploy/rollback_backend_container.sh`：手工回滚脚本。支持回滚到上一个 release、指定 release 或指定镜像。
+- `scripts/deploy/production.env.example`：生产环境变量模板，真实值只放 VPS。
+
+推荐拓扑：
+
+```text
+Gitee/Git 仓库
    |
-   | HTTPS
+   | Jenkins 拉代码并执行 Jenkinsfile
    v
-Nginx / 网关
+Jenkins on VPS
    |
-   | 仅内网或本机访问
+   | mvn verify + docker build
    v
-Spring Boot 后端 127.0.0.1:8080
-   |       |        |
-   v       v        v
-MySQL    Redis    S3 兼容对象存储
+本地 Docker 镜像 english-tutor-agent-backend:<release-id>
+   |
+   | sudo 调用 root-owned 发布脚本
+   v
+Docker Compose backend service
+   |
+   v
+Spring Boot 后端容器 127.0.0.1:8080
 ```
 
-> 安全原则：不要把 `8080` 后端端口直接暴露到公网。生产公网只开放 `80/443`，由 Nginx、负载均衡或 API 网关转发到后端。
+> 安全原则：镜像是可复现交付物，但生产密钥不进镜像、不进 Git。Jenkins 不应获得全量免密 sudo；它只允许执行固定路径的受控发布/回滚脚本。
 
-## 1. 约定和占位符
+## 2. VPS 前置准备
 
-下面命令会使用这些占位符，请部署时替换成你的真实值：
+以下命令在 VPS 上执行。
 
-| 占位符 | 示例 | 说明 |
-| --- | --- | --- |
-| `<APP_DOMAIN>` | `english.example.com` | 对外访问域名 |
-| `<DEPLOY_ROOT>` | `/opt/english-tutor-agent` | 服务部署根目录 |
-| `<SERVICE_USER>` | `english-tutor` | 运行后端的 Linux 系统用户 |
-| `<DB_HOST>` | `10.0.0.10` | MySQL 地址 |
-| `<DB_PASSWORD>` | 留空后自行填写 | MySQL 密码，不能提交到 Git |
-| `<REDIS_HOST>` | `10.0.0.11` | Redis 地址 |
-| `<REDIS_PASSWORD>` | 留空后自行填写 | Redis 密码，不能提交到 Git |
-| `<S3_ENDPOINT>` | `https://s3.example.com` | S3 兼容服务 Endpoint |
-| `<S3_ACCESS_KEY>` | 留空后自行填写 | 对象存储 Access Key |
-| `<S3_SECRET_KEY>` | 留空后自行填写 | 对象存储 Secret Key |
+### 2.1 安装 Java、Git 和 Docker
 
-如果没有特殊说明，本文默认：
+Jenkins 需要 Java 21 执行 Maven 构建，也需要 Docker 构建和运行镜像。
 
 ```bash
-APP_DOMAIN="<APP_DOMAIN>"
-DEPLOY_ROOT="/opt/english-tutor-agent"
-SERVICE_USER="english-tutor"
-SERVER_PORT="8080"
+sudo apt-get update
+sudo apt-get install -y openjdk-21-jdk git curl ca-certificates
 ```
 
-## 2. 服务器准备
-
-以下命令在生产服务器上执行。示例系统为 Ubuntu 22.04 LTS / 24.04 LTS。
-
-### 2.1 创建部署用户
+安装 Docker Engine 和 Compose plugin。可以按 Docker 官方文档安装；Ubuntu 常见安装完成后确认：
 
 ```bash
-sudo useradd --system --home /opt/english-tutor-agent --shell /usr/sbin/nologin english-tutor
+docker version
+docker compose version
 ```
 
-如果用户已存在，命令会提示已存在，可以忽略。
-
-### 2.2 创建目录
+确认 Jenkins 用户也能使用 Java 21：
 
 ```bash
-sudo install -d -o english-tutor -g english-tutor /opt/english-tutor-agent
-sudo install -d -o english-tutor -g english-tutor /opt/english-tutor-agent/releases
-sudo install -d -o english-tutor -g english-tutor /opt/english-tutor-agent/shared
+sudo -u jenkins java -version
+```
+
+### 2.2 Jenkins 的 Docker 权限
+
+最简单方式是把 Jenkins 用户加入 `docker` 组：
+
+```bash
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+```
+
+然后测试：
+
+```bash
+sudo -u jenkins docker version
+sudo -u jenkins docker compose version
+```
+
+安全提醒：能访问 Docker daemon 基本等同于 root 权限。生产上要确保 Jenkins 只对可信管理员开放，Job 只从受保护分支发布。
+
+### 2.3 创建部署目录
+
+```bash
+sudo install -d -o root -g root /opt/english-tutor-agent
+sudo install -d -o root -g root /opt/english-tutor-agent/bin
+sudo install -d -o root -g root /opt/english-tutor-agent/shared
+sudo install -d -o root -g root /opt/english-tutor-agent/releases
 ```
 
 目录用途：
 
-- `/opt/english-tutor-agent/releases/<release-id>/`：每次发布的后端 Jar；
-- `/opt/english-tutor-agent/current`：指向当前版本的软链接；
-- `/opt/english-tutor-agent/shared/production.env`：生产环境变量文件。
+- `/opt/english-tutor-agent/bin/`：root-owned 发布/回滚脚本。
+- `/opt/english-tutor-agent/shared/production.env`：生产环境变量。
+- `/opt/english-tutor-agent/shared/docker-compose.backend.yml`：root-owned Compose 文件。
+- `/opt/english-tutor-agent/shared/current-image.env`：当前后端镜像，由发布脚本维护。
+- `/opt/english-tutor-agent/releases/<release-id>/`：每次发布的镜像元数据。
 
-### 2.3 安装基础依赖
+## 3. 安装受控脚本和 Compose 文件
 
-```bash
-sudo apt-get update
-sudo apt-get install -y openjdk-21-jre-headless curl ca-certificates rsync
-```
-
-如果你选择“在服务器上直接构建”，还需要 Git 和构建依赖：
+从仓库工作区执行：
 
 ```bash
-sudo apt-get install -y git
+cd <REPO_WORKSPACE>
+
+sudo install -m 0755 -o root -g root \
+  scripts/deploy/deploy_backend_container_with_jenkins.sh \
+  /opt/english-tutor-agent/bin/deploy_backend_container_with_jenkins.sh
+
+sudo install -m 0755 -o root -g root \
+  scripts/deploy/rollback_backend_container.sh \
+  /opt/english-tutor-agent/bin/rollback_backend_container.sh
+
+sudo install -m 0644 -o root -g root \
+  scripts/deploy/docker-compose.backend.yml \
+  /opt/english-tutor-agent/shared/docker-compose.backend.yml
 ```
 
-确认 Java 版本：
+确认：
 
 ```bash
-java -version
+sudo ls -l /opt/english-tutor-agent/bin/
+sudo ls -l /opt/english-tutor-agent/shared/docker-compose.backend.yml
 ```
 
-应看到 Java 21，例如：
+以后如果这些脚本或 Compose 文件更新，需要管理员重新执行上面的 `install` 命令。不要让 Jenkins 从可写工作区直接 `sudo` 执行部署脚本。
 
-```text
-openjdk version "21..."
-```
+## 4. 生产环境变量
 
-## 3. 准备 MySQL
+Jenkins 只负责构建镜像和发布容器，不负责创建 MySQL、Redis 或对象存储。发布前需要先准备好：
 
-推荐使用云厂商托管 MySQL 或独立数据库服务器。后端要求 MySQL 8.x 兼容版本。
+- MySQL 8.x 兼容数据库和 `english_tutor` 应用用户；
+- Redis 7.x 服务，建议设置密码且只允许内网访问；
+- S3 兼容对象存储 Bucket，默认私有，Access Key 只授予必要权限。
 
-### 3.1 创建数据库和用户
-
-在 MySQL 管理终端执行：
-
-```sql
-CREATE DATABASE english_tutor
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_0900_ai_ci;
-
-CREATE USER 'english_tutor'@'%'
-  IDENTIFIED BY '<DB_PASSWORD>';
-
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
-  ON english_tutor.*
-  TO 'english_tutor'@'%';
-
-FLUSH PRIVILEGES;
-```
-
-说明：
-
-- `<DB_PASSWORD>` 留空给你自己替换，不要写进仓库；
-- Flyway 需要建表和迁移权限，所以至少需要 `CREATE`、`ALTER`、`INDEX`；
-- 如果数据库和应用在同一台机器，可以把 `'%'` 改成 `'localhost'` 或具体内网 IP；
-- 数据库时区建议统一按 UTC 处理，应用 JDBC URL 已带 UTC 相关参数。
-
-### 3.2 从服务器测试连接
-
-如果服务器安装了 MySQL 客户端：
+创建环境变量文件：
 
 ```bash
-sudo apt-get install -y mysql-client
-mysql -h <DB_HOST> -P 3306 -u english_tutor -p english_tutor
-```
-
-登录后执行：
-
-```sql
-SELECT 1;
-SHOW DATABASES;
-```
-
-确认能连接后输入：
-
-```sql
-exit;
-```
-
-## 4. 准备 Redis
-
-推荐使用云厂商托管 Redis 或独立 Redis 7.x 服务。
-
-### 4.1 Redis 配置要求
-
-生产环境至少满足：
-
-- Redis 不直接暴露公网；
-- 设置密码；
-- 应用服务器可以访问 Redis 内网地址；
-- Redis 数据用于短期状态，不作为长期事实来源。
-
-### 4.2 从服务器测试连接
-
-安装 Redis 客户端：
-
-```bash
-sudo apt-get install -y redis-tools
-```
-
-如果 Redis 有密码：
-
-```bash
-redis-cli -h <REDIS_HOST> -p 6379 -a '<REDIS_PASSWORD>' ping
-```
-
-如果 Redis 暂无密码，仅限内网临时测试：
-
-```bash
-redis-cli -h <REDIS_HOST> -p 6379 ping
-```
-
-期望返回：
-
-```text
-PONG
-```
-
-> 生产环境不要使用无密码 Redis。
-
-## 5. 准备 S3 兼容对象存储
-
-后端设计要求音频和文件类资源进入对象存储，不写入数据库 BLOB。你可以使用 AWS S3、MinIO、七牛云 S3 兼容接口或其他兼容服务。
-
-需要准备：
-
-- Bucket 名称，例如 `english-tutor-prod`；
-- Endpoint，例如 `https://s3.<region>.example.com`；
-- Region，例如 `cn-east-1`、`ap-southeast-1`；
-- Access Key；
-- Secret Key；
-- 可选的公开访问基础 URL，例如 CDN 域名。
-
-权限建议：
-
-- Bucket 默认私有；
-- Access Key 只授予当前 Bucket 的必要读写权限；
-- 不要把 Access Key 和 Secret Key 写入 Git、README、Issue 或日志。
-
-## 6. 编写生产环境变量文件
-
-在服务器上创建环境变量文件：
-
-```bash
+sudo cp scripts/deploy/production.env.example /opt/english-tutor-agent/shared/production.env
 sudo nano /opt/english-tutor-agent/shared/production.env
 ```
 
-写入下面内容。敏感值保持空位，由你在服务器上填写：
+至少确认这些值：
 
 ```bash
-# =========================
-# English Tutor Agent Backend
-# Production environment
-# =========================
-
-# 应用基础信息
-APP_DOMAIN=<APP_DOMAIN>
-PUBLIC_BASE_URL=https://<APP_DOMAIN>
 APP_ENV=production
-APP_TIMEZONE=Asia/Shanghai
-
-# 后端监听端口。不要直接开放公网，由 Nginx/网关反向代理。
 SERVER_PORT=8080
-
-# 如果你希望 Spring Boot 只绑定本机地址，可以保留这一项。
-# 若你的网关与后端不在同一台机器，请改成内网监听地址或移除此项。
-SERVER_ADDRESS=127.0.0.1
-
-# MySQL
+BACKEND_HOST_PORT=8080
 DB_HOST=<DB_HOST>
-DB_PORT=3306
-DB_NAME=english_tutor
 DB_USERNAME=english_tutor
 DB_PASSWORD=
-
-# Flyway 前向迁移。生产默认开启。
-FLYWAY_ENABLED=true
-
-# Redis
 REDIS_HOST=<REDIS_HOST>
-REDIS_PORT=6379
 REDIS_PASSWORD=
-REDIS_TIMEOUT=2s
-
-# S3 兼容对象存储
 S3_ENDPOINT=<S3_ENDPOINT>
-S3_REGION=<S3_REGION>
 S3_BUCKET=<S3_BUCKET>
 S3_ACCESS_KEY=
 S3_SECRET_KEY=
-S3_PUBLIC_BASE_URL=
-
-# AI Provider
-# 当前阶段生产试运行建议先使用 fake，等真实 Provider Adapter 完成并通过评审后再切换。
-LLM_PROVIDER=fake
-LLM_BASE_URL=
-LLM_API_KEY=
-LLM_MODEL=
-
-ASR_PROVIDER=fake
-ASR_BASE_URL=
-ASR_API_KEY=
-ASR_MODEL=
-
-TTS_PROVIDER=fake
-TTS_BASE_URL=
-TTS_API_KEY=
-TTS_MODEL=
-
-# 隐私与保留策略
-SAVE_RAW_TEXT_DEFAULT=true
-SAVE_RAW_AUDIO_DEFAULT=false
-RAW_AUDIO_RETENTION_DAYS=7
 ```
 
-保存后设置权限：
+设置权限：
 
 ```bash
-sudo chown english-tutor:english-tutor /opt/english-tutor-agent/shared/production.env
 sudo chmod 600 /opt/english-tutor-agent/shared/production.env
+sudo chown root:root /opt/english-tutor-agent/shared/production.env
 ```
 
-检查文件权限：
+敏感值不得写入 Git、README、Issue、Jenkins Console Output 或聊天记录。
+
+## 5. Jenkins sudoers
+
+Jenkins 只需要 sudo 执行两个固定脚本：
 
 ```bash
-sudo ls -l /opt/english-tutor-agent/shared/production.env
-```
-
-期望类似：
-
-```text
--rw------- 1 english-tutor english-tutor ... production.env
-```
-
-> 注意：如果密码中包含空格、`#`、`$`、引号等 shell 特殊字符，请使用安全的引号和转义方式。最稳妥的做法是生成不含 shell 特殊字符但足够长的随机密码。
-
-## 7. 构建后端 Jar
-
-后端可以在服务器上构建，也可以在本地构建后上传。生产推荐 CI 或本地干净环境构建，再上传 Jar 到服务器。
-
-### 7.1 方式 A：在服务器上构建
-
-在服务器上拉取代码：
-
-```bash
-cd /opt
-sudo git clone <YOUR_GIT_REPOSITORY_URL> english-tutor-agent-source
-sudo chown -R "$USER":"$USER" /opt/english-tutor-agent-source
-cd /opt/english-tutor-agent-source
-```
-
-如果仓库已经存在：
-
-```bash
-cd /opt/english-tutor-agent-source
-git pull
-```
-
-确保 Maven Wrapper 可执行：
-
-```bash
-chmod +x server/mvnw
-```
-
-运行后端测试并构建：
-
-```bash
-cd /opt/english-tutor-agent-source/server
-./mvnw -pl tutor-bootstrap -am clean verify
-```
-
-构建成功后确认 Jar 存在：
-
-```bash
-ls -lh tutor-bootstrap/target/tutor-bootstrap-0.1.0-SNAPSHOT.jar
-```
-
-如果你必须跳过测试，仅用于紧急发布：
-
-```bash
-./mvnw -pl tutor-bootstrap -am -DskipTests package
-```
-
-> 正常发布不要跳过测试。跳过测试应记录原因，并在发布后补跑完整验证。
-
-### 7.2 方式 B：本地构建后上传
-
-在本地仓库根目录执行：
-
-```bash
-(cd server && ./mvnw -pl tutor-bootstrap -am clean verify)
-```
-
-上传 Jar 到服务器临时目录：
-
-```bash
-scp server/tutor-bootstrap/target/tutor-bootstrap-0.1.0-SNAPSHOT.jar <SSH_USER>@<SERVER_HOST>:/tmp/tutor-bootstrap.jar
-```
-
-登录服务器：
-
-```bash
-ssh <SSH_USER>@<SERVER_HOST>
-```
-
-确认上传成功：
-
-```bash
-ls -lh /tmp/tutor-bootstrap.jar
-```
-
-## 8. 安装一次后端 Release
-
-以下命令在生产服务器执行。
-
-### 8.1 创建 Release 目录
-
-```bash
-RELEASE_ID="$(date -u +%Y%m%dT%H%M%SZ)"
-DEPLOY_ROOT="/opt/english-tutor-agent"
-RELEASE_DIR="$DEPLOY_ROOT/releases/$RELEASE_ID"
-
-sudo install -d -o english-tutor -g english-tutor "$RELEASE_DIR/server"
-```
-
-### 8.2 安装 Jar
-
-如果你是在服务器上构建：
-
-```bash
-sudo install -m 0644 \
-  /opt/english-tutor-agent-source/server/tutor-bootstrap/target/tutor-bootstrap-0.1.0-SNAPSHOT.jar \
-  "$RELEASE_DIR/server/tutor-bootstrap.jar"
-```
-
-如果你是本地构建后上传：
-
-```bash
-sudo install -m 0644 /tmp/tutor-bootstrap.jar "$RELEASE_DIR/server/tutor-bootstrap.jar"
-```
-
-设置属主：
-
-```bash
-sudo chown -R english-tutor:english-tutor "$RELEASE_DIR"
-```
-
-切换当前版本软链接：
-
-```bash
-sudo ln -sfn "$RELEASE_DIR" "$DEPLOY_ROOT/current"
-sudo chown -h english-tutor:english-tutor "$DEPLOY_ROOT/current"
-```
-
-检查当前版本：
-
-```bash
-readlink -f /opt/english-tutor-agent/current
-ls -lh /opt/english-tutor-agent/current/server/tutor-bootstrap.jar
-```
-
-## 9. 配置 systemd 服务
-
-创建 systemd unit：
-
-```bash
-sudo nano /etc/systemd/system/english-tutor-agent.service
+sudo visudo -f /etc/sudoers.d/english-tutor-agent-jenkins
 ```
 
 写入：
 
-```ini
-[Unit]
-Description=English Tutor Agent backend
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=english-tutor
-Group=english-tutor
-WorkingDirectory=/opt/english-tutor-agent/current/server
-EnvironmentFile=/opt/english-tutor-agent/shared/production.env
-ExecStart=/usr/bin/java -jar /opt/english-tutor-agent/current/server/tutor-bootstrap.jar
-SuccessExitStatus=143
-Restart=on-failure
-RestartSec=10
-TimeoutStopSec=30
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=full
-ProtectHome=true
-ReadWritePaths=/opt/english-tutor-agent
-
-[Install]
-WantedBy=multi-user.target
+```sudoers
+jenkins ALL=(root) NOPASSWD: /opt/english-tutor-agent/bin/deploy_backend_container_with_jenkins.sh, /opt/english-tutor-agent/bin/rollback_backend_container.sh
 ```
 
-加载并设置开机启动：
+验证：
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable english-tutor-agent
+sudo visudo -cf /etc/sudoers.d/english-tutor-agent-jenkins
+sudo -u jenkins sudo -n /opt/english-tutor-agent/bin/deploy_backend_container_with_jenkins.sh --help
+sudo -u jenkins sudo -n /opt/english-tutor-agent/bin/rollback_backend_container.sh --help
 ```
 
-## 10. 启动后端
+不要给 Jenkins 配置全量免密 sudo，也不要给 Jenkins 开放通用删除权限。
 
-启动服务：
+## 6. Jenkins Job 配置
 
-```bash
-sudo systemctl restart english-tutor-agent
+推荐使用 `Pipeline script from SCM`：
+
+1. Jenkins 首页点击 `New Item`。
+2. 名称：`english-tutor-agent-backend-prod`。
+3. 类型选择 `Pipeline`。
+4. `Definition` 选择 `Pipeline script from SCM`。
+5. SCM 选择 Git。
+6. Repository URL 填仓库地址，例如 `git@gitee.com:flyPanda/english-tutor-agent.git`。
+7. Credentials 选择你的 Git 凭据。
+8. Branch Specifier 填 `*/main`。
+9. Script Path 填 `Jenkinsfile`。
+
+`Jenkinsfile` 中的生产路径固定为：
+
+```text
+DEPLOY_ROOT=/opt/english-tutor-agent
+DEPLOY_SCRIPT=/opt/english-tutor-agent/bin/deploy_backend_container_with_jenkins.sh
+BACKEND_IMAGE_REPOSITORY=english-tutor-agent-backend
 ```
 
-查看状态：
+可用参数：
 
-```bash
-sudo systemctl status english-tutor-agent --no-pager
+| 参数名 | 默认值 | 说明 |
+| --- | --- | --- |
+| `SKIP_TESTS` | `false` | 紧急发布才允许跳过测试 |
+
+## 7. 首次发布
+
+在 Jenkins Job 页面点击 `Build with Parameters`：
+
+1. `SKIP_TESTS` 保持 `false`。
+2. 点击 `Build`。
+
+Jenkins 会执行：
+
+```text
+mvn clean verify
+→ docker build -f server/Dockerfile
+→ sudo /opt/english-tutor-agent/bin/deploy_backend_container_with_jenkins.sh
+→ docker compose up -d backend
+→ /actuator/health 健康检查
 ```
 
-查看启动日志：
+构建成功后，在 VPS 上检查：
 
 ```bash
-sudo journalctl -u english-tutor-agent -n 200 --no-pager
-```
-
-如果 Flyway 成功执行，日志中应能看到数据库迁移完成或无待执行迁移。若数据库连接、Redis 连接或环境变量有误，服务会启动失败，优先看 `journalctl` 输出。
-
-## 11. 健康检查
-
-在服务器上检查本机健康状态：
-
-```bash
+docker ps --filter name=english-tutor-backend
+docker compose \
+  --env-file /opt/english-tutor-agent/shared/production.env \
+  --env-file /opt/english-tutor-agent/shared/current-image.env \
+  -f /opt/english-tutor-agent/shared/docker-compose.backend.yml \
+  ps
 curl -fsS http://127.0.0.1:8080/actuator/health
 ```
 
-期望返回类似：
+## 8. 日常发布
 
-```json
-{"status":"UP"}
+默认流程：
+
+```text
+push/merge 到 main
+→ Jenkins Build with Parameters
+→ 测试通过
+→ 构建新镜像 english-tutor-agent-backend:<release-id>
+→ Compose 切换后端容器
+→ 健康检查通过
 ```
 
-如果设置了 `SERVER_PORT` 为其他端口，请替换命令中的 `8080`。
+建议先手工点击发布。确认流程稳定后，再配置 Gitee WebHook 自动触发。即使启用 WebHook，也建议只允许 `main` 或受保护 tag 触发生产发布。
 
-检查端口监听：
+## 9. 回滚
+
+发布脚本健康检查失败时，会自动把 Compose 切回上一镜像。
+
+手工回滚到上一个 release：
 
 ```bash
-ss -ltnp | grep 8080
+sudo /opt/english-tutor-agent/bin/rollback_backend_container.sh --previous
 ```
 
-如果设置了 `SERVER_ADDRESS=127.0.0.1`，应看到监听在本机地址，避免公网直连。
-
-## 12. 可选：配置 Nginx 只代理后端 API
-
-前端部署会单独写文档。这里仅给后端 API 代理示例，适合你想先验证后端域名访问。
-
-安装 Nginx：
+手工回滚到指定 release：
 
 ```bash
-sudo apt-get install -y nginx
+ls -1dt /opt/english-tutor-agent/releases/*
+sudo /opt/english-tutor-agent/bin/rollback_backend_container.sh --release-id <RELEASE_ID>
 ```
 
-创建站点配置：
+手工回滚到指定本地镜像：
 
 ```bash
-sudo nano /etc/nginx/sites-available/english-tutor-agent-backend.conf
+sudo /opt/english-tutor-agent/bin/rollback_backend_container.sh --image english-tutor-agent-backend:<TAG>
 ```
 
-写入：
+重要提醒：
+
+- Flyway 是前向迁移。
+- 回滚镜像不会自动回滚数据库结构。
+- 涉及表结构或数据语义变更的发布，必须提前准备兼容策略和数据库备份。
+
+## 10. Nginx 后端代理
+
+后端容器只映射到本机 `127.0.0.1:${BACKEND_HOST_PORT:-8080}`，公网通过 Nginx 或网关访问。
+
+Compose 会让 Spring Boot 在容器内监听 `0.0.0.0:8080`，但宿主机只映射到 `127.0.0.1`，避免后端端口直接暴露公网。
 
 ```nginx
 server {
     listen 80;
     server_name <APP_DOMAIN>;
-
-    access_log /var/log/nginx/english-tutor-agent-backend.access.log;
-    error_log /var/log/nginx/english-tutor-agent-backend.error.log;
 
     location /api/ {
         proxy_pass http://127.0.0.1:8080/api/;
@@ -580,315 +338,116 @@ server {
 }
 ```
 
-启用配置：
+生产建议启用 HTTPS。
+
+## 11. 安全检查清单
+
+- [ ] Jenkins 不允许匿名访问。
+- [ ] Jenkins 管理页面使用 HTTPS，最好只允许 VPN、内网或固定 IP 访问。
+- [ ] Jenkins Job 只从 `main` 或受保护 tag 发布生产。
+- [ ] Jenkins 访问 Docker daemon 的风险已接受，并限制 Jenkins 管理权限。
+- [ ] Jenkins 没有全量免密 sudo。
+- [ ] Jenkins sudoers 只允许执行两个固定 root-owned 脚本。
+- [ ] `/opt/english-tutor-agent/bin/*.sh` 属主为 `root root`，Jenkins 不能修改。
+- [ ] `/opt/english-tutor-agent/shared/docker-compose.backend.yml` 属主为 `root root`，Jenkins 不能修改。
+- [ ] `production.env` 权限为 `600`。
+- [ ] 真实密钥没有进入 Git、镜像层或 Jenkins Console Output。
+- [ ] `.dockerignore` 排除了 `.git`、本地数据、密钥和无关构建产物。
+- [ ] Docker 镜像内使用非 root 用户运行应用。
+- [ ] 后端端口只绑定 `127.0.0.1`，不直接暴露公网。
+- [ ] 发布前已准备数据库备份和回滚策略。
+
+## 12. 常用命令
+
+查看容器：
 
 ```bash
-sudo ln -sfn /etc/nginx/sites-available/english-tutor-agent-backend.conf /etc/nginx/sites-enabled/english-tutor-agent-backend.conf
-sudo nginx -t
-sudo systemctl reload nginx
+docker ps --filter name=english-tutor-backend
 ```
 
-公网检查：
+查看日志：
 
 ```bash
-curl -fsS http://<APP_DOMAIN>/actuator/health
+docker logs --tail=200 english-tutor-backend
+docker logs -f english-tutor-backend
 ```
 
-生产建议配置 HTTPS。DNS 指向服务器后，可使用 Certbot：
+查看当前镜像：
 
 ```bash
-sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d <APP_DOMAIN>
+cat /opt/english-tutor-agent/shared/current-image.env
+cat /opt/english-tutor-agent/shared/current-release
 ```
 
-HTTPS 检查：
+查看历史 release：
 
 ```bash
-curl -fsS https://<APP_DOMAIN>/actuator/health
+ls -1dt /opt/english-tutor-agent/releases/*
 ```
 
-## 13. 防火墙建议
-
-如果使用 UFW：
+清理旧镜像和旧 release 由管理员手工执行：
 
 ```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw enable
-sudo ufw status
+docker image ls english-tutor-agent-backend
+sudo rm -r -- /opt/english-tutor-agent/releases/<OLD_RELEASE_ID>
+docker image rm english-tutor-agent-backend:<OLD_TAG>
 ```
 
-不要开放后端端口：
+## 13. 故障排查
 
-```bash
-sudo ufw deny 8080
-```
+### 13.1 Jenkins 构建失败
 
-如果后端只监听 `127.0.0.1`，公网本身无法直接访问 `8080`，但防火墙仍建议保留。
-
-## 14. 常用运维命令
-
-查看服务状态：
-
-```bash
-sudo systemctl status english-tutor-agent --no-pager
-```
-
-重启服务：
-
-```bash
-sudo systemctl restart english-tutor-agent
-```
-
-停止服务：
-
-```bash
-sudo systemctl stop english-tutor-agent
-```
-
-查看最近日志：
-
-```bash
-sudo journalctl -u english-tutor-agent -n 200 --no-pager
-```
-
-实时跟踪日志：
-
-```bash
-sudo journalctl -u english-tutor-agent -f
-```
-
-查看当前发布版本：
-
-```bash
-readlink -f /opt/english-tutor-agent/current
-```
-
-查看历史发布：
-
-```bash
-ls -1 /opt/english-tutor-agent/releases
-```
-
-## 15. 回滚
-
-先列出历史版本：
-
-```bash
-ls -1 /opt/english-tutor-agent/releases
-```
-
-选择一个已知可用版本，例如 `<RELEASE_ID>`，切换软链接：
-
-```bash
-sudo ln -sfn /opt/english-tutor-agent/releases/<RELEASE_ID> /opt/english-tutor-agent/current
-sudo chown -h english-tutor:english-tutor /opt/english-tutor-agent/current
-sudo systemctl restart english-tutor-agent
-```
-
-回滚后检查：
-
-```bash
-sudo systemctl status english-tutor-agent --no-pager
-curl -fsS http://127.0.0.1:8080/actuator/health
-```
-
-重要提醒：
-
-- Flyway 是前向迁移；
-- 回滚 Jar 不会自动回滚数据库结构；
-- 涉及表结构或数据语义变更的发布，必须提前准备兼容策略和数据库备份。
-
-## 16. 发布前检查清单
-
-发布前逐项确认：
-
-- [ ] Java 版本是 21；
-- [ ] `production.env` 权限是 `600`；
-- [ ] `DB_PASSWORD`、`REDIS_PASSWORD`、`S3_SECRET_KEY` 等敏感值没有进入 Git；
-- [ ] MySQL 只能被应用服务器或可信内网访问；
-- [ ] Redis 设置了密码，且不暴露公网；
-- [ ] S3 Bucket 默认私有；
-- [ ] `FLYWAY_ENABLED=true`；
-- [ ] 后端端口没有直接暴露公网；
-- [ ] `/actuator/health` 返回 `UP`；
-- [ ] systemd 服务已设置开机启动；
-- [ ] 已配置日志查看方式；
-- [ ] 已准备数据库备份和回滚方案；
-- [ ] 如果对公网开放，域名必须启用 HTTPS。
-
-## 17. 故障排查
-
-### 17.1 服务启动失败
-
-查看状态和日志：
-
-```bash
-sudo systemctl status english-tutor-agent --no-pager
-sudo journalctl -u english-tutor-agent -n 300 --no-pager
-```
+优先看 Jenkins Console Output。
 
 常见原因：
 
-- Java 不是 21；
-- `production.env` 缺少数据库或 Redis 配置；
-- MySQL 用户没有建表/迁移权限；
-- Redis 密码错误；
-- Jar 路径不存在；
-- `current` 软链接指向了错误目录。
+- Jenkins 使用的 Java 不是 21。
+- Jenkins 无法访问 Gitee/Git 仓库。
+- Maven 下载依赖失败。
+- 后端测试失败。
+- Jenkins 用户不能访问 Docker daemon。
 
-### 17.2 数据库连接失败
-
-在服务器上测试：
+排查：
 
 ```bash
-mysql -h <DB_HOST> -P 3306 -u english_tutor -p english_tutor
+sudo -u jenkins java -version
+sudo -u jenkins git ls-remote <GIT_REPOSITORY_URL>
+sudo -u jenkins docker version
 ```
 
-检查：
+### 13.2 Docker 构建失败
 
-- 数据库安全组是否允许应用服务器访问；
-- 用户名和密码是否正确；
-- 数据库名是否为 `english_tutor`；
-- MySQL 是否是 8.x 兼容版本；
-- Flyway 用户是否有建表和改表权限。
-
-### 17.3 Redis 连接失败
-
-在服务器上测试：
+检查 Jar 是否存在：
 
 ```bash
-redis-cli -h <REDIS_HOST> -p 6379 -a '<REDIS_PASSWORD>' ping
+ls -lh server/tutor-bootstrap/target/tutor-bootstrap-0.1.0-SNAPSHOT.jar
 ```
 
-检查：
+检查 `.dockerignore` 是否误排除了 Jar。当前配置保留：
 
-- Redis 地址和端口是否正确；
-- 密码是否正确；
-- 安全组/防火墙是否允许应用服务器访问；
-- Redis 是否强制 TLS。如果强制 TLS，需要额外配置客户端连接参数，不能只填普通 `REDIS_HOST`。
+```text
+!server/tutor-bootstrap/target/tutor-bootstrap-0.1.0-SNAPSHOT.jar
+```
 
-### 17.4 健康检查不是 UP
-
-执行：
+### 13.3 Jenkins sudo 权限失败
 
 ```bash
+sudo visudo -cf /etc/sudoers.d/english-tutor-agent-jenkins
+sudo -u jenkins sudo -n /opt/english-tutor-agent/bin/deploy_backend_container_with_jenkins.sh --help
+```
+
+### 13.4 容器启动或健康检查失败
+
+```bash
+docker ps -a --filter name=english-tutor-backend
+docker logs --tail=300 english-tutor-backend
 curl -v http://127.0.0.1:8080/actuator/health
-sudo journalctl -u english-tutor-agent -n 300 --no-pager
 ```
 
 优先排查：
 
-- 数据库连接；
-- Redis 连接；
-- Flyway 迁移；
-- 端口是否被占用；
-- 环境变量是否被 systemd 正确读取。
-
-### 17.5 systemd 没有读取最新环境变量
-
-修改 `production.env` 后重启服务：
-
-```bash
-sudo systemctl restart english-tutor-agent
-```
-
-如果修改了 service 文件本身，需要：
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart english-tutor-agent
-```
-
-## 18. 最小可复制部署脚本
-
-如果你已经在服务器上准备好了：
-
-- `/opt/english-tutor-agent/shared/production.env`；
-- Java 21；
-- MySQL、Redis、S3；
-- 已构建好的 `/tmp/tutor-bootstrap.jar`；
-
-可以用下面脚本完成一次后端发布：
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-DEPLOY_ROOT="/opt/english-tutor-agent"
-SERVICE_USER="english-tutor"
-SOURCE_JAR="/tmp/tutor-bootstrap.jar"
-RELEASE_ID="$(date -u +%Y%m%dT%H%M%SZ)"
-RELEASE_DIR="$DEPLOY_ROOT/releases/$RELEASE_ID"
-
-if [ ! -f "$SOURCE_JAR" ]; then
-  echo "Jar 不存在：$SOURCE_JAR" >&2
-  exit 1
-fi
-
-if [ ! -f "$DEPLOY_ROOT/shared/production.env" ]; then
-  echo "环境变量文件不存在：$DEPLOY_ROOT/shared/production.env" >&2
-  exit 1
-fi
-
-set -a
-. "$DEPLOY_ROOT/shared/production.env"
-set +a
-
-if ! id "$SERVICE_USER" >/dev/null 2>&1; then
-  sudo useradd --system --home "$DEPLOY_ROOT" --shell /usr/sbin/nologin "$SERVICE_USER"
-fi
-
-sudo install -d -o "$SERVICE_USER" -g "$SERVICE_USER" "$DEPLOY_ROOT" "$DEPLOY_ROOT/releases" "$DEPLOY_ROOT/shared"
-sudo install -d -o "$SERVICE_USER" -g "$SERVICE_USER" "$RELEASE_DIR/server"
-sudo install -m 0644 "$SOURCE_JAR" "$RELEASE_DIR/server/tutor-bootstrap.jar"
-sudo chown -R "$SERVICE_USER:$SERVICE_USER" "$RELEASE_DIR"
-
-sudo ln -sfn "$RELEASE_DIR" "$DEPLOY_ROOT/current"
-sudo chown -h "$SERVICE_USER:$SERVICE_USER" "$DEPLOY_ROOT/current"
-
-sudo tee /etc/systemd/system/english-tutor-agent.service >/dev/null <<'SERVICE'
-[Unit]
-Description=English Tutor Agent backend
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=english-tutor
-Group=english-tutor
-WorkingDirectory=/opt/english-tutor-agent/current/server
-EnvironmentFile=/opt/english-tutor-agent/shared/production.env
-ExecStart=/usr/bin/java -jar /opt/english-tutor-agent/current/server/tutor-bootstrap.jar
-SuccessExitStatus=143
-Restart=on-failure
-RestartSec=10
-TimeoutStopSec=30
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=full
-ProtectHome=true
-ReadWritePaths=/opt/english-tutor-agent
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-
-sudo systemctl daemon-reload
-sudo systemctl enable english-tutor-agent
-sudo systemctl restart english-tutor-agent
-
-for i in $(seq 1 30); do
-  if curl -fsS "http://127.0.0.1:${SERVER_PORT:-8080}/actuator/health" >/dev/null; then
-    echo "后端健康检查通过，发布完成：$RELEASE_ID"
-    exit 0
-  fi
-  sleep 2
-done
-
-sudo journalctl -u english-tutor-agent -n 120 --no-pager >&2 || true
-echo "后端健康检查失败，请查看日志" >&2
-exit 1
-```
-
-> 这个脚本是文档内的最小后端发布脚本。仓库已有 `scripts/deploy/deploy_production.sh` 是前后端一体发布脚本，后续拆分前端文档时可以再决定是否新增正式的后端专用脚本文件。
+- `production.env` 缺少数据库或 Redis 配置。
+- MySQL 用户没有迁移权限。
+- Redis 密码错误。
+- 容器内 `SERVER_PORT` 是否为 `8080`。
+- `BACKEND_HOST_PORT` 是否和 Nginx 代理端口一致。

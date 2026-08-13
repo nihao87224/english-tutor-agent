@@ -4,7 +4,7 @@
 
 ## Task
 
-`DOCS-T04 Chinese README User-Facing Rewrite`
+`DOCS-T07 Dockerized Jenkins Backend Deployment`
 
 ## Status
 
@@ -12,44 +12,57 @@
 
 ## Goal
 
-Rewrite the Chinese README sections `为什么做这个项目` and `亮点` so they speak to product users, reflect the original user pain points, and avoid technical implementation details that ordinary learners do not care about.
+Switch backend production deployment to Docker images built by Jenkins and run on the VPS through Docker Compose, so future work can focus on business code rather than deployment mechanics.
 
 ## Related documents
 
-- `README_zh.md`
-- `CHANGELOG.md`
-- `docs/modify/English_Tutor_Agent_V1.0_原始用户端产品需求.md`
-- `docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md`
+- `Jenkinsfile`
+- `server/Dockerfile`
+- `.dockerignore`
+- `scripts/deploy/docker-compose.backend.yml`
+- `scripts/deploy/deploy_backend_container_with_jenkins.sh`
+- `scripts/deploy/rollback_backend_container.sh`
+- `scripts/deploy/production.env.example`
+- `docs/deploy/BACKEND_PRODUCTION_DEPLOYMENT.md`
 - `docs/process/DEFINITION_OF_DONE.md`
 
 ## In Scope
 
-- Read the original user-facing requirement discussion and current PRD.
-- Rewrite the Chinese README motivation section in a more conversational tone.
-- Rewrite the Chinese README highlights to focus on differences from common English learning apps.
-- Remove user-facing technical points from these two sections.
+- Add a backend Docker image definition.
+- Add Docker build context exclusions.
+- Add a production Docker Compose backend service.
+- Update Jenkins to build and deploy backend Docker images.
+- Add controlled container deploy and rollback scripts.
+- Rewrite backend deployment documentation around Docker Compose.
 - Update changelog and task record.
 
 ## Out of Scope
 
 - Changing backend, Web or Android implementation code.
-- Adding generated or external images.
-- Rewriting the English README.
-- Changing product requirements.
+- Deploying Jenkins or the backend from this local machine.
+- Frontend containerization.
+- Adding a remote container registry flow.
+- Storing production secrets in the repository or Docker image.
 - Committing or pushing unless separately requested.
 
 ## Acceptance Criteria
 
-1. The motivation section reflects the original pain points: input stronger than output, passive vocabulary, sentence organization, unnatural expression, delayed feedback and missing learning loop.
-2. The highlights section explains user-visible differences from common English learning apps.
-3. Technical implementation details such as Fake Provider, OpenAPI, schema validation and deployment baseline are not used as user-facing highlights.
-4. Documentation-only changes pass project validation and diff checks.
+1. Jenkins builds a backend Docker image after backend verification.
+2. Backend production runtime is described as Docker Compose, not Jar + systemd.
+3. Production secrets remain outside Git and outside Docker image layers.
+4. Deployment and rollback scripts use fixed `/opt/english-tutor-agent` conventions and validate inputs.
+5. Documentation explains VPS setup, Jenkins setup, daily deployment, rollback and security risks.
+6. Documentation and static checks pass.
 
 ## Verification Record
 
 - Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS.
+- Docker Compose backend YAML parse with PyYAML - PASS.
+- Static secret scan for Jenkins, Docker, deployment scripts and docs - PASS.
+- Static checks for Dockerfile, Compose health check, Jenkins Docker build stage and LF-only deployment files - PASS.
 - `git diff --check` - PASS. Only Git line-ending conversion warnings were reported.
+- Local `docker build`, `docker compose config`, `bash -n` and `shellcheck` were not run because this Windows environment has no Docker, bash or shellcheck; verify on the VPS/Jenkins Linux runtime during first setup.
 
 ## Review Status
 
-Completed for Chinese README user-facing motivation and highlights rewrite.
+Completed for Dockerized Jenkins backend deployment files and documentation.

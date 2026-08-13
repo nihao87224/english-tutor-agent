@@ -5,6 +5,7 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Reworked backend production deployment around Jenkins-built Docker images and Docker Compose releases on the VPS.
 - Rewrote the Chinese README user-facing motivation and highlights around original user pain points and product differences instead of technical implementation details.
 - Refined the README toward a high-star open-source layout, removed the progress table, replaced the unreliable SVG hero with screenshot placeholders, and documented future screenshot paths.
 - Rewrote the root README as a professional open-source landing page with demo placeholder, overview graphic, project positioning, quick start and deployment links.
@@ -22,6 +23,7 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added a backend Dockerfile, Docker Compose production backend service, Jenkins image pipeline, controlled container deploy script and container rollback script.
 - Added a Chinese root README for Chinese-speaking users and linked it from the English README.
 - Added a Chinese backend-only production deployment guide with step-by-step commands, environment placeholders, systemd setup, health checks, rollback and troubleshooting.
 - Added the MIT license file and linked it from the README.
