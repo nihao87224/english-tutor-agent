@@ -1,0 +1,24 @@
+[Unit]
+Description=English Tutor Agent backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_USER__
+WorkingDirectory=__DEPLOY_ROOT__/current/server
+EnvironmentFile=__DEPLOY_ROOT__/shared/production.env
+ExecStart=/usr/bin/java -jar __DEPLOY_ROOT__/current/server/tutor-bootstrap.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=__DEPLOY_ROOT__
+
+[Install]
+WantedBy=multi-user.target

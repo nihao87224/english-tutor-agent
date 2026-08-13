@@ -1,10 +1,10 @@
 # Current Task
 
-> 开始新任务时替换本文件内容。一个时间只允许存在一个当前开发任务。
+> Start a new task by replacing this file. Only one development task may be active at a time.
 
 ## Task
 
-`M0-T01 建立仓库与目录结构`
+`OPS-T01 Production Deployment Documentation`
 
 ## Status
 
@@ -12,39 +12,48 @@
 
 ## Goal
 
-确认并提交编码启动目录、规则、文档、契约和本地基础设施模板，使 Cursor 能够进入 M0-T02/M0-T03 的工程初始化。
+Document a production deployment path for the current Web-first build and provide complete deployment scripts with sensitive values supplied through environment variables.
 
-启动包 v1.0.1 已完成 Git 初始化、基线提交，并推送到 `git@gitee.com:flyPanda/english-tutor-agent.git`（`main`）。
+## Related documents
 
-## In scope
+- `docs/deploy/PRODUCTION_DEPLOYMENT.md`
+- `scripts/deploy/production.env.example`
+- `scripts/deploy/deploy_production.sh`
+- `scripts/deploy/deploy_production.ps1`
+- `scripts/deploy/systemd/english-tutor-agent.service`
+- `scripts/deploy/nginx/english-tutor-agent.conf`
+- `docs/process/DEFINITION_OF_DONE.md`
 
-- 检查本启动包文件完整性；
-- 修复文档链接和目录问题；
-- 初始化 Git；
-- 创建第一笔基线提交；
-- 记录项目基线版本。
+## In Scope
 
-## Out of scope
+- Provide a production deployment guide.
+- Leave sensitive values blank and documented in an environment template.
+- Provide Linux server deployment script.
+- Provide Windows-to-Linux deployment script.
+- Provide systemd and Nginx templates.
+- Update changelog and script index.
 
-- 创建 Spring Boot 业务代码；
-- 创建 Android 业务页面；
-- 调用真实 LLM、ASR 或 TTS；
-- 创建正式数据库业务表。
+## Out of Scope
 
-## Acceptance criteria
+- Executing production deployment.
+- Provisioning managed MySQL, Redis, object storage, DNS or TLS certificates.
+- Adding authentication, CORS support or release-hardening features.
+- Changing backend or Web business code.
 
-1. `python scripts/validate_project.py` 通过；
-2. ZIP 解压后不存在缺失的基线文件；
-3. Git 中不包含密钥或生成目录；
-4. README 能说明下一步；
-5. 完成独立 Review。
+## Acceptance Criteria
 
-## Expected commands
+1. Production deployment guide explains architecture, prerequisites, environment variables, deployment, TLS, rollback and operations checks.
+2. Deployment scripts build backend and Web artifacts, install a timestamped release, update systemd/Nginx, and run health checks.
+3. Sensitive values are not committed and are represented by blank environment variables with comments.
+4. Static script parsing and project validation checks pass or documented limitations are recorded.
 
-```bash
-cp .env.example .env
-python scripts/validate_project.py
-git init
-git add .
-git commit -m "chore: establish vibe coding project baseline"
-```
+## Verification Record
+
+- PowerShell parser check for `scripts/deploy/deploy_production.ps1` - PASS.
+- Bash parser check for `scripts/deploy/deploy_production.sh` - PASS.
+- Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS.
+- `git diff --check` - PASS. Only Git line-ending conversion warnings were reported.
+
+## Review Status
+
+Completed for documentation and deployment script generation. Production deployment itself was not executed.
