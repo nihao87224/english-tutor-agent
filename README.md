@@ -2,6 +2,8 @@
 
 > An open-source AI English Expression Coach for deliberate practice, layered feedback, and adaptive learning plans.
 
+[中文说明](README_zh.md)
+
 <p>
   <img alt="Java 21" src="https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white">
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white">

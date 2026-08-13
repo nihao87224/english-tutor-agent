@@ -21,6 +21,8 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added a Chinese root README for Chinese-speaking users and linked it from the English README.
+- Added a Chinese backend-only production deployment guide with step-by-step commands, environment placeholders, systemd setup, health checks, rollback and troubleshooting.
 - Added the MIT license file and linked it from the README.
 - Added production deployment documentation, environment template, systemd/Nginx templates and Linux/PowerShell deployment scripts.
 - Added M3-T08 Playwright E2E coverage for the complete Web Expression Coach path.
