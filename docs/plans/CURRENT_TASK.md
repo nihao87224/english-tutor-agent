@@ -4,7 +4,7 @@
 
 ## Task
 
-`OPS-T01 Production Deployment Documentation`
+`DOCS-T01 Professional README Refresh`
 
 ## Status
 
@@ -12,48 +12,43 @@
 
 ## Goal
 
-Document a production deployment path for the current Web-first build and provide complete deployment scripts with sensitive values supplied through environment variables.
+Rewrite the root README into a professional open-source project landing page that quickly explains what English Tutor Agent does, what problem it solves, its advantages, current status, quick start and deployment path.
 
 ## Related documents
 
+- `README.md`
+- `docs/assets/project-overview.svg`
+- `docs/plans/TASK_BACKLOG.md`
 - `docs/deploy/PRODUCTION_DEPLOYMENT.md`
-- `scripts/deploy/production.env.example`
-- `scripts/deploy/deploy_production.sh`
-- `scripts/deploy/deploy_production.ps1`
-- `scripts/deploy/systemd/english-tutor-agent.service`
-- `scripts/deploy/nginx/english-tutor-agent.conf`
 - `docs/process/DEFINITION_OF_DONE.md`
 
 ## In Scope
 
-- Provide a production deployment guide.
-- Leave sensitive values blank and documented in an environment template.
-- Provide Linux server deployment script.
-- Provide Windows-to-Linux deployment script.
-- Provide systemd and Nginx templates.
-- Update changelog and script index.
+- Replace the outdated starter README.
+- Add a project overview image.
+- Include a demo URL placeholder for future production deployment.
+- Explain current M3 Web Expression Coach status.
+- Add quick-start, architecture, roadmap, security and documentation links.
+- Update changelog and task record.
 
 ## Out of Scope
 
-- Executing production deployment.
-- Provisioning managed MySQL, Redis, object storage, DNS or TLS certificates.
-- Adding authentication, CORS support or release-hardening features.
-- Changing backend or Web business code.
+- Deploying production.
+- Changing backend, Web or Android business code.
+- Adding screenshots from a live hosted environment.
 
 ## Acceptance Criteria
 
-1. Production deployment guide explains architecture, prerequisites, environment variables, deployment, TLS, rollback and operations checks.
-2. Deployment scripts build backend and Web artifacts, install a timestamped release, update systemd/Nginx, and run health checks.
-3. Sensitive values are not committed and are represented by blank environment variables with comments.
-4. Static script parsing and project validation checks pass or documented limitations are recorded.
+1. README clearly explains product purpose, target problem, advantages and current status.
+2. README includes a visual overview image stored in the repository.
+3. README includes a demo URL placeholder that can be updated after production deployment.
+4. Documentation-only changes pass project validation and diff checks.
 
 ## Verification Record
 
-- PowerShell parser check for `scripts/deploy/deploy_production.ps1` - PASS.
-- Bash parser check for `scripts/deploy/deploy_production.sh` - PASS.
 - Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS.
 - `git diff --check` - PASS. Only Git line-ending conversion warnings were reported.
 
 ## Review Status
 
-Completed for documentation and deployment script generation. Production deployment itself was not executed.
+Completed for README content and repository-local overview image.

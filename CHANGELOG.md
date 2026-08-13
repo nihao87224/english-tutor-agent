@@ -5,6 +5,7 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Rewrote the root README as a professional open-source landing page with demo placeholder, overview graphic, project positioning, quick start and deployment links.
 - Rebaselined V1.0 direction to Web-first English Expression Coach, moving Android voice/listening to a later milestone and updating PRD, design, backlog and UI prototype docs.
 - Expanded baseline validation to check JSON Schema contracts and examples.
 - Strengthened M0-T02 ArchUnit module boundary coverage.

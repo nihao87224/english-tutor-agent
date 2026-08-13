@@ -1,0 +1,99 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">English Tutor Agent learning loop overview</title>
+  <desc id="desc">A visual overview of the Web-first English Expression Coach learning loop.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6F8FF"/>
+      <stop offset="1" stop-color="#ECFEFF"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F8FAFC"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2L12 7L2 12" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .title { font: 700 36px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
+      .subtitle { font: 500 18px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
+      .label { font: 700 20px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0F172A; }
+      .body { font: 500 15px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
+      .chip { font: 700 13px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1D4ED8; }
+      .small { font: 600 12px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #64748B; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="520" rx="36" fill="url(#bg)"/>
+
+  <text x="60" y="72" class="title">English Tutor Agent</text>
+  <text x="60" y="108" class="subtitle">Expression-first learning loop: practice, feedback, evidence, and adaptive planning.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="155" width="205" height="180" rx="26" fill="url(#card)" stroke="#DBEAFE"/>
+    <rect x="84" y="179" width="72" height="26" rx="13" fill="#DBEAFE"/>
+    <text x="100" y="197" class="chip">STEP 1</text>
+    <text x="84" y="237" class="label">Today's Plan</text>
+    <text x="84" y="270" class="body">Goal-aware task</text>
+    <text x="84" y="294" class="body">Estimated duration</text>
+    <text x="84" y="318" class="body">Why this focus</text>
+  </g>
+
+  <path d="M275 245H340" stroke="#2563EB" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="350" y="155" width="205" height="180" rx="26" fill="url(#card)" stroke="#C7D2FE"/>
+    <rect x="374" y="179" width="72" height="26" rx="13" fill="#E0E7FF"/>
+    <text x="390" y="197" class="chip">STEP 2</text>
+    <text x="374" y="237" class="label">Expression</text>
+    <text x="374" y="270" class="body">Write what you</text>
+    <text x="374" y="294" class="body">really want to say</text>
+    <text x="374" y="318" class="body">in context</text>
+  </g>
+
+  <path d="M565 245H630" stroke="#2563EB" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="640" y="155" width="205" height="180" rx="26" fill="url(#card)" stroke="#BAE6FD"/>
+    <rect x="664" y="179" width="72" height="26" rx="13" fill="#E0F2FE"/>
+    <text x="680" y="197" class="chip">STEP 3</text>
+    <text x="664" y="237" class="label">AI Coach</text>
+    <text x="664" y="270" class="body">Streaming reply</text>
+    <text x="664" y="294" class="body">Layered correction</text>
+    <text x="664" y="318" class="body">Natural expression</text>
+  </g>
+
+  <path d="M855 245H920" stroke="#2563EB" stroke-width="4" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="930" y="155" width="205" height="180" rx="26" fill="url(#card)" stroke="#A7F3D0"/>
+    <rect x="954" y="179" width="72" height="26" rx="13" fill="#D1FAE5"/>
+    <text x="970" y="197" class="chip">STEP 4</text>
+    <text x="954" y="237" class="label">Try Again</text>
+    <text x="954" y="270" class="body">Rewrite or retell</text>
+    <text x="954" y="294" class="body">Keep the meaning</text>
+    <text x="954" y="318" class="body">Build fluency</text>
+  </g>
+
+  <path d="M1032 346C1032 424 210 424 210 346" stroke="#2563EB" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 12" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="420" y="374" width="360" height="92" rx="26" fill="#FFFFFF" stroke="#DBEAFE"/>
+    <text x="455" y="415" class="label">Learning Evidence + Daily Summary</text>
+    <text x="455" y="444" class="body">Practice results update learner state and influence the next plan.</text>
+  </g>
+
+  <g>
+    <rect x="60" y="388" width="240" height="64" rx="20" fill="#EFF6FF" stroke="#BFDBFE"/>
+    <text x="82" y="414" class="small">Backend</text>
+    <text x="82" y="437" class="body">Spring Boot · MySQL · Redis · Flyway</text>
+  </g>
+
+  <g>
+    <rect x="900" y="388" width="235" height="64" rx="20" fill="#F0FDFA" stroke="#99F6E4"/>
+    <text x="922" y="414" class="small">Frontend</text>
+    <text x="922" y="437" class="body">React · TypeScript · Playwright</text>
+  </g>
+</svg>
