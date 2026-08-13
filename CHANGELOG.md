@@ -5,6 +5,7 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Rewrote the Chinese README user-facing motivation and highlights around original user pain points and product differences instead of technical implementation details.
 - Refined the README toward a high-star open-source layout, removed the progress table, replaced the unreliable SVG hero with screenshot placeholders, and documented future screenshot paths.
 - Rewrote the root README as a professional open-source landing page with demo placeholder, overview graphic, project positioning, quick start and deployment links.
 - Rebaselined V1.0 direction to Web-first English Expression Coach, moving Android voice/listening to a later milestone and updating PRD, design, backlog and UI prototype docs.

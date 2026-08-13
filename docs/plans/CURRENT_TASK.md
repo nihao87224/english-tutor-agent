@@ -4,7 +4,7 @@
 
 ## Task
 
-`DOCS-T03 Backend Production Deployment Guide`
+`DOCS-T04 Chinese README User-Facing Rewrite`
 
 ## Status
 
@@ -12,51 +12,44 @@
 
 ## Goal
 
-Regenerate a backend-only production deployment guide in Chinese with detailed step-by-step commands, explicit environment variable placeholders, systemd operation, health checks, rollback and troubleshooting.
+Rewrite the Chinese README sections `为什么做这个项目` and `亮点` so they speak to product users, reflect the original user pain points, and avoid technical implementation details that ordinary learners do not care about.
 
 ## Related documents
 
-- `docs/deploy/BACKEND_PRODUCTION_DEPLOYMENT.md`
-- `scripts/deploy/production.env.example`
-- `scripts/deploy/systemd/english-tutor-agent.service`
-- `server/tutor-bootstrap/src/main/resources/application.yml`
+- `README_zh.md`
+- `CHANGELOG.md`
+- `docs/modify/English_Tutor_Agent_V1.0_原始用户端产品需求.md`
+- `docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md`
 - `docs/process/DEFINITION_OF_DONE.md`
 
 ## In Scope
 
-- Create a backend-only production deployment document under `docs/deploy`.
-- Use Chinese explanations.
-- Provide copyable commands for server preparation, environment variables, build, release installation, systemd, health checks, rollback and troubleshooting.
-- Leave sensitive values blank or as placeholders with explanatory comments.
-- Keep frontend deployment out of scope.
+- Read the original user-facing requirement discussion and current PRD.
+- Rewrite the Chinese README motivation section in a more conversational tone.
+- Rewrite the Chinese README highlights to focus on differences from common English learning apps.
+- Remove user-facing technical points from these two sections.
 - Update changelog and task record.
 
 ## Out of Scope
 
-- Deploying production.
-- Changing backend, Web or Android business code.
-- Rewriting the frontend deployment guide.
-- Adding or changing runtime scripts.
+- Changing backend, Web or Android implementation code.
+- Adding generated or external images.
+- Rewriting the English README.
+- Changing product requirements.
+- Committing or pushing unless separately requested.
 
 ## Acceptance Criteria
 
-1. Backend production deployment guide is separate from frontend deployment documentation.
-2. Guide is written in Chinese.
-3. Guide includes detailed step-by-step commands.
-4. Sensitive values are left blank or represented by clear placeholders.
-5. Documentation-only changes pass project validation and diff checks.
+1. The motivation section reflects the original pain points: input stronger than output, passive vocabulary, sentence organization, unnatural expression, delayed feedback and missing learning loop.
+2. The highlights section explains user-visible differences from common English learning apps.
+3. Technical implementation details such as Fake Provider, OpenAPI, schema validation and deployment baseline are not used as user-facing highlights.
+4. Documentation-only changes pass project validation and diff checks.
 
 ## Verification Record
 
-- Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS after rerun.
+- Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS.
 - `git diff --check` - PASS. Only Git line-ending conversion warnings were reported.
-- Trailing whitespace check for deployment guide, changelog and task record - PASS.
 
 ## Review Status
 
-Completed for backend-only deployment guide drafting and validation.
-
-## Follow-up Update
-
-- Added `README_zh.md` for Chinese-speaking users and linked it from `README.md`.
-- Re-ran `scripts\validate_project.py` and `git diff --check` after the README follow-up - PASS.
+Completed for Chinese README user-facing motivation and highlights rewrite.
