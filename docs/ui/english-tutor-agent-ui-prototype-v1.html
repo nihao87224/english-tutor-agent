@@ -44,7 +44,7 @@
     .workspace {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 250px minmax(410px, 1fr) 310px;
+      grid-template-columns: 250px minmax(720px, 1fr) 310px;
       gap: 24px;
       padding: 24px;
     }
@@ -87,7 +87,7 @@
 
     .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; }
     .stage-toolbar {
-      width: min(470px, 100%); display:flex; align-items:center; justify-content:space-between;
+      width: min(920px, 100%); display:flex; align-items:center; justify-content:space-between;
       margin-bottom: 14px; color: var(--muted); font-size: 12px;
     }
     .stage-toolbar button {
@@ -95,21 +95,20 @@
       border-radius: 12px; padding: 8px 11px; cursor: pointer;
     }
     .phone {
-      width: 390px; height: 844px; max-height: calc(100vh - 84px);
-      min-height: 680px; background: var(--phone); border-radius: 46px;
-      border: 10px solid #17191f; box-shadow: var(--shadow); position: relative;
+      width: min(920px, 100%); height: 680px; max-height: calc(100vh - 84px);
+      min-height: 620px; background: var(--phone); border-radius: 22px;
+      border: 1px solid var(--line); box-shadow: var(--shadow); position: relative;
       overflow: hidden;
     }
     .phone::before {
-      content: ""; position: absolute; z-index: 30; top: 9px; left: 50%; transform: translateX(-50%);
-      width: 110px; height: 30px; border-radius: 18px; background: #17191f;
+      display: none;
     }
-    .screen { display: none; height: 100%; overflow: auto; padding: 48px 20px 98px; scrollbar-width: none; }
+    .screen { display: none; height: 100%; overflow: auto; padding: 32px 34px 76px; scrollbar-width: none; }
     .screen::-webkit-scrollbar { display:none; }
     .screen.active { display: block; animation: enter .28s ease; }
     @keyframes enter { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform:none;} }
     .statusbar {
-      position:absolute; z-index:20; top:14px; left:25px; right:24px; display:flex; justify-content:space-between;
+      position:absolute; z-index:20; top:14px; left:25px; right:24px; display:none; justify-content:space-between;
       color:#fff; font-weight:700; font-size:11px; pointer-events:none;
     }
     .status-icons { display:flex; align-items:center; gap:5px; }
@@ -287,7 +286,7 @@
       <div class="brand-mark" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 4.5h9a3 3 0 0 1 3 3V19l-4-2.5H5a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3Z" stroke="currentColor" stroke-width="2"/><path d="M8 8.5h5M8 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </div>
-      <div><strong>English Tutor Agent</strong><small>UI Prototype · v1.0</small></div>
+      <div><strong>English Tutor Agent</strong><small>Web Expression Coach · v1.0</small></div>
     </div>
     <div class="group-title">首次使用</div>
     <button class="nav-btn active" data-screen="welcome"><span class="nav-num">01</span>欢迎与目标</button>
@@ -296,17 +295,17 @@
     <button class="nav-btn" data-screen="result"><span class="nav-num">04</span>初始能力画像</button>
     <div class="group-title">日常学习</div>
     <button class="nav-btn" data-screen="home"><span class="nav-num">05</span>今日学习计划</button>
-    <button class="nav-btn" data-screen="listening"><span class="nav-num">06</span>听力到口语</button>
-    <button class="nav-btn" data-screen="conversation"><span class="nav-num">07</span>语音对话练习</button>
+    <button class="nav-btn" data-screen="listening"><span class="nav-num">06</span>今日表达教练</button>
+    <button class="nav-btn" data-screen="conversation"><span class="nav-num">07</span>表达纠错练习</button>
     <button class="nav-btn" data-screen="summary"><span class="nav-num">08</span>训练总结</button>
     <div class="group-title">长期成长</div>
     <button class="nav-btn" data-screen="progress"><span class="nav-num">09</span>能力与进步</button>
     <button class="nav-btn" data-screen="ielts"><span class="nav-num">10</span>IELTS 口语</button>
-    <div class="side-footer">点击左侧页面，或在手机原型中使用按钮体验完整路径。所有交互均在本地运行。</div>
+    <div class="side-footer">点击左侧页面体验 Web-first 表达纠错路径。所有交互均在本地运行。</div>
   </aside>
 
   <main class="stage">
-    <div class="stage-toolbar"><span>Android 移动端高保真交互样例</span><button id="resetBtn">重置演示</button></div>
+    <div class="stage-toolbar"><span>Web-first 表达教练交互样例</span><button id="resetBtn">重置演示</button></div>
     <div class="phone">
       <div class="statusbar"><span>9:41</span><div class="status-icons">● ◔ <span></span></div></div>
 
@@ -314,14 +313,14 @@
         <div class="hero-orb">
           <svg width="27" height="27" viewBox="0 0 24 24" fill="none"><path d="M5 5h10a3 3 0 0 1 3 3v10l-4.5-2.7H5a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z" stroke="currentColor" stroke-width="2"/><path d="M8 9h5M8 12.5h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
-        <div class="eyebrow">你的专属 AI 英语私教</div>
-        <h1>你只需决定目标，<br>学习路径交给我。</h1>
-        <p>先用几分钟了解你的英语现状。以后每天学什么、练多久、何时复习，我会根据你的真实表现自动调整。</p>
+        <div class="eyebrow">AI English Expression Coach</div>
+        <h1>把听得懂的英语，<br>变成说得出的表达。</h1>
+        <p>先用几分钟了解你的目标，然后直接进入 Web 表达教练：输入真实想法，获得自然表达、语法解释和 Try Again 练习。</p>
         <h3 style="margin-top:24px">你现在最想提升什么？</h3>
         <div class="choice-grid" id="goalChoices">
           <button class="choice selected" data-goal="职场英语"><span class="choice-icon">💼</span><span><strong>职场英语</strong><small>会议、汇报、技术沟通</small></span><span class="radio"></span></button>
           <button class="choice" data-goal="日常综合英语"><span class="choice-icon">💬</span><span><strong>日常综合英语</strong><small>自然交流与综合能力</small></span><span class="radio"></span></button>
-          <button class="choice" data-goal="IELTS 备考"><span class="choice-icon">🎓</span><span><strong>IELTS 备考</strong><small>完整口语训练与模拟</small></span><span class="radio"></span></button>
+          <button class="choice" data-goal="IELTS 备考"><span class="choice-icon">🎓</span><span><strong>IELTS 备考</strong><small>后续专项训练与模拟</small></span><span class="radio"></span></button>
         </div>
         <div class="pill-row"><button class="pill active">每天 20 分钟</button><button class="pill">10 分钟</button><button class="pill">30 分钟</button></div>
         <div class="bottom-cta"><button class="primary-btn" onclick="go('self')">开始了解我</button></div>
@@ -387,15 +386,15 @@
         <div class="home-head"><div><div class="eyebrow">星期二 · 7 月 21 日</div><h2 style="margin:5px 0">早上好，Steven</h2><p style="margin:0;font-size:12px">今天已经为你准备好 20 分钟训练。</p></div><div class="avatar">S</div></div>
         <div class="focus-card">
           <span style="font-size:11px;opacity:.8">今日重点</span>
-          <h2 style="margin:7px 0">听懂以后，快速回应</h2>
-          <p>你最近能抓住大意，但没有文字提示时回答较慢。今天将用工作场景训练听后组织。</p>
-          <div class="focus-stats"><span>20 分钟</span><span>3 个任务</span><span>口语优先</span></div>
+          <h2 style="margin:7px 0">把中文想法组织成自然英文</h2>
+          <p>你能理解不少英语表达，但主动说出时容易逐字翻译。今天聚焦“压力很大/临时有事”的自然表达。</p>
+          <div class="focus-stats"><span>20 分钟</span><span>3 个任务</span><span>表达优先</span></div>
         </div>
         <div class="section-head"><h3>今日路径</h3><a onclick="openSheet()">调整今天</a></div>
         <div class="lesson-list">
-          <div class="lesson-card" onclick="go('listening')"><span class="lesson-icon audio">🎧</span><span><strong>分级听力：项目延期</strong><small>理解 → 关键词 → 自然语速</small></span><span class="lesson-time">6 分钟 ›</span></div>
-          <div class="lesson-card" onclick="go('conversation')"><span class="lesson-icon speak">🎙️</span><span><strong>语音回应：说明影响</strong><small>短轮次互动与轻量纠错</small></span><span class="lesson-time">9 分钟 ›</span></div>
-          <div class="lesson-card"><span class="lesson-icon review">↻</span><span><strong>复习：may be caused by</strong><small>在新场景中主动使用</small></span><span class="lesson-time">5 分钟 ›</span></div>
+          <div class="lesson-card" onclick="go('listening')"><span class="lesson-icon audio">✎</span><span><strong>表达意图：最近工作压力很大</strong><small>想法 → 模板 → 自然英文</small></span><span class="lesson-time">6 分钟 ›</span></div>
+          <div class="lesson-card" onclick="go('conversation')"><span class="lesson-icon speak">✓</span><span><strong>纠错练习：My work is very busy</strong><small>语法解释与自然表达</small></span><span class="lesson-time">9 分钟 ›</span></div>
+          <div class="lesson-card"><span class="lesson-icon review">↻</span><span><strong>Try Again：be under pressure</strong><small>换一个场景主动使用</small></span><span class="lesson-time">5 分钟 ›</span></div>
         </div>
         <div class="section-head"><h3>连续学习</h3><a onclick="go('progress')">查看进步</a></div>
         <div class="streak">
@@ -405,40 +404,40 @@
       </section>
 
       <section class="screen" id="listening">
-        <div class="topbar"><button class="icon-btn" onclick="go('home')">←</button><span class="topbar-title">听力到口语 · 1/3</span><button class="icon-btn">⋯</button></div>
-        <div class="eyebrow" style="margin-top:12px">工作英语 · B1 分级</div>
-        <h2>项目为什么会延期？</h2>
-        <p>先听自然语速，尝试抓住主要原因。听不清时再使用辅助。</p>
+        <div class="topbar"><button class="icon-btn" onclick="go('home')">←</button><span class="topbar-title">今日表达教练 · 1/3</span><button class="icon-btn">⋯</button></div>
+        <div class="eyebrow" style="margin-top:12px">工作英语 · 主动表达</div>
+        <h2>你想表达：最近工作压力很大。</h2>
+        <p>不要逐字翻译。先看一个自然英文结构，再用自己的真实情况写一句。</p>
         <div class="player-card" id="lessonAudio">
-          <div style="display:flex;justify-content:space-between;align-items:center"><span class="tag" style="background:rgba(255,255,255,.1);color:#fff">自然语速</span><span style="font-size:11px;color:#b9bdc9">0:28</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="tag" style="background:rgba(255,255,255,.1);color:#fff">表达模板</span><span style="font-size:11px;color:#b9bdc9">pattern</span></div>
           <button class="big-play" onclick="toggleLessonPlayer()" id="lessonPlay">▶</button>
-          <div class="progress-line" style="background:#4b4f61"><i id="lessonBar" style="width:0%"></i></div><div class="time-row"><span id="lessonTime">0:00</span><span>0:28</span></div>
+          <div class="progress-line" style="background:#4b4f61"><i id="lessonBar" style="width:72%"></i></div><div class="time-row"><span>I've been under a lot of pressure at work lately.</span><span></span></div>
         </div>
-        <div class="pill-row"><button class="pill" onclick="this.classList.toggle('active')">0.8× 慢速</button><button class="pill" onclick="toggleTranscript()">显示关键词</button><button class="pill">再听一次</button></div>
-        <div class="transcript blurred" id="transcript"><div style="display:flex;justify-content:space-between"><strong>关键词辅助</strong><span class="tag mint">按需查看</span></div><p>The release has been delayed because the payment service is still unstable. The team needs two more days to finish testing.</p><div class="segment"><strong>核心词块：</strong> be delayed because… / need two more days to…</div></div>
-        <div class="question-card" style="box-shadow:none"><h3>主要原因是什么？</h3><button class="answer active">支付服务仍不稳定，需要更多测试时间。</button><button class="answer">团队决定增加新的产品功能。</button></div>
-        <div class="bottom-cta"><button class="primary-btn" onclick="go('conversation')">下一步：用英语回应</button></div>
+        <div class="pill-row"><button class="pill active">be under pressure</button><button class="pill">lately</button><button class="pill">with work</button></div>
+        <div class="transcript" id="transcript"><div style="display:flex;justify-content:space-between"><strong>为什么自然？</strong><span class="tag mint">结构解释</span></div><p>英语里通常说 people are busy 或 people are under pressure，而不是 work is busy。</p><div class="segment"><strong>可复用结构：</strong> I've been under a lot of pressure with/from ... lately.</div></div>
+        <div class="question-card" style="box-shadow:none"><h3>用你的真实情况写一句</h3><button class="answer active">My work is very busy recently.</button><button class="answer">I've been under a lot of pressure at work recently.</button></div>
+        <div class="bottom-cta"><button class="primary-btn" onclick="go('conversation')">下一步：获得纠错</button></div>
       </section>
 
       <section class="screen" id="conversation">
-        <div class="topbar"><button class="icon-btn" onclick="go('listening')">←</button><span class="topbar-title">语音回应 · 2/3</span><button class="icon-btn">⋯</button></div>
-        <div class="prompt-bubble"><span class="tag purple">情境</span><h3 style="margin-top:10px">Your manager asks:</h3><p style="color:var(--ink);margin-bottom:0">“What caused the delay, and when can we release the new version?”</p></div>
-        <div class="chat-bubble ai">Take a moment. Try to answer in two or three sentences. You can use <strong>“The delay was caused by…”</strong></div>
+        <div class="topbar"><button class="icon-btn" onclick="go('listening')">←</button><span class="topbar-title">表达纠错 · 2/3</span><button class="icon-btn">⋯</button></div>
+        <div class="prompt-bubble"><span class="tag purple">用户表达</span><h3 style="margin-top:10px">My work is very busy recently.</h3><p style="color:var(--ink);margin-bottom:0">AI 会先理解你的意图，再给出更自然的英文表达。</p></div>
+        <div class="chat-bubble ai">I understand. You mean you have a lot of work and feel stressed lately. A more natural way to say it is: <strong>I've been really busy with work lately.</strong></div>
         <div class="mic-zone"><button class="mic" id="micBtn" onclick="toggleMic()">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="8" height="12" rx="4" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button><div class="record-label" id="recordLabel">点击开始回答</div></div>
-        <div class="chat-bubble user" id="userAnswer" style="display:none">The delay maybe because the payment service is not stable. We need two more days to test it.</div>
-        <div class="correction" id="correctionBox" style="display:none"><div style="display:flex;justify-content:space-between"><strong>一个值得改进的表达</strong><span class="tag amber">历史问题再次出现</span></div><p style="font-size:12px;color:var(--ink)"><del>The delay maybe because…</del><br><ins>The delay may be caused by…</ins></p><p style="font-size:11px;margin:0">先继续交流；本轮结束后会用新场景再练一次。</p></div>
-        <div class="bottom-cta"><button class="primary-btn" id="continueConversation" onclick="go('summary')" disabled>完成并查看反馈</button></div>
+        </button><div class="record-label" id="recordLabel">模拟 Try Again</div></div>
+        <div class="chat-bubble user" id="userAnswer" style="display:none">I've been under a lot of pressure at work lately because we have several deadlines.</div>
+        <div class="correction" id="correctionBox" style="display:block"><div style="display:flex;justify-content:space-between"><strong>表达纠错</strong><span class="tag amber">自然表达</span></div><p style="font-size:12px;color:var(--ink)"><del>My work is very busy recently.</del><br><ins>I've been really busy with work lately.</ins></p><p style="font-size:11px;margin:0">Why: busy usually describes a person or schedule. “with work lately” sounds more natural than “work is busy recently”.</p></div>
+        <div class="bottom-cta"><button class="primary-btn" id="continueConversation" onclick="go('summary')">完成并查看反馈</button></div>
       </section>
 
       <section class="screen" id="summary">
         <div class="topbar"><button class="icon-btn" onclick="go('conversation')">←</button><span class="topbar-title">今天完成了</span><button class="icon-btn">↗</button></div>
         <div class="hero-orb" style="width:88px;height:88px;margin-top:18px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div style="text-align:center"><h2>很棒，完成 20 分钟训练</h2><p>今天的证据已经用于调整后续学习计划。</p></div>
-        <div class="summary-card good"><span class="tag mint">明显进步</span><h3 style="margin-top:10px">你能听懂延期的主要原因</h3><p>第二遍自然语速中，你准确捕捉到了 payment service 和 two more days。</p></div>
-        <div class="summary-card focus"><span class="tag amber">继续巩固</span><h3 style="margin-top:10px">原因表达：may be caused by</h3><p>这个历史问题再次出现。系统将在两天后，用另一个工作场景验证你能否独立使用。</p></div>
-        <div class="question-card" style="box-shadow:none"><div class="question-meta"><span>计划变化</span><span class="tag purple">自动调整</span></div><p style="font-size:12px;color:var(--ink)">下次会减少基础阅读题，增加短听力后的即时口语回应。</p></div>
+        <div style="text-align:center"><h2>很好，完成一次表达升级</h2><p>今天的证据已经用于调整后续学习计划。</p></div>
+        <div class="summary-card good"><span class="tag mint">主动表达</span><h3 style="margin-top:10px">你完成了从直译到自然表达的改写</h3><p>从 “My work is very busy” 调整为 “I've been really busy with work lately.”</p></div>
+        <div class="summary-card focus"><span class="tag amber">继续巩固</span><h3 style="margin-top:10px">表达结构：I've been ... with work lately</h3><p>系统会在后续场景中继续验证你能否主动使用这个结构。</p></div>
+        <div class="question-card" style="box-shadow:none"><div class="question-meta"><span>计划变化</span><span class="tag purple">自动调整</span></div><p style="font-size:12px;color:var(--ink)">下次会减少基础阅读题，增加“中文意图 → 自然英文表达”的 Try Again 练习。</p></div>
         <button class="secondary-btn" onclick="go('progress')" style="margin-top:13px">查看能力变化</button>
         <div class="bottom-cta"><button class="primary-btn" onclick="go('home')">返回今日首页</button></div>
       </section>
@@ -465,7 +464,7 @@
         <div class="bottom-cta"><button class="primary-btn" onclick="toggleMic();go('conversation')">开始 1–2 分钟表达</button></div>
       </section>
 
-      <div class="quick-sheet" id="quickSheet" onclick="closeSheet(event)"><div class="sheet-card"><div class="sheet-handle"></div><h2>今天需要调整吗？</h2><p>临时需求只影响近期安排，不会直接覆盖长期能力判断。</p><div class="choice-grid"><button class="choice"><span class="choice-icon">⏱️</span><span><strong>今天只有 5 分钟</strong><small>压缩为一个高价值任务</small></span></button><button class="choice"><span class="choice-icon">🤫</span><span><strong>今天不方便说话</strong><small>切换到文字和听力模式</small></span></button><button class="choice"><span class="choice-icon">📅</span><span><strong>明天有英文会议</strong><small>临时提高会议训练优先级</small></span></button></div><button class="primary-btn" style="margin-top:14px" onclick="document.getElementById('quickSheet').classList.remove('open')">保存今天的调整</button></div></div>
+      <div class="quick-sheet" id="quickSheet" onclick="closeSheet(event)"><div class="sheet-card"><div class="sheet-handle"></div><h2>今天需要调整吗？</h2><p>临时需求只影响近期安排，不会直接覆盖长期能力判断。</p><div class="choice-grid"><button class="choice"><span class="choice-icon">⏱️</span><span><strong>今天只有 5 分钟</strong><small>只做一个表达升级</small></span></button><button class="choice"><span class="choice-icon">✎</span><span><strong>我有中文想法</strong><small>先帮我组织成自然英文</small></span></button><button class="choice"><span class="choice-icon">📅</span><span><strong>明天有英文会议</strong><small>临时提高会议表达优先级</small></span></button></div><button class="primary-btn" style="margin-top:14px" onclick="document.getElementById('quickSheet').classList.remove('open')">保存今天的调整</button></div></div>
     </div>
   </main>
 
@@ -487,9 +486,9 @@
     assessment: ['轻量能力初评','8–10 分钟内获得听、说、读、写的最小有效证据。','完成低压力选择题和一个短口语任务。',['选择题为主，减少考试感','题目难度随表现调整','支持暂停与继续'],'初评轻量化，长期评估持续化。'],
     result: ['初始能力画像','不只显示一个等级，而是解释优势、短板和首个训练方向。','确认首个重点并直接进入训练。',['结果保持简明','明确这是临时判断','说明“为什么这样安排”'],'计划必须可解释。'],
     home: ['今日学习计划','首页不展示课程库，直接给出 Agent 自动生成的今日路径。','开始今日任务，或表达临时需求。',['默认 20 分钟','任务动态组合','允许临时干预但不重置长期路径'],'低决策负担，动态计划。'],
-    listening: ['听力到口语','借鉴“分级音频 → 辅助 → 自然语速 → 主动使用”的学习结构。','完成听力理解后进入口头回应。',['文本辅助按需显示','不强制先看答案','理解任务为口语输出服务'],'口语优先不等于只做自由聊天。'],
-    conversation: ['语音对话练习','优先维持真实交流，只处理少量高价值问题。','录音回答，接收轻量纠错。',['严重问题及时提醒','轻微问题延后总结','高频历史问题明确提示'],'纠错服务于交流。'],
-    summary: ['训练总结','展示具体学习证据以及下一次计划为什么变化。','查看进步或返回首页。',['不堆砌大量语法讲解','把错误转化为后续复习','让用户感受到系统记住自己'],'每次训练都应更新学习者模型。'],
+    listening: ['今日表达教练','把中文想法、直译句或不确定表达转成自然英文。','理解表达模板，并写出自己的第一版。',['先理解意图','给出可复用结构','避免课程库式任务选择'],'V1.0 的核心不是陪聊，而是表达升级。'],
+    conversation: ['表达纠错练习','保持自然交流，同时突出少量高价值语法和表达问题。','查看 correction、natural expression，并 Try Again。',['SSE 流式回应','correction_ready 固定进入面板','Try Again 形成二次 evidence'],'纠错必须服务于再次表达。'],
+    summary: ['训练总结','展示具体学习证据以及下一次计划为什么变化。','查看进步或返回首页。',['不堆砌大量语法讲解','把错误转化为再输出练习','让用户感受到系统记住自己'],'每次训练都应更新学习者模型。'],
     progress: ['能力与进步','默认展示趋势、优势和当前重点，详细数据按需展开。','查看能力趋势和表达掌握状态。',['避免伪精确评分','强调多维能力','展示可迁移的掌握证据'],'能力变化必须基于多次证据。'],
     ielts: ['IELTS 口语','支持 Part 1、2、3 和完整模拟，同时明确 AI 估算边界。','准备并完成限时表达。',['提供结构支持但不过度代答','按官方公开维度反馈','分数明确为练习参考'],'诚实表达评估能力与边界。']
   };

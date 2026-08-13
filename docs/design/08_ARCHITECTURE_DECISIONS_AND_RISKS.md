@@ -106,6 +106,25 @@ LLM、ASR、TTS 通过项目自有接口接入。业务层不得依赖供应商�
 
 Android 客户端统一使用 **Hilt** 管理 Application、ViewModel、Repository 和基础设施依赖。首版不采用 Koin 或其他 DI 框架，以避免双轨依赖装配和测试替身分裂。
 
+## ADR-013：V1.0 改为 Web-first 表达教练
+
+**状态：接受**
+
+2026-08-10 根据 `docs/modify/English_Tutor_Agent_V1.0_原始用户端产品需求.md` 修订，
+V1.0 首要验证目标从 Android 语音/听力闭环调整为 Web-first 的智能表达纠错教练。
+
+原因：
+
+- 当前已完成 M0-M2 后端文字学习闭环，Web 可以最小成本复用 REST/SSE、Correction、Evidence、Summary 和 Planning；
+- 新产品重点是将 passive vocabulary / passive grammar 转化为主动表达能力，文字输入更适合快速验证表达纠错和 Try Again；
+- Android、ASR、TTS、听力播放器涉及设备权限、音频质量和 Provider 选择，继续作为后续阶段能力。
+
+影响：
+
+- M3 改为 Web Expression Coach MVP；
+- 原 Android 语音与听力任务后移到 M4；
+- ADR-012 仍保留为后续 Android 阶段的技术约束，不作为 V1.0 Web 发布门槛。
+
 ---
 
 # 2. 实施前需选择但不阻塞设计的项目
@@ -113,9 +132,9 @@ Android 客户端统一使用 **Hilt** 管理 Application、ViewModel、Reposito
 | 编号 | 选择项 | 默认建议 | 决策时点 |
 |---|---|---|---|
 | T-001 | 首个 LLM Provider | 支持流式和结构化输出的主流 Provider | M1 初始化前 |
-| T-002 | ASR Provider | 对中国用户英语口音表现好、支持时间戳 | M3 前 |
-| T-003 | TTS Provider | 低延迟、自然英语、多语速 | M3 前 |
-| T-004 | 对象存储 | S3 兼容，优先现有 OSS/云存储 | M3 前 |
+| T-002 | ASR Provider | 对中国用户英语口音表现好、支持时间戳 | M4 前 |
+| T-003 | TTS Provider | 低延迟、自然英语、多语速 | M4 前 |
+| T-004 | 对象存储 | S3 兼容，优先现有 OSS/云存储 | M4 前 |
 | T-005 | 登录方式 | 测试期匿名设备账号，发布前升级账号体系 | M1 |
 | T-006 | 部署位置 | 先单区域 VPS/云主机 | M1 |
 | T-007 | Android 最低版本 | 建议 minSdk 26 | 项目初始化 |

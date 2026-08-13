@@ -5,6 +5,39 @@
 
 ---
 
+# 0. V1.0 Web-first 后端修订
+
+2026-08-10 起，V1.0 后端交付优先服务 Web 表达教练闭环。已完成的
+Training、Conversation、Correction、Learning Evidence、Daily Summary 和
+Next Plan Change 保持为主线能力。
+
+后端优先级调整如下：
+
+- P0：文字训练会话、SSE 流式对话、分层纠错、自然表达建议、Try Again 练习、学习证据、日总结和下一计划变化。
+- P1：表达意图识别和更结构化的 expression improvement 输出。
+- 后移：音频上传、ASR、TTS、听力播放器和 Android 弱网恢复。
+
+V1.0 Web 不新增独立 BFF。Web 直接使用 `/api/v1` REST 与 SSE 契约，
+以 `X-User-Key` 支持本地开发和早期单用户验证；正式鉴权在发布阶段补齐。
+
+## 0.1 Web 表达教练主路径
+
+```text
+GET /api/v1/plans/today
+→ POST /api/v1/training-sessions
+→ GET /api/v1/training-sessions/{id}/current-task
+→ POST /api/v1/conversations/{id}/messages/stream
+→ event: correction_ready
+→ POST /api/v1/training-sessions/{id}/tasks/{taskId}/attempts
+→ POST /api/v1/training-sessions/{id}/complete
+→ GET /api/v1/plans/today
+```
+
+Try Again 在 V1.0 可复用 task attempt 和 conversation stream，不引入新的长期复习表。
+如果需要区分尝试轮次，先通过 idempotency key、attempt metadata 和 evidence metadata 表达。
+
+---
+
 # 1. 工程结构
 
 ## 1.1 Maven 模块

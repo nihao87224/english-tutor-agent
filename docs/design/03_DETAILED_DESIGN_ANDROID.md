@@ -4,6 +4,9 @@
 > UI：Jetpack Compose + Material 3  
 > 架构：UI / Domain / Data，单向数据流，离线优先缓存
 
+> 2026-08-10 修订：Android 已后移到 M4。V1.0 当前主客户端为 Web，
+> 本文档保留为后续 Android 语音/听力阶段设计输入，不作为 Web V1.0 发布门槛。
+
 ---
 
 # 1. 项目结构

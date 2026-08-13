@@ -2,7 +2,7 @@
 
 > 文档版本：`1.0.0`  
 > 设计输入：`ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md`  
-> 状态：概要设计基线初版
+> 状态：概要设计基线初版，含 2026-08-10 Web-first 修订
 
 ---
 
@@ -16,11 +16,11 @@
 轻量评估
 → 建立学习者画像
 → 自动生成计划
-→ 执行听说读写训练
-→ 纠错与反馈
+→ Web 文字表达训练
+→ 语法纠错与自然表达优化
+→ Try Again 再输出
 → 记录学习证据
-→ 更新能力和掌握状态
-→ 安排复习及测验
+→ 每日总结
 → 生成下一次计划
 ```
 
@@ -28,9 +28,10 @@
 
 ## 1.2 技术目标
 
-- 首版完整支持 Android 文字、语音和听力；
+- V1.0 首版优先支持 Web 文字表达教练；
 - 普通文字回复快速流式开始；
-- 语音链路可显示录音、上传、识别、生成、播放状态；
+- 表达纠错可展示错误定位、规则解释、自然表达和 Try Again；
+- 语音链路后移到 M4，可显示录音、上传、识别、生成、播放状态；
 - 模型或网络失败不丢失用户已完成的学习内容；
 - 学习计划和能力变化可解释、可追踪；
 - AI 供应商可替换；
@@ -44,7 +45,7 @@
 4. **模块化单体**：边界清晰，但首版统一部署；
 5. **客户端可恢复**：关键进度先本地保存，再与服务端同步；
 6. **隐私默认可控**：用户可关闭原文/录音保存和执行删除；
-7. **纵向闭环交付**：按 M1–M6 逐段实现，不按技术层横向堆代码。
+7. **纵向闭环交付**：按 M1–M7 逐段实现，不按技术层横向堆代码。
 
 ---
 
@@ -52,8 +53,10 @@
 
 ```mermaid
 flowchart LR
-    U[学习者] --> A[Android App]
-    A --> B[English Tutor Backend]
+    U[学习者] --> W[Web App]
+    U -. 后续阶段 .-> A[Android App]
+    W --> B[English Tutor Backend]
+    A -. 后续阶段 .-> B
     B --> L[LLM Provider]
     B --> S[ASR Provider]
     B --> T[TTS Provider]
@@ -69,10 +72,10 @@ flowchart LR
 
 | 角色 | 与系统关系 |
 |---|---|
-| 学习者 | 完成评估、训练、对话、复习和数据管理 |
+| 学习者 | 在 Web 完成表达输入、纠错、再输出、总结和数据管理 |
 | AI Provider | 提供 LLM、ASR、TTS 能力，可由一个或多个厂商组成 |
-| 对象存储 | 保存音频、生成的听力资源和可选原始录音 |
-| 通知服务 | Android 本地提醒为主，后续可接推送 |
+| 对象存储 | 后续保存音频、生成的听力资源和可选原始录音 |
+| 通知服务 | 后续 Android 本地提醒为主，可接推送 |
 | 内容运营 | 管理场景模板、评测集、禁用内容和版本 |
 
 ---
@@ -83,12 +86,17 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph Android
-      UI[Compose UI]
+    subgraph Web
+      UI[Expression Coach UI]
+      STATE[Client State]
+      SSE[SSE Client]
+      LOCAL[Local Draft/User Key]
+    end
+
+    subgraph AndroidLater[Android Later]
+      AUI[Compose UI]
       VM[ViewModel / UDF]
       AR[Audio Runtime]
-      LR[Local Repository]
-      SY[Sync & WorkManager]
     end
 
     subgraph Backend
@@ -109,9 +117,9 @@ flowchart TB
       OBS[Audit & Observability]
     end
 
-    UI --> VM --> LR
-    VM --> AR
-    LR --> SY --> API
+    UI --> STATE --> SSE --> API
+    UI --> LOCAL
+    AUI --> VM --> AR
     API --> AUTH
     API --> ONB
     API --> PLAN
@@ -137,7 +145,7 @@ flowchart TB
 第一版建议部署为：
 
 ```text
-Android App
+Web App
     │ HTTPS / SSE
 Nginx / API Gateway
     │
@@ -148,11 +156,13 @@ English Tutor Backend（单实例起步，可水平扩容）
     └── 外部 AI Provider
 ```
 
+Android App 后续阶段接入同一 API，不改变后端领域边界。
+
 部署约束：
 
 - 后端保持无状态请求处理，学习状态落库；
 - SSE 连接通过粘性会话或共享状态支持扩容；
-- 语音二进制不进入数据库；
+- 语音二进制不进入数据库，V1.0 Web 文字链路不依赖对象存储；
 - 异步任务使用数据库 Outbox + Worker 或 Redis 队列；
 - 首版无需 Kafka，除非日后并发或异步链路明显增长。
 
@@ -178,7 +188,21 @@ English Tutor Backend（单实例起步，可水平扩容）
 | AI Gateway | Provider 抽象、路由、重试、结构化输出和成本 | 全部 AI 功能 |
 | Audit & Observability | Trace、调用日志、指标、审计和问题追踪 | NFR |
 
-## 4.2 Android 模块
+## 4.2 Web V1.0 模块
+
+| 模块 | 主要职责 |
+|---|---|
+| app | 路由、布局、全局 Provider 和启动流程 |
+| shared/api-client | REST、SSE、错误转换和幂等请求头 |
+| shared/session | 开发期用户键、会话草稿和最近一次训练状态 |
+| features/onboarding | 最短目标、偏好和初评入口 |
+| features/coach | 表达输入、流式回复、纠错面板和 Try Again |
+| features/plan | 今日任务、计划原因和下一计划变化 |
+| features/summary | 每日总结、练习证据和下一步建议 |
+| features/settings | 隐私、原文保存开关和本地数据清理 |
+| testing | Mock API、SSE fixture 和 Playwright 主路径 |
+
+## 4.3 Android 后续模块
 
 | 模块 | 主要职责 |
 |---|---|
@@ -349,14 +373,14 @@ Learning Orchestrator
 | 核心业务数据 | MySQL | 用户、计划、任务、画像、证据、纠错 |
 | 短期状态 | Redis | SSE 会话、幂等键、临时锁、限流、缓存 |
 | 二进制内容 | 对象存储 | 录音、TTS 音频、听力素材 |
-| 客户端缓存 | Room | 今日计划、任务进度、上传草稿、最近报告 |
+| 客户端缓存 | Web localStorage/sessionStorage；后续 Android Room | 今日计划、任务进度、表达草稿、最近报告 |
 | 配置与 Prompt | Git + 数据库发布表 | Prompt 文本、场景模板、版本 |
 | 可观测数据 | Metrics/Logs/Traces | latency、token、ASR 失败、trace |
 
 ## 8.2 一致性原则
 
 - 关系数据库是学习状态的最终事实来源；
-- Android Room 是客户端缓存，不独立决定长期画像；
+- Web 本地状态和后续 Android Room 都只是客户端缓存，不独立决定长期画像；
 - 音频上传使用临时上传凭证或后端中转；
 - 任务提交使用幂等键；
 - 画像更新与证据写入在同一事务或可靠异步事件中完成；
@@ -370,10 +394,10 @@ Learning Orchestrator
 
 - 普通业务：HTTPS REST JSON；
 - 文字流式回复：SSE；
-- 音频上传：multipart 或预签名 URL；
-- 音频播放：HTTPS Range；
+- 音频上传：后续阶段使用 multipart 或预签名 URL；
+- 音频播放：后续阶段使用 HTTPS Range；
 - 实时全双工：后续版本考虑 WebRTC/WebSocket；
-- 通知：Android 本地 WorkManager，后续可接 FCM。
+- 通知：后续 Android 本地 WorkManager，可接 FCM。
 
 ## 9.2 API 分组
 
@@ -438,7 +462,17 @@ Learning Orchestrator
 - Spring AI 支持 ChatClient、流式调用、结构化输出、Memory 和 Tool Calling；
 - 保留自有 Provider、Agent 和学习领域接口，避免业务绑定框架细节。
 
-## 11.2 Android 基线
+## 11.2 Web V1.0 基线
+
+采用组件化 UI + 单向数据流 + API Client：
+
+- 首页直接呈现今日表达教练任务；
+- 对话页通过 SSE 渲染 assistant 流式回复；
+- 纠错面板固定展示 grammar feedback、natural expression 和 Try Again；
+- 本地保存开发期 `X-User-Key`、草稿和最近一次会话；
+- E2E 以 Playwright 验证从输入到纠错再输出的主路径。
+
+## 11.3 Android 后续基线
 
 采用 Compose + UDF + Repository：
 
@@ -449,7 +483,7 @@ Learning Orchestrator
 - WorkManager 处理持久化同步和提醒；
 - Media3 处理听力与 TTS 播放。
 
-## 11.3 为什么不拆微服务
+## 11.4 为什么不拆微服务
 
 - 第一版业务仍在快速验证；
 - Agent、计划、画像和训练存在较强事务关联；
@@ -464,20 +498,21 @@ Learning Orchestrator
 |---|---|
 | M1 | Onboarding、Assessment、Learner Profile、首个 Plan |
 | M2 | Training、Conversation、Correction、Evidence 更新 |
-| M3 | Audio、ASR、TTS、Listening、上传恢复 |
-| M4 | Review、Mastery、Weekly Report、Stage Assessment |
-| M5 | IELTS Part 1/2/3、完整模拟与参考评分 |
-| M6 | 隐私、观测、弱网、性能、灰度与发布门禁 |
+| M3 | Web Expression Coach、SSE、Correction Panel、Try Again、Web E2E |
+| M4 | Audio、ASR、TTS、Listening、Android 上传恢复 |
+| M5 | Review、Mastery、Weekly Report、Stage Assessment |
+| M6 | IELTS Part 1/2/3、完整模拟与参考评分 |
+| M7 | 隐私、观测、弱网、性能、灰度与发布门禁 |
 
 ---
 
 # 13. 概要设计验收
 
 - [ ] 所有 P0 需求均有归属模块；
-- [ ] Android 和后端边界清晰；
+- [ ] Web 和后端边界清晰；
 - [ ] 初评、计划、训练、证据、复习形成闭环；
-- [ ] 文字和语音链路均有可实施方案；
+- [ ] Web 文字表达、纠错和 Try Again 链路均有可实施方案；
 - [ ] AI Provider 可替换；
 - [ ] 数据保存、关闭和删除具备架构支持；
-- [ ] 首版范围未依赖全双工实时语音；
-- [ ] 能按 M1–M6 分阶段运行验证。
+- [ ] V1.0 范围未依赖语音、听力、Android 或全双工实时语音；
+- [ ] 能按 M1–M7 分阶段运行验证。

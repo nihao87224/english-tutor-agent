@@ -5,6 +5,10 @@
 > 二进制：S3 兼容对象存储  
 > API 版本：`/api/v1`
 
+> 2026-08-10 修订：V1.0 Web-first 表达教练优先使用 profile、assessment、
+> planning、training、conversation、correction、learning evidence 和 reporting 相关契约。
+> 音频、ASR、TTS、review scheduler、IELTS 完整模拟相关模型和接口保留为后续阶段设计输入。
+
 ---
 
 # 1. 数据建模原则

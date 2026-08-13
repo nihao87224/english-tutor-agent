@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>English Tutor Agent Experience</title>
+  </head>
+  <body>
+    <p>Preparing your local demo session...</p>
+    <script>
+      localStorage.setItem("englishTutor.web.userKey", "experience-demo-20260813");
+      localStorage.setItem(
+        "englishTutor.web.onboarding",
+        JSON.stringify({
+          completed: true,
+          primaryGoal: "WORKPLACE",
+          dailyMinutes: 20,
+          correctionStyle: "STANDARD",
+          saveRawText: true,
+        }),
+      );
+      window.location.replace("/");
+    </script>
+  </body>
+</html>

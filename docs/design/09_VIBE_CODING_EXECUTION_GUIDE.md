@@ -195,49 +195,63 @@ M2-006 今日总结
 M2-007 第二天计划调整 E2E
 ```
 
-## M3：语音与听力
+## M3：Web 表达教练
 
 ```text
-M3-001 Android 录音状态机
-M3-002 音频上传
-M3-003 ASR Provider
-M3-004 听力播放器
-M3-005 TTS
-M3-006 低置信度确认
-M3-007 弱网重试 E2E
+M3-R00 V1.0 Web-first 路线重基线
+M3-T01 Web 工程初始化与 API Client
+M3-T02 Web 最短 Onboarding 与本地用户键
+M3-T03 Web 今日表达教练首页
+M3-T04 Web SSE 对话与流式回复
+M3-T05 Web 分层纠错与自然表达面板
+M3-T06 Try Again 改写/复述练习闭环
+M3-T07 Web 每日总结与下一计划变化展示
+M3-T08 Web Expression Coach E2E
 ```
 
-## M4：复习与长期画像
+## M4：语音与听力
 
 ```text
-M4-001 KnowledgeState
-M4-002 ReviewScheduler
-M4-003 迁移任务
-M4-004 延迟验证
-M4-005 周报
-M4-006 阶段测验
+M4-T01 Android 录音状态机
+M4-T02 音频上传
+M4-T03 ASR Provider
+M4-T04 听力播放器
+M4-T05 TTS
+M4-T06 低置信度确认
+M4-T07 弱网重试 E2E
 ```
 
-## M5：IELTS
+## M5：复习与长期画像
 
 ```text
-M5-001 Part 1
-M5-002 Part 2 计时与录音
-M5-003 Part 3
-M5-004 完整模拟状态机
-M5-005 评分 Rubric
-M5-006 稳定性评测
+M5-001 KnowledgeState
+M5-002 ReviewScheduler
+M5-003 迁移任务
+M5-004 延迟验证
+M5-005 周报
+M5-006 阶段测验
 ```
 
-## M6：发布
+## M6：IELTS
 
 ```text
-M6-001 隐私设置
-M6-002 删除流程
-M6-003 可观测性
-M6-004 性能和成本
-M6-005 Android 真机矩阵
-M6-006 灰度与回滚
+M6-001 Part 1
+M6-002 Part 2 计时与录音
+M6-003 Part 3
+M6-004 完整模拟状态机
+M6-005 评分 Rubric
+M6-006 稳定性评测
+```
+
+## M7：发布
+
+```text
+M7-001 隐私设置
+M7-002 删除流程
+M7-003 可观测性
+M7-004 性能和成本
+M7-005 Web 部署与 Android 真机矩阵
+M7-006 灰度与回滚
 ```
 
 ---

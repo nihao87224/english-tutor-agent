@@ -3,6 +3,11 @@
 > 版本：`1.0.0`  
 > 上游：`ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md`
 
+> 2026-08-10 修订声明：V1.0 已调整为 Web-first English Expression Coach。
+> 当前实现与后续开发以拆分文档中的最新修订为准，尤其是
+> `00_README.md`、`01_HIGH_LEVEL_DESIGN.md`、`02_DETAILED_DESIGN_BACKEND.md`
+> 和 `03_DETAILED_DESIGN_WEB.md`。本合并版保留历史基线内容，待下一次文档合并任务统一再生成。
+
 
 <!-- BEGIN 00_README.md -->
 
