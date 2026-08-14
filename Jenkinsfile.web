@@ -19,7 +19,7 @@ pipeline {
     stage('Validate Workspace') {
       steps {
         sh '''
-          set -euo pipefail
+          set -eu
           echo "[validate] Checking required Web deployment inputs"
           docker version
           test -f web/package.json
@@ -37,7 +37,7 @@ pipeline {
     stage('Build Web Docker Image') {
       steps {
         sh '''
-          set -euo pipefail
+          set -eu
           rm -rf "$WEB_RELEASE_METADATA_DIR"
           mkdir -p "$WEB_RELEASE_METADATA_DIR"
 
@@ -59,7 +59,7 @@ pipeline {
     stage('Deploy Web Container') {
       steps {
         sh '''
-          set -euo pipefail
+          set -eu
 
           web_image="$(cat "$WEB_RELEASE_METADATA_DIR/web_image")"
           previous_image="$(docker inspect -f '{{.Config.Image}}' "$WEB_CONTAINER_NAME" 2>/dev/null || true)"
