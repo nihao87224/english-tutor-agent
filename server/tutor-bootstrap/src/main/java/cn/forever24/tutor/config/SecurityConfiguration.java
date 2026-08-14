@@ -26,7 +26,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/v1/me").authenticated()
+                        .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
                         .requestMatchers("/api/v1/admin/**").authenticated()
                         .anyRequest().permitAll());
         return http.build();

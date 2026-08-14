@@ -41,6 +41,9 @@ tutor:
       enabled: ${TUTOR_BOOTSTRAP_ADMIN_ENABLED:false}
       email: ${TUTOR_BOOTSTRAP_ADMIN_EMAIL:}
       password: ${TUTOR_BOOTSTRAP_ADMIN_PASSWORD:}
+  quota:
+    default-daily-limit: ${TUTOR_QUOTA_DEFAULT_DAILY_LIMIT:50}
+    reset-timezone: ${TUTOR_QUOTA_RESET_TIMEZONE:Asia/Shanghai}
   ai:
     llm-provider: ${LLM_PROVIDER:openai}
     asr-provider: ${ASR_PROVIDER:openai}

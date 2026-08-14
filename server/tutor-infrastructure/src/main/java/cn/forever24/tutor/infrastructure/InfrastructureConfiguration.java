@@ -18,6 +18,8 @@ import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.planning.LearningPlanApplicationService;
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
+import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
+import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
 import cn.forever24.tutor.application.training.TrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
@@ -38,6 +40,8 @@ import cn.forever24.tutor.infrastructure.profile.InMemoryUserProfileRepository;
 import cn.forever24.tutor.infrastructure.profile.JdbcUserProfileRepository;
 import cn.forever24.tutor.infrastructure.planning.InMemoryLearningPlanRepository;
 import cn.forever24.tutor.infrastructure.planning.JdbcLearningPlanRepository;
+import cn.forever24.tutor.infrastructure.quota.InMemoryDailyQuotaRepository;
+import cn.forever24.tutor.infrastructure.quota.JdbcDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +57,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.ZoneId;
 
 @Configuration
 public class InfrastructureConfiguration {
@@ -231,6 +236,27 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(DailyQuotaRepository.class)
+    public DailyQuotaRepository dailyQuotaRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryDailyQuotaRepository();
+        }
+        return new JdbcDailyQuotaRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public DailyQuotaApplicationService dailyQuotaApplicationService(
+            DailyQuotaRepository dailyQuotaRepository,
+            Environment environment,
+            Clock clock
+    ) {
+        int defaultDailyLimit = environment.getProperty("tutor.quota.default-daily-limit", Integer.class, 50);
+        ZoneId resetZone = ZoneId.of(environment.getProperty("tutor.quota.reset-timezone", "Asia/Shanghai"));
+        return new DailyQuotaApplicationService(dailyQuotaRepository, clock, defaultDailyLimit, resetZone);
+    }
+
+    @Bean
     public OnboardingApplicationService onboardingApplicationService(UserProfileRepository userProfileRepository) {
         return new OnboardingApplicationService(userProfileRepository);
     }
@@ -262,12 +288,14 @@ public class InfrastructureConfiguration {
     public ConversationApplicationService conversationApplicationService(
             TrainingSessionRepository trainingSessionRepository,
             LearningPlanRepository learningPlanRepository,
-            ConversationReplyStreamer conversationReplyStreamer
+            ConversationReplyStreamer conversationReplyStreamer,
+            DailyQuotaApplicationService dailyQuotaApplicationService
     ) {
         return new ConversationApplicationService(
                 trainingSessionRepository,
                 learningPlanRepository,
-                conversationReplyStreamer);
+                conversationReplyStreamer,
+                dailyQuotaApplicationService);
     }
 
     @Bean
@@ -277,7 +305,8 @@ public class InfrastructureConfiguration {
             AssessmentSessionRepository assessmentSessionRepository,
             AssessmentAnswerRepository assessmentAnswerRepository,
             AssessmentResultRepository assessmentResultRepository,
-            OpenAnswerEvaluator openAnswerEvaluator
+            OpenAnswerEvaluator openAnswerEvaluator,
+            DailyQuotaApplicationService dailyQuotaApplicationService
     ) {
         return new AssessmentApplicationService(
                 userProfileRepository,
@@ -285,6 +314,7 @@ public class InfrastructureConfiguration {
                 assessmentSessionRepository,
                 assessmentAnswerRepository,
                 assessmentResultRepository,
-                openAnswerEvaluator);
+                openAnswerEvaluator,
+                dailyQuotaApplicationService);
     }
 }

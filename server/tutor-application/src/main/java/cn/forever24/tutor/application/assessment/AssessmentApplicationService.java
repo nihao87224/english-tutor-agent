@@ -3,6 +3,9 @@ package cn.forever24.tutor.application.assessment;
 import cn.forever24.tutor.assessment.AssessmentAnswerReceipt;
 import cn.forever24.tutor.assessment.AssessmentAnswerType;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
+import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
+import cn.forever24.tutor.application.quota.QuotaRequestType;
+import cn.forever24.tutor.application.quota.QuotaReservation;
 import cn.forever24.tutor.assessment.AssessmentResult;
 import cn.forever24.tutor.assessment.AssessmentSession;
 import cn.forever24.tutor.assessment.FourSkillSelfAssessment;
@@ -26,6 +29,7 @@ public class AssessmentApplicationService {
     private final AssessmentAnswerRepository assessmentAnswerRepository;
     private final AssessmentResultRepository assessmentResultRepository;
     private final OpenAnswerEvaluator openAnswerEvaluator;
+    private final DailyQuotaApplicationService dailyQuotaApplicationService;
 
     public AssessmentApplicationService(
             UserProfileRepository userProfileRepository,
@@ -33,7 +37,8 @@ public class AssessmentApplicationService {
             AssessmentSessionRepository assessmentSessionRepository,
             AssessmentAnswerRepository assessmentAnswerRepository,
             AssessmentResultRepository assessmentResultRepository,
-            OpenAnswerEvaluator openAnswerEvaluator
+            OpenAnswerEvaluator openAnswerEvaluator,
+            DailyQuotaApplicationService dailyQuotaApplicationService
     ) {
         this.userProfileRepository = userProfileRepository;
         this.selfAssessmentRepository = selfAssessmentRepository;
@@ -41,6 +46,7 @@ public class AssessmentApplicationService {
         this.assessmentAnswerRepository = assessmentAnswerRepository;
         this.assessmentResultRepository = assessmentResultRepository;
         this.openAnswerEvaluator = openAnswerEvaluator;
+        this.dailyQuotaApplicationService = dailyQuotaApplicationService;
     }
 
     public SelfAssessmentResult submitSelfAssessment(
@@ -137,7 +143,11 @@ public class AssessmentApplicationService {
     ) {
         OpenAssessmentItem item = OpenAssessmentItemBank.requireOpenTextItem(itemId);
         String normalizedText = OpenAssessmentItemBank.requireAnswerText(text);
-        OpenAnswerEvaluation evaluation = evaluateOpenAnswer(item, normalizedText);
+        QuotaReservation reservation = dailyQuotaApplicationService.reserve(
+                userKey.value(),
+                QuotaRequestType.ASSESSMENT_OPEN_ANSWER,
+                assessmentId + ":" + item.itemId());
+        OpenAnswerEvaluation evaluation = evaluateOpenAnswer(item, normalizedText, reservation);
         ScoredOpenAnswer answer = new ScoredOpenAnswer(
                 item.itemId(),
                 item.questionType(),
@@ -147,13 +157,19 @@ public class AssessmentApplicationService {
         return assessmentAnswerRepository.saveOpenAnswer(userKey, assessmentId, answer);
     }
 
-    private OpenAnswerEvaluation evaluateOpenAnswer(OpenAssessmentItem item, String text) {
+    private OpenAnswerEvaluation evaluateOpenAnswer(OpenAssessmentItem item, String text, QuotaReservation reservation) {
         try {
-            return openAnswerEvaluator.evaluate(new OpenAnswerEvaluationRequest(item, text));
+            OpenAnswerEvaluation evaluation = openAnswerEvaluator.evaluate(new OpenAnswerEvaluationRequest(item, text));
+            dailyQuotaApplicationService.commit(reservation);
+            return evaluation;
         } catch (IllegalArgumentException exception) {
+            dailyQuotaApplicationService.commit(reservation);
             return OpenAnswerEvaluation.safeUnscored(
                     openAnswerEvaluator.promptVersion(),
                     openAnswerEvaluator.schemaVersion());
+        } catch (RuntimeException exception) {
+            dailyQuotaApplicationService.refund(reservation);
+            throw exception;
         }
     }
 }

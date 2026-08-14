@@ -39,6 +39,19 @@ class CurrentUserKeyIntegrationTest {
     }
 
     @Test
+    void authenticatedLearnerCanReadCurrentQuota() throws Exception {
+        AuthResult learner = register("saas-m3-quota@example.com", "learner-password");
+
+        mockMvc.perform(get("/api/v1/me/quota")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + learner.accessToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dailyLimit").value(50))
+                .andExpect(jsonPath("$.used").value(0))
+                .andExpect(jsonPath("$.remaining").value(50))
+                .andExpect(jsonPath("$.unlimited").value(false));
+    }
+
+    @Test
     void authenticatedLearnerIdentityIgnoresSpoofedLegacyHeader() throws Exception {
         AuthResult learnerA = register("saas-m2-a@example.com", "learner-password");
         AuthResult learnerB = register("saas-m2-b@example.com", "learner-password");

@@ -1,6 +1,8 @@
 package cn.forever24.tutor.application.assessment;
 
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
+import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
+import cn.forever24.tutor.application.quota.TestDailyQuotaRepository;
 import cn.forever24.tutor.assessment.AssessmentAttemptEvidence;
 import cn.forever24.tutor.assessment.AssessmentAnswerReceipt;
 import cn.forever24.tutor.assessment.AssessmentCorrectness;
@@ -22,6 +24,8 @@ import cn.forever24.tutor.profile.PrivacySettings;
 import cn.forever24.tutor.profile.ProfileSummary;
 import cn.forever24.tutor.profile.UserKey;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +43,19 @@ class AssessmentApplicationServiceTest {
     private final FakeAssessmentAnswerRepository assessmentAnswerRepository = new FakeAssessmentAnswerRepository();
     private final FakeAssessmentResultRepository assessmentResultRepository = new FakeAssessmentResultRepository();
     private final StubOpenAnswerEvaluator openAnswerEvaluator = new StubOpenAnswerEvaluator();
+    private final DailyQuotaApplicationService dailyQuotaApplicationService = new DailyQuotaApplicationService(
+            new TestDailyQuotaRepository(),
+            Clock.systemUTC(),
+            50,
+            ZoneId.of("Asia/Shanghai"));
     private final AssessmentApplicationService service = new AssessmentApplicationService(
             profileRepository,
             selfAssessmentRepository,
             assessmentSessionRepository,
             assessmentAnswerRepository,
             assessmentResultRepository,
-            openAnswerEvaluator);
+            openAnswerEvaluator,
+            dailyQuotaApplicationService);
 
     @Test
     void submitsSelfAssessmentAndAdvancesProgressToAssessment() {

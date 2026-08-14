@@ -231,13 +231,12 @@ Gate:
 - no cross-user access;
 - quota concurrency, admin audit, Web smoke and Android smoke pass.
 
-## First Code Task Recommendation
+## Current Implementation Progress
 
-Start with SaaS-M1 only:
+SaaS-M1 through SaaS-M3 have been implemented:
 
-`SaaS-M1: Identity Schema + Auth Backend`
+- `SaaS-M1: Identity Schema + Auth Backend`
+- `SaaS-M2: CurrentActor + Multi-User Isolation`
+- `SaaS-M3: Daily Quota Engine`
 
-Do not start quota, admin provider runtime configuration or Web admin UI until
-SaaS-M1 is merged and verified. This keeps the first implementation slice small
-enough to review safely while establishing the account model that every later
-milestone depends on.
+The next backend milestone is `SaaS-M4: Runtime AI Provider + Secret`.

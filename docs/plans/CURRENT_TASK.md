@@ -4,7 +4,7 @@
 
 ## Task
 
-`SaaS-M2 CurrentActor + Multi-user Isolation`
+`SaaS-M3 Daily Quota Engine`
 
 ## Status
 
@@ -12,42 +12,43 @@
 
 ## Goal
 
-Move learner API identity resolution from trusted client-supplied `X-User-Key`
-values to backend-resolved authenticated users, while keeping a temporary
-legacy compatibility switch for existing tests and controlled migration.
+Atomically enforce daily AI learning request quota for quota-consuming learner
+actions, expose the current authenticated user's quota state, and preserve
+idempotency so retries do not double-consume quota.
 
 ## Related documents
 
 - `docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md`
 - `docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md`
 - `docs/decisions/ADR-0014-saas-foundation.md`
-- `server/tutor-api/src/main/java/cn/forever24/tutor/api/auth/CurrentUserKeyResolver.java`
+- `contracts/openapi/english-tutor-api.yaml`
+- `server/tutor-bootstrap/src/main/resources/db/migration/V14__saas_daily_quota.sql`
 
 ## In Scope
 
-- Resolve learner `userKey` from Spring Security `Authentication` when a bearer
-  access token is present.
-- Prefer authenticated identity over any `X-User-Key` header.
-- Add `TUTOR_AUTH_LEGACY_USER_KEY_ENABLED` with production default `false`.
-- Keep legacy `X-User-Key` behavior only when explicitly enabled.
-- Cover anonymous rejection and spoofed-header isolation with integration tests.
+- Add daily quota policy, usage and reservation persistence.
+- Add quota date calculation from configured reset timezone.
+- Add reserve, commit, refund and stale reservation cleanup.
+- Enforce quota for conversation AI replies and open assessment answer scoring.
+- Return `DAILY_QUOTA_EXCEEDED` as a 429 ProblemDetail.
+- Add `GET /api/v1/me/quota`.
+- Add default quota environment configuration.
 
 ## Out of Scope
 
-- Removing the temporary `X-User-Key` request parameters from all controllers.
-- Daily quota engine.
-- Admin management APIs and Web admin console.
-- Runtime provider database configuration.
-- Android auth.
+- Admin quota override/reset/bonus APIs.
+- Web quota UI.
+- Android quota UI.
 - Billing, subscription, organization or workspace features.
+- Removing the temporary legacy `X-User-Key` compatibility path.
 
 ## Acceptance Criteria
 
-1. Anonymous learner API requests return 401 when legacy mode is disabled.
-2. Authenticated learner APIs use the token owner's `userKey`.
-3. A spoofed `X-User-Key` does not override authenticated identity.
-4. Existing legacy test paths only work when `TUTOR_AUTH_LEGACY_USER_KEY_ENABLED=true`.
-5. `/api/v1/admin/**` remains outside legacy identity compatibility.
+1. With remaining quota = 1, 10-20 concurrent requests allow exactly one success.
+2. Repeated idempotency key does not double-consume quota.
+3. Provider failure before usable output refunds quota.
+4. `/api/v1/me/quota` returns daily limit, used, bonus, remaining, unlimited and reset time.
+5. Quota exhaustion returns `429 DAILY_QUOTA_EXCEEDED`.
 6. Released Flyway V1-V13 are not modified.
 
 ## Verification Record
@@ -56,4 +57,4 @@ legacy compatibility switch for existing tests and controlled migration.
 
 ## Review Status
 
-Completed for SaaS-M2.
+Completed for SaaS-M3.

@@ -8,6 +8,13 @@ import cn.forever24.tutor.application.assessment.AssessmentSessionRepository;
 import cn.forever24.tutor.application.assessment.OpenAnswerEvaluationRequest;
 import cn.forever24.tutor.application.assessment.OpenAnswerEvaluator;
 import cn.forever24.tutor.application.assessment.SelfAssessmentRepository;
+import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
+import cn.forever24.tutor.application.quota.DailyQuotaRepository;
+import cn.forever24.tutor.application.quota.DailyQuotaStatus;
+import cn.forever24.tutor.application.quota.QuotaPolicy;
+import cn.forever24.tutor.application.quota.QuotaRequestType;
+import cn.forever24.tutor.application.quota.QuotaReservation;
+import cn.forever24.tutor.application.quota.QuotaReservationStatus;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.assessment.AssessmentAttemptEvidence;
 import cn.forever24.tutor.assessment.AssessmentAnswerReceipt;
@@ -32,6 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +57,12 @@ class AssessmentControllerTest {
                     new FakeAssessmentSessionRepository(),
                     new FakeAssessmentAnswerRepository(),
                     new FakeAssessmentResultRepository(),
-                    new StubOpenAnswerEvaluator()),
+                    new StubOpenAnswerEvaluator(),
+                    new DailyQuotaApplicationService(
+                            new AllowingDailyQuotaRepository(),
+                            Clock.systemUTC(),
+                            50,
+                            ZoneId.of("Asia/Shanghai"))),
             CurrentUserKeyResolver.legacyOnly());
 
     @Test
@@ -207,6 +224,51 @@ class AssessmentControllerTest {
         @Override
         public OpenAnswerEvaluation evaluate(OpenAnswerEvaluationRequest request) {
             return OpenAnswerEvaluation.safeUnscored(promptVersion(), schemaVersion());
+        }
+    }
+
+    private static final class AllowingDailyQuotaRepository implements DailyQuotaRepository {
+
+        @Override
+        public DailyQuotaStatus getStatus(
+                UserKey userKey,
+                LocalDate quotaDate,
+                QuotaPolicy policy,
+                OffsetDateTime resetAt
+        ) {
+            return new DailyQuotaStatus(quotaDate, policy.dailyLimit(), 0, 0, policy.dailyLimit(), policy.unlimited(), resetAt);
+        }
+
+        @Override
+        public QuotaReservation reserve(
+                UserKey userKey,
+                LocalDate quotaDate,
+                QuotaRequestType requestType,
+                String idempotencyKey,
+                QuotaPolicy policy,
+                Instant now,
+                Instant expiresAt,
+                OffsetDateTime resetAt
+        ) {
+            return new QuotaReservation(
+                    "quota-test",
+                    userKey.value(),
+                    quotaDate,
+                    requestType,
+                    idempotencyKey,
+                    QuotaReservationStatus.RESERVED);
+        }
+
+        @Override
+        public void commit(String reservationId, Instant now) {
+        }
+
+        @Override
+        public void refund(String reservationId, Instant now) {
+        }
+
+        @Override
+        public void refundStaleReservations(Instant now) {
         }
     }
 

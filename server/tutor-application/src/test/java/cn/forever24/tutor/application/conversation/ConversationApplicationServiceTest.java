@@ -1,6 +1,8 @@
 package cn.forever24.tutor.application.conversation;
 
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
+import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
+import cn.forever24.tutor.application.quota.TestDailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionCompletion;
 import cn.forever24.tutor.application.training.TrainingSessionRepository;
 import cn.forever24.tutor.learner.LearningEvidenceDraft;
@@ -14,8 +16,10 @@ import cn.forever24.tutor.training.TrainingSessionMode;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,11 +56,16 @@ class ConversationApplicationServiceTest {
                             List.of(),
                             "Clear response.",
                             "correction-analyzer-v1",
-                            "correction-result-v1",
-                            "trace-correction-1",
-                            "openai",
-                            "test-chat-model")),
-                    ConversationStreamEvent.done(4, "trace-1", "openai", "test-chat-model")));
+                    "correction-result-v1",
+                    "trace-correction-1",
+                    "openai",
+                    "test-chat-model")),
+                    ConversationStreamEvent.done(4, "trace-1", "openai", "test-chat-model")),
+            new DailyQuotaApplicationService(
+                    new TestDailyQuotaRepository(),
+                    Clock.systemUTC(),
+                    50,
+                    ZoneId.of("Asia/Shanghai")));
 
     @Test
     void streamsConversationForActiveCurrentTask() {
@@ -72,6 +81,33 @@ class ConversationApplicationServiceTest {
         assertEquals("text_delta", events.get(1).type().eventName());
         assertEquals("correction_ready", events.get(2).type().eventName());
         assertEquals("done", events.get(3).type().eventName());
+    }
+
+    @Test
+    void refundsQuotaWhenProviderFailsBeforeUsableOutput() {
+        TestDailyQuotaRepository quotaRepository = new TestDailyQuotaRepository();
+        ConversationApplicationService failingService = new ConversationApplicationService(
+                trainingSessionRepository,
+                new FakeLearningPlanRepository(),
+                context -> {
+                    throw new IllegalStateException("provider failed");
+                },
+                new DailyQuotaApplicationService(
+                        quotaRepository,
+                        Clock.systemUTC(),
+                        50,
+                        ZoneId.of("Asia/Shanghai")));
+
+        assertThrows(IllegalStateException.class, () -> failingService.streamMessage(new ConversationStreamRequest(
+                "user-1",
+                "training-1",
+                ConversationMessageType.TEXT,
+                "Today I fixed a database connection issue.",
+                "task-1",
+                "conversation-idem-fail")));
+
+        assertEquals(0, quotaRepository.commitCount());
+        assertEquals(1, quotaRepository.refundCount());
     }
 
     @Test
