@@ -90,7 +90,7 @@ Learner
 - 确定性规则负责学习优先级、复习到期、状态流转和持久化；
 - AI Provider 负责受约束的教练内容生成、分析和语言反馈；
 - 具体供应商 SDK 隔离在项目自有接口之后；
-- 测试默认使用 Fake Provider 和固定响应。
+- 测试使用本地 stub 或固定响应，不调用真实付费模型。
 
 ## 架构
 
@@ -112,7 +112,7 @@ server/
 |-- tutor-domain          domain rules, aggregates, value objects
 |-- tutor-application     use-case orchestration
 |-- tutor-api             HTTP controllers, DTOs, SSE mapping
-|-- tutor-agent           AI provider abstraction and fake providers
+|-- tutor-agent           AI provider abstraction and OpenAI adapters
 |-- tutor-infrastructure  JDBC repositories, cache, storage adapters
 |-- tutor-observability   tracing, metrics, audit extension points
 `-- tutor-bootstrap       Spring Boot entrypoint and Flyway migrations
@@ -124,7 +124,7 @@ server/
 Browser / Android
       |
       v
-Spring Boot API  -----> AI Provider Interface -----> Fake or real provider
+Spring Boot API  -----> AI Provider Interface -----> OpenAI provider
       |
       +-------------> MySQL + Flyway
       +-------------> Redis
@@ -234,6 +234,8 @@ pnpm run e2e
 
 - [PRD](docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md)
 - [设计索引](docs/design/00_README.md)
+- [SaaS Foundation 设计 v1.1.0](docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md)
+- [SaaS Foundation 实施计划](docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md)
 - [当前任务](docs/plans/CURRENT_TASK.md)
 - [任务 backlog](docs/plans/TASK_BACKLOG.md)
 - [Definition of Done](docs/process/DEFINITION_OF_DONE.md)

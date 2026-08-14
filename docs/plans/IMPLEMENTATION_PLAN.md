@@ -182,6 +182,33 @@
 - 回滚与应急手册
 - 用户验收与正式发布
 
+---
+
+## SaaS Foundation v1.1.0：平台化增量
+
+来源：
+
+- `docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md`
+- `docs/ui/ENGLISH_TUTOR_AGENT_SAAS_UI_PROTOTYPE_v1.1.0.html`
+- `docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md`
+- ADR-0014
+
+原则：这是在当前学习闭环上的增量 SaaS 平台层，不重写英语学习核心；一次只实现一个 SaaS milestone。
+
+实施顺序：
+
+- SaaS-M1 Identity Schema + Auth Backend
+- SaaS-M2 CurrentActor + Multi-user Isolation
+- SaaS-M3 Daily Quota Engine
+- SaaS-M4 Runtime AI Provider + Secret
+- SaaS-M5 Admin Backend
+- SaaS-M6 Web Learner SaaS UX + i18n
+- SaaS-M7 Web Admin Console
+- SaaS-M8 Android Learner Auth + Quota + i18n
+- SaaS-M9 Hardening + Legacy Cleanup
+
+首个代码任务建议只启动 SaaS-M1。不要提前实现 quota、admin provider runtime、Web admin console 或 Android auth。
+
 ## 开发节奏
 
 每个任务建议控制在 0.5–2 个工作日内。超过 2 天的任务必须继续拆分。

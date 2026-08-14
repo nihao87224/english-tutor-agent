@@ -16,3 +16,4 @@ OPENAI_LLM_MODEL: test-chat-model
 OPENAI_ASR_MODEL: test-asr-model
 OPENAI_TTS_MODEL: test-tts-model
 OPENAI_TTS_VOICE: test-voice
+TUTOR_JWT_SIGNING_SECRET: test-only-jwt-signing-secret-change-me-32

@@ -4,7 +4,7 @@
 
 ## Task
 
-`DOCS-T08 Independent Web Jenkins Docker Deployment`
+`SaaS-M1 Identity Schema + Auth Backend`
 
 ## Status
 
@@ -12,51 +12,53 @@
 
 ## Goal
 
-Add an independent Jenkins pipeline for building and deploying the React/Vite Web frontend as an Nginx Docker container, without changing the existing backend Jenkinsfile or backend deployment logic.
+Establish real SaaS account identity with email/password registration, login,
+JWT access tokens, opaque refresh token sessions, `/api/v1/me`, RBAC seed data
+and one-time bootstrap admin support.
 
 ## Related documents
 
-- `Jenkinsfile.web`
-- `web/Dockerfile`
-- `web/nginx.container.conf`
-- `web/package.json`
-- `web/pnpm-lock.yaml`
-- `docs/process/DEFINITION_OF_DONE.md`
+- `docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md`
+- `docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md`
+- `docs/decisions/ADR-0014-saas-foundation.md`
+- `server/tutor-bootstrap/src/main/resources/db/migration/V11__saas_account_identity.sql`
+- `server/tutor-bootstrap/src/main/resources/db/migration/V12__saas_rbac.sql`
+- `server/tutor-bootstrap/src/main/resources/db/migration/V13__saas_auth_session.sql`
 
 ## In Scope
 
-- Add a multi-stage Web Dockerfile using Node 22, pnpm 11.16.0, `pnpm test` and a same-origin production build.
-- Add an Nginx container config listening on `18082`, serving the SPA and proxying `/api/` and `/actuator/` to the backend on host loopback.
-- Add an independent Web Jenkins pipeline that builds, deploys, health-checks and rolls back the `english-tutor-web` container.
-- Update changelog and task record.
+- Add auth account fields to existing `app_user`.
+- Add USER/ADMIN roles and ADMIN permissions.
+- Add refresh token session persistence with hashed tokens.
+- Add register, login, refresh, logout and `/me` APIs.
+- Add bootstrap admin environment configuration.
+- Add Spring Security bearer JWT support for `/api/v1/me`.
+- Keep existing learner `X-User-Key` APIs temporarily available for SaaS-M2 migration.
 
 ## Out of Scope
 
-- Changing Web business code.
-- Changing the existing backend `Jenkinsfile`.
-- Changing backend deployment logic.
-- Adding a remote image registry flow.
-- Deploying Jenkins or containers from this local machine.
-- Committing or pushing unless separately requested.
+- CurrentActor migration for all learner APIs.
+- Daily quota engine.
+- Admin management APIs and Web admin console.
+- Runtime provider database configuration.
+- Android auth.
+- Billing, subscription, organization or workspace features.
 
 ## Acceptance Criteria
 
-1. Web Docker image build runs `pnpm install --frozen-lockfile`, `pnpm test` and `VITE_API_BASE_URL="" pnpm run build`.
-2. Runtime image uses `nginx:alpine` and serves `dist` from the Nginx static directory.
-3. Container Nginx listens on `18082`, supports SPA fallback and proxies `/api/` plus `/actuator/`.
-4. SSE proxying disables buffering.
-5. `Jenkinsfile.web` is independent, uses commit SHA plus UTC timestamp image tags and deploys `english-tutor-web` with `--restart unless-stopped --network host`.
-6. Deployment checks `/` and `/actuator/health`, and restores the previous image when startup or health checks fail.
-7. Existing backend deployment files are not modified.
+1. Normalized email is unique.
+2. USER registration and login succeed.
+3. ADMIN login succeeds through bootstrap admin.
+4. Invalid credentials do not reveal whether the account exists.
+5. Refresh token rotation works and rejects the old token.
+6. Logout revokes the current refresh token.
+7. `/api/v1/me` requires a valid bearer access token.
+8. Released Flyway V1-V10 are not modified.
 
 ## Verification Record
 
-- `pnpm test` from `web/` - PASS.
-- `VITE_API_BASE_URL="" pnpm run build` from `web/` - PASS.
-- Static checks for Web Dockerfile, Nginx proxy/SSE config and Web Jenkins rollback flow - PASS.
-- `git diff --check` - PASS.
-- Local `docker build` was not run because Docker is not available in this Windows environment; verify the full image build and deploy flow on the Jenkins Linux runtime.
+- `.\mvnw.cmd -pl tutor-bootstrap -am test` from `server/` - PASS, with 2 external infrastructure tests skipped because Docker/external services are not available.
 
 ## Review Status
 
-Completed for independent Web Jenkins Docker deployment files and task documentation.
+Completed for SaaS-M1.

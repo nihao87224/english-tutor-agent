@@ -73,6 +73,24 @@
 M5 长期复习与动态掌握、M6 IELTS Speaking、M7 发布准备在对应里程碑启动前详细拆分。
 不得提前创建大量未使用代码。
 
+## SaaS Foundation v1.1.0
+
+> 权威设计：`docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md`
+> 实施计划：`docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md`
+> 规则：一次只实现一个 SaaS milestone，不得提前写后续 milestone 的空壳代码。
+
+| ID | 任务 | 状态 | 依赖 | 主要验收 |
+|---|---|---:|---|---|
+| SaaS-M1 | Identity Schema + Auth Backend | DONE | v1.0 baseline | Email 唯一、USER/ADMIN 登录、refresh rotation、bootstrap admin |
+| SaaS-M2 | CurrentActor + Multi-user Isolation | TODO | SaaS-M1 | User A 无法访问 User B 学习资源，admin 不走 legacy identity |
+| SaaS-M3 | Daily Quota Engine | TODO | SaaS-M2 | remaining=1 并发下仅 1 次成功，幂等不重复扣减 |
+| SaaS-M4 | Runtime AI Provider + Secret | TODO | SaaS-M3, ADR-0013 | 默认 provider 可运行时切换，secret 加密且不回显 |
+| SaaS-M5 | Admin Backend | TODO | SaaS-M4 | USER 访问 admin API = 403，敏感操作写 audit |
+| SaaS-M6 | Web Learner SaaS UX + i18n | TODO | SaaS-M2, SaaS-M3 | register/login/practice/quota/history/logout 闭环 |
+| SaaS-M7 | Web Admin Console | TODO | SaaS-M5 | Admin UI 与真实 API 联通，不使用生产 mock 数据 |
+| SaaS-M8 | Android Learner Auth + Quota + i18n | TODO | SaaS-M6 | Web/Android 同邮箱看到同一用户、quota 和学习数据 |
+| SaaS-M9 | Hardening + Legacy Cleanup | TODO | SaaS-M1..M8 | 无 legacy identity、无明文 secret、无跨用户访问 |
+
 ## Task card template
 
 ```markdown

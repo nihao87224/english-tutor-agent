@@ -120,6 +120,7 @@
 | `08_ARCHITECTURE_DECISIONS_AND_RISKS.md` | 已确认架构决策、实施期选择与风险控制 |
 | `09_VIBE_CODING_EXECUTION_GUIDE.md` | 后续开发、Review、测试和发布协作流程 |
 | `ENGLISH_TUTOR_AGENT_DESIGN_v1.0.0.md` | 合并版完整文档 |
+| `ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md` | SaaS Foundation 增量设计：认证、CurrentActor、额度、管理后台、运行时 AI 配置 |
 
 ## 6. 阅读顺序
 
@@ -136,6 +137,7 @@ PRD
 → 06 测试与安全
 → 07 需求追踪
 → 09 开发执行指南
+→ ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0（仅在进入 SaaS Foundation 任务时）
 ```
 
 ## 7. 分阶段开发门禁
@@ -146,7 +148,7 @@ PRD
 - [x] 用户确认 Web-first 表达教练作为 V1.0 首版交互；
 - [x] PRD、概要设计、详细设计已进入项目 `docs/`；
 - [x] 已生成实施计划、任务 Backlog 和任务编号规则；
-- [x] M0/M1 默认使用 Fake Provider，不要求真实模型密钥；
+- [x] M0/M1 使用本地 stub 或固定响应完成确定性验证；生产运行时使用 OpenAI-backed real providers；
 - [ ] 当前任务计划经过 Review；
 - [ ] Git 基线提交完成。
 

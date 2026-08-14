@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Tutor Agent · SaaS UI Prototype</title>
+  <style>
+    :root{
+      --bg:#f4f6f7;
+      --surface:#ffffff;
+      --surface-2:#f8faf9;
+      --ink:#17202a;
+      --muted:#6a7581;
+      --muted-2:#8a949e;
+      --line:#dfe5e8;
+      --line-strong:#cbd4d9;
+      --accent:#236457;
+      --accent-2:#174c42;
+      --accent-soft:#eaf5f1;
+      --accent-soft-2:#dff0ea;
+      --danger:#b94b4b;
+      --danger-soft:#fff0f0;
+      --warn:#a16a13;
+      --warn-soft:#fff7e7;
+      --success:#2b775f;
+      --success-soft:#e9f7f1;
+      --shadow:0 20px 55px rgba(23,32,42,.10);
+      --shadow-soft:0 10px 26px rgba(23,32,42,.07);
+      --radius:16px;
+      --radius-sm:11px;
+      --sidebar:248px;
+      --admin-sidebar:256px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#e9edef;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+
+    .prototype{
+      min-height:100vh;
+      padding:16px;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr);
+      gap:14px;
+    }
+
+    .proto-toolbar{
+      max-width:1480px;
+      width:100%;
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(203,212,217,.9);
+      border-radius:14px;
+      box-shadow:0 8px 24px rgba(23,32,42,.06);
+      backdrop-filter:blur(12px);
+      position:sticky;
+      top:12px;
+      z-index:100;
+    }
+
+    .proto-brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand-mark{
+      width:34px;height:34px;border-radius:10px;background:var(--ink);color:#fff;
+      display:grid;place-items:center;font-weight:900;letter-spacing:-.04em;
+    }
+    .proto-brand strong{font-size:.92rem;white-space:nowrap}
+    .proto-brand span{display:block;color:var(--muted);font-size:.72rem;margin-top:1px}
+
+    .toolbar-groups{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .seg{
+      display:flex;padding:3px;background:#f2f5f5;border:1px solid var(--line);border-radius:10px;
+    }
+    .seg button{
+      border:0;background:transparent;color:var(--muted);padding:7px 10px;border-radius:7px;
+      font-weight:750;font-size:.78rem;
+    }
+    .seg button.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(23,32,42,.08)}
+
+    .preview-stage{
+      width:100%;
+      min-height:0;
+      display:grid;
+      place-items:start center;
+      overflow:auto;
+      padding:4px 0 24px;
+    }
+    .prototype-frame{
+      width:min(1480px,100%);
+      min-height:calc(100vh - 96px);
+      background:var(--bg);
+      border:1px solid var(--line-strong);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      container-type:inline-size;
+      transition:width .28s ease,height .28s ease,border-radius .28s ease;
+    }
+    .prototype-frame.mobile{
+      width:390px;
+      height:844px;
+      min-height:844px;
+      border:8px solid #151b20;
+      border-radius:34px;
+      overflow:auto;
+      scrollbar-width:none;
+      box-shadow:0 30px 70px rgba(23,32,42,.24);
+    }
+    .prototype-frame.mobile::-webkit-scrollbar{display:none}
+    .prototype-frame.mobile .app-root{min-height:100%}
+
+    /* Shared app */
+    .app-root{min-height:calc(100vh - 98px);background:var(--bg)}
+    .app-shell{min-height:100%;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr)}
+    .admin-shell{grid-template-columns:var(--admin-sidebar) minmax(0,1fr)}
+
+    .sidebar{
+      background:#12201e;color:#f5fbf9;padding:22px 16px 18px;
+      display:flex;flex-direction:column;gap:22px;min-height:100%;
+    }
+    .sidebar.admin{background:#17202a}
+    .sidebar-brand{display:flex;align-items:center;gap:10px;padding:0 7px}
+    .sidebar-brand .brand-mark{background:#f3f8f6;color:#17202a}
+    .sidebar-brand strong{display:block;font-size:.95rem}
+    .sidebar-brand small{display:block;color:#9eb5af;margin-top:2px;font-size:.7rem}
+    .admin .sidebar-brand small{color:#aab4bd}
+
+    .nav-group{display:grid;gap:5px}
+    .nav-label{
+      padding:8px 10px 5px;color:#7f9c95;font-size:.68rem;font-weight:850;
+      letter-spacing:.08em;text-transform:uppercase;
+    }
+    .admin .nav-label{color:#87939d}
+    .nav-item{
+      width:100%;border:0;background:transparent;color:#b9cbc6;text-align:left;
+      padding:10px 11px;border-radius:10px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:.86rem;
+    }
+    .admin .nav-item{color:#b9c1c8}
+    .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+    .nav-item.active{background:#eef8f4;color:#153f36}
+    .admin .nav-item.active{background:#fff;color:#17202a}
+    .nav-icon{
+      width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.12);font-size:.72rem;font-weight:900;
+    }
+    .nav-item.active .nav-icon{border-color:rgba(35,100,87,.18);background:#dcefe8}
+    .admin .nav-item.active .nav-icon{border-color:#e1e6ea;background:#f2f4f6}
+
+    .sidebar-foot{
+      margin-top:auto;border-top:1px solid rgba(255,255,255,.09);padding:16px 6px 0;display:grid;gap:12px;
+    }
+    .mini-user{display:flex;gap:10px;align-items:center}
+    .avatar{
+      width:36px;height:36px;border-radius:50%;background:#dcefe8;color:#174c42;
+      display:grid;place-items:center;font-weight:900;font-size:.78rem;flex:none;
+    }
+    .avatar.admin-av{background:#edf0f2;color:#17202a}
+    .mini-user strong{display:block;font-size:.78rem;color:#fff;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mini-user small{display:block;color:#8ca59f;font-size:.67rem;margin-top:2px}
+    .admin .mini-user small{color:#94a0aa}
+
+    .content{min-width:0;display:flex;flex-direction:column}
+    .topbar{
+      min-height:68px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:18px;
+      background:rgba(255,255,255,.84);border-bottom:1px solid var(--line);backdrop-filter:blur(10px);
+      position:sticky;top:0;z-index:30;
+    }
+    .page-heading strong{font-size:.94rem}
+    .page-heading span{display:block;color:var(--muted);font-size:.72rem;margin-top:2px}
+    .top-actions{display:flex;align-items:center;gap:10px}
+    .quota-chip{
+      display:flex;align-items:center;gap:9px;padding:7px 10px;border:1px solid #cfe2dc;background:#f5fbf8;border-radius:999px;
+      color:#194f43;font-size:.75rem;font-weight:800;
+    }
+    .quota-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .ghost-btn,.soft-btn,.primary-btn,.danger-btn{
+      min-height:38px;border-radius:10px;padding:0 14px;font-weight:800;font-size:.8rem;
+    }
+    .ghost-btn{background:#fff;border:1px solid var(--line);color:var(--ink)}
+    .soft-btn{background:var(--accent-soft);border:1px solid #cfe5dd;color:var(--accent-2)}
+    .primary-btn{background:var(--ink);border:1px solid var(--ink);color:#fff}
+    .danger-btn{background:#fff;border:1px solid #e7bebe;color:var(--danger)}
+    .primary-btn:hover{background:#0c1218}
+    .ghost-btn:hover{border-color:var(--line-strong)}
+    .main{padding:28px;flex:1}
+    .mobile-top,.bottom-nav{display:none}
+
+    .eyebrow{margin:0 0 8px;color:var(--accent);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    h1,h2,h3,p{margin-top:0}
+    h1{font-size:clamp(1.9rem,3vw,3rem);line-height:1.08;letter-spacing:-.035em;margin-bottom:10px}
+    h2{font-size:1.15rem;letter-spacing:-.015em}
+    h3{font-size:.92rem}
+    .lead{max-width:680px;color:var(--muted);line-height:1.65;margin:0}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:30px 0 13px}
+    .section-head h2{margin:0}
+    .section-head p{margin:4px 0 0;color:var(--muted);font-size:.8rem}
+    .text-link{border:0;background:transparent;color:var(--accent);font-weight:850;font-size:.8rem;padding:0}
+
+    .grid{display:grid;gap:16px}
+    .grid.kpi{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:24px}
+    .grid.two{grid-template-columns:minmax(0,1.4fr) minmax(300px,.8fr)}
+    .grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .card{
+      background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:0 1px 1px rgba(23,32,42,.02);
+    }
+    .card.interactive{transition:.2s ease}
+    .card.interactive:hover{transform:translateY(-2px);box-shadow:var(--shadow-soft);border-color:#cfd8dc}
+    .kpi-card span{color:var(--muted);font-size:.72rem;font-weight:800}
+    .kpi-card strong{display:block;font-size:1.65rem;letter-spacing:-.04em;margin-top:8px}
+    .kpi-card small{display:block;color:var(--muted-2);font-size:.7rem;margin-top:6px}
+    .kpi-card .positive{color:var(--accent)}
+
+    .hero-card{
+      padding:26px;border-radius:20px;background:
+        radial-gradient(circle at 95% 0%,rgba(70,139,123,.16),transparent 31%),
+        linear-gradient(135deg,#fff 0%,#f7fbf9 100%);
+      border:1px solid #d8e4e0;display:grid;grid-template-columns:minmax(0,1fr) 265px;gap:24px;align-items:center;
+    }
+    .hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+    .hero-visual{
+      min-height:180px;border-radius:16px;background:#16332d;color:#fff;padding:18px;
+      display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;position:relative;
+    }
+    .hero-visual:after{
+      content:"";position:absolute;width:180px;height:180px;border:35px solid rgba(255,255,255,.07);border-radius:50%;
+      right:-70px;bottom:-85px;
+    }
+    .hero-visual small{color:#acc7c0;font-weight:800;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+    .hero-visual strong{font-size:2.2rem;letter-spacing:-.05em;position:relative;z-index:1}
+    .hero-visual span{font-size:.77rem;color:#d6e5e1;position:relative;z-index:1}
+
+    .progress-track{height:7px;background:#e9eeec;border-radius:999px;overflow:hidden}
+    .progress-track > i{display:block;height:100%;background:var(--accent);border-radius:999px}
+    .quota-box .quota-numbers{display:flex;align-items:baseline;justify-content:space-between;margin:12px 0 10px}
+    .quota-box .quota-numbers strong{font-size:1.5rem}
+    .quota-box .quota-numbers span{font-size:.76rem;color:var(--muted)}
+
+    .task-list{display:grid;gap:10px}
+    .task{
+      display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);
+      border-radius:12px;background:#fff;
+    }
+    .task-index{width:38px;height:38px;border-radius:10px;background:#f0f5f3;color:var(--accent);display:grid;place-items:center;font-weight:900;font-size:.78rem}
+    .task strong{display:block;font-size:.86rem}
+    .task small{display:block;color:var(--muted);font-size:.72rem;margin-top:3px}
+    .task .pill{justify-self:end}
+
+    .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:.67rem;font-weight:850;border:1px solid var(--line);background:#fff;color:var(--muted)}
+    .pill.success{background:var(--success-soft);color:var(--success);border-color:#cce8dc}
+    .pill.warn{background:var(--warn-soft);color:var(--warn);border-color:#f0ddb8}
+    .pill.danger{background:var(--danger-soft);color:var(--danger);border-color:#f0cccc}
+    .pill.dark{background:#eef1f3;color:#25313b;border-color:#d9e0e4}
+
+    .stat-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px}
+    .stat-row > div{min-width:115px}
+    .stat-row strong{font-size:1.15rem}
+    .stat-row span{display:block;color:var(--muted);font-size:.7rem;margin-top:3px}
+
+    /* Practice */
+    .practice-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;height:calc(100vh - 152px);min-height:620px}
+    .conversation-card{padding:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+    .conversation-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .conversation-head h2{margin:0;font-size:1rem}
+    .message-list{padding:18px;overflow:auto;display:grid;align-content:start;gap:12px;background:#fbfcfc}
+    .message{max-width:78%;border:1px solid var(--line);border-radius:14px;padding:11px 13px;font-size:.82rem;line-height:1.55;background:#fff}
+    .message.user{justify-self:end;background:#17202a;color:#fff;border-color:#17202a;border-bottom-right-radius:5px}
+    .message.ai{justify-self:start;border-bottom-left-radius:5px}
+    .message small{display:block;font-size:.62rem;opacity:.6;margin-bottom:4px;font-weight:850;text-transform:uppercase}
+    .composer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:14px;border-top:1px solid var(--line);background:#fff}
+    .composer textarea{resize:none;min-height:44px;max-height:100px;border:1px solid var(--line-strong);border-radius:10px;padding:11px 12px;outline:none}
+    .composer textarea:focus{border-color:#78a79b;box-shadow:0 0 0 3px rgba(35,100,87,.08)}
+    .coach-panel{display:grid;gap:12px;align-content:start;overflow:auto}
+    .correction{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+    .correction .label{font-size:.64rem;color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+    .correction p{font-size:.79rem;line-height:1.5;margin:7px 0 0}
+    .natural{background:var(--accent-soft);border-color:#cfe5dd}
+    .coach-tip{font-size:.78rem;color:var(--muted);line-height:1.55}
+
+    /* Account */
+    .account-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px}
+    .profile-card{text-align:center}
+    .profile-avatar{width:72px;height:72px;border-radius:50%;background:#dcefe8;color:#174c42;display:grid;place-items:center;margin:2px auto 12px;font-weight:900;font-size:1.1rem}
+    .profile-card h2{margin:0 0 4px}
+    .profile-card p{font-size:.76rem;color:var(--muted);margin:0}
+    .settings-list{display:grid;gap:12px}
+    .settings-row{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+    .settings-row:last-child{border-bottom:0}
+    .settings-row strong{font-size:.82rem}
+    .settings-row span{display:block;color:var(--muted);font-size:.72rem;margin-top:3px}
+
+    /* Admin tables & controls */
+    .admin-hero{display:flex;align-items:center;justify-content:space-between;gap:18px}
+    .admin-hero h1{font-size:2rem}
+    .chart-card{min-height:280px}
+    .bar-chart{height:190px;display:flex;gap:10px;align-items:flex-end;padding-top:18px}
+    .bar-col{flex:1;min-width:16px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px}
+    .bar{width:100%;max-width:42px;background:linear-gradient(#4e8a7d,#236457);border-radius:7px 7px 3px 3px;min-height:12px}
+    .bar-col span{font-size:.62rem;color:var(--muted)}
+    .provider-list{display:grid;gap:10px}
+    .provider-mini{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px;border:1px solid var(--line);border-radius:11px}
+    .provider-mini strong{font-size:.8rem}
+    .provider-mini small{display:block;color:var(--muted);font-size:.67rem;margin-top:2px}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#45a17f;box-shadow:0 0 0 4px #e6f5ef}
+    .status-dot.off{background:#a5adb4;box-shadow:0 0 0 4px #eef0f2}
+
+    .table-card{padding:0;overflow:hidden}
+    .table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+    .search-wrap{position:relative;flex:1;max-width:360px}
+    .search-wrap input{width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px 0 34px;outline:none;background:#fbfcfc}
+    .search-wrap:before{content:"⌕";position:absolute;left:12px;top:7px;color:var(--muted);font-size:1rem}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 16px;text-align:left;border-bottom:1px solid #edf0f2;font-size:.77rem;white-space:nowrap}
+    th{font-size:.66rem;color:var(--muted);background:#fafbfb;text-transform:uppercase;letter-spacing:.04em}
+    tbody tr:hover{background:#fafcfc}
+    tbody tr:last-child td{border-bottom:0}
+    .email-cell{display:flex;align-items:center;gap:9px}
+    .tiny-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#eef5f2;color:var(--accent);font-size:.65rem;font-weight:900}
+    .email-cell strong{font-size:.76rem}
+    .email-cell small{display:block;color:var(--muted);font-size:.64rem;margin-top:2px}
+    .row-action{border:0;background:transparent;color:var(--accent);font-weight:850;font-size:.72rem}
+
+    .provider-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .provider-card{display:grid;gap:15px}
+    .provider-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .provider-logo{width:42px;height:42px;border-radius:12px;background:#eef3f2;display:grid;place-items:center;font-size:.72rem;font-weight:950}
+    .provider-card h3{margin:0}
+    .provider-card p{margin:4px 0 0;color:var(--muted);font-size:.72rem}
+    .field-label{display:block;font-size:.68rem;font-weight:850;color:#394550;margin-bottom:6px}
+    .field{width:100%;height:40px;border:1px solid var(--line);border-radius:9px;background:#fbfcfc;padding:0 11px;color:var(--ink)}
+    .token-field{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+    .provider-foot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+    .switch{position:relative;width:38px;height:22px;border-radius:999px;background:#cbd3d7;border:0;padding:0;transition:.2s}
+    .switch:after{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.15);transition:.2s}
+    .switch.on{background:var(--accent)}
+    .switch.on:after{left:19px}
+
+    .settings-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+    .form-stack{display:grid;gap:14px}
+    .form-row{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+    .form-row:last-child{border-bottom:0}
+    .form-row h3{margin:0 0 4px}
+    .form-row p{margin:0;color:var(--muted);font-size:.72rem;line-height:1.45}
+    .audit-list{display:grid;gap:0}
+    .audit-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start;padding:13px 0;border-bottom:1px solid var(--line)}
+    .audit-item:last-child{border-bottom:0}
+    .audit-icon{width:30px;height:30px;border-radius:9px;background:#f0f3f4;display:grid;place-items:center;font-size:.65rem;font-weight:900}
+    .audit-item strong{font-size:.76rem}
+    .audit-item p{margin:3px 0 0;color:var(--muted);font-size:.68rem;line-height:1.4}
+    .audit-item time{font-size:.64rem;color:var(--muted-2);white-space:nowrap}
+
+    /* Auth */
+    .auth-shell{min-height:calc(100vh - 98px);display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,560px);background:#fff}
+    .auth-visual{background:#132622;color:#fff;padding:clamp(32px,6vw,88px);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+    .auth-visual:before,.auth-visual:after{content:"";position:absolute;border:1px solid rgba(255,255,255,.09);border-radius:50%}
+    .auth-visual:before{width:520px;height:520px;right:-250px;top:-180px}
+    .auth-visual:after{width:320px;height:320px;right:-100px;bottom:-150px}
+    .auth-visual .sidebar-brand{padding:0;position:relative;z-index:1}
+    .auth-copy{max-width:560px;position:relative;z-index:1}
+    .auth-copy h1{font-size:clamp(2.4rem,5vw,4.7rem)}
+    .auth-copy p{color:#c2d5d0;line-height:1.7;max-width:500px}
+    .auth-points{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+    .auth-points span{border:1px solid rgba(255,255,255,.15);padding:7px 9px;border-radius:999px;color:#dbe9e5;font-size:.7rem;font-weight:750}
+    .auth-form-side{display:grid;place-items:center;padding:36px;background:#f7f9f8}
+    .auth-card{width:min(390px,100%);background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:var(--shadow-soft)}
+    .auth-card h2{font-size:1.5rem;margin-bottom:6px}
+    .auth-card > p{color:var(--muted);font-size:.78rem;line-height:1.5;margin-bottom:22px}
+    .input-group{display:grid;gap:6px;margin-bottom:13px}
+    .input-group label{font-size:.7rem;font-weight:850}
+    .input-group input{height:42px;border:1px solid var(--line-strong);border-radius:10px;padding:0 12px;outline:none}
+    .input-group input:focus{border-color:#78a79b;box-shadow:0 0 0 3px rgba(35,100,87,.08)}
+    .auth-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:10px 0 16px;font-size:.7rem;color:var(--muted)}
+    .auth-row a,.auth-switch{color:var(--accent);font-weight:850;text-decoration:none;border:0;background:transparent;padding:0}
+    .full{width:100%}
+    .auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted-2);font-size:.66rem;margin:16px 0}
+    .auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--line);flex:1}
+    .auth-note{text-align:center;color:var(--muted);font-size:.69rem!important;margin:14px 0 0!important}
+
+    /* Modal / toast */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(14,21,25,.44);display:grid;place-items:center;padding:20px;z-index:200;backdrop-filter:blur(3px)}
+    .modal{width:min(560px,100%);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.22);overflow:hidden}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:17px 19px;border-bottom:1px solid var(--line)}
+    .modal-head h3{margin:0;font-size:1rem}
+    .modal-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff}
+    .modal-body{padding:18px}
+    .user-summary{display:flex;align-items:center;gap:12px;padding:13px;background:#f7faf9;border:1px solid var(--line);border-radius:12px;margin-bottom:16px}
+    .user-summary .profile-avatar{width:46px;height:46px;margin:0;font-size:.78rem}
+    .user-summary strong{display:block;font-size:.82rem}
+    .user-summary small{display:block;color:var(--muted);font-size:.68rem;margin-top:3px}
+    .quota-editor{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+    .quota-editor > div{padding:12px;border:1px solid var(--line);border-radius:11px}
+    .quota-editor span{display:block;color:var(--muted);font-size:.64rem;font-weight:800}
+    .quota-editor strong{display:block;font-size:1.15rem;margin-top:5px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:9px;padding:15px 18px;border-top:1px solid var(--line);background:#fafbfb}
+    .toast{
+      position:fixed;right:24px;bottom:24px;background:#17202a;color:#fff;border-radius:12px;padding:12px 14px;
+      font-size:.76rem;font-weight:750;box-shadow:var(--shadow);z-index:300;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s;
+    }
+    .toast.show{transform:translateY(0);opacity:1}
+
+    /* Container responsive - also powers built-in Mobile preview */
+    @container (max-width: 760px){
+      .app-root{min-height:100%;padding-bottom:68px}
+      .app-shell,.admin-shell{display:block}
+      .sidebar,.topbar{display:none}
+      .mobile-top{
+        display:flex;min-height:58px;padding:9px 14px;align-items:center;justify-content:space-between;gap:10px;
+        background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);
+      }
+      .mobile-brand{display:flex;align-items:center;gap:8px}
+      .mobile-brand .brand-mark{width:31px;height:31px;font-size:.74rem}
+      .mobile-brand strong{font-size:.82rem}
+      .mobile-brand small{display:block;color:var(--muted);font-size:.62rem;margin-top:1px}
+      .mobile-top .quota-chip{padding:6px 8px;font-size:.67rem}
+      .main{padding:16px}
+      .bottom-nav{
+        display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;min-height:62px;
+        background:rgba(255,255,255,.97);border-top:1px solid var(--line);z-index:45;backdrop-filter:blur(12px);
+      }
+      .prototype-frame.mobile .bottom-nav{position:sticky;bottom:0}
+      .bottom-nav button{
+        border:0;background:transparent;color:var(--muted);display:grid;place-items:center;align-content:center;gap:3px;padding:7px 2px;font-size:.58rem;font-weight:750;
+      }
+      .bottom-nav button b{display:grid;place-items:center;width:26px;height:24px;border-radius:8px;font-size:.67rem}
+      .bottom-nav button.active{color:var(--accent)}
+      .bottom-nav button.active b{background:var(--accent-soft)}
+      .admin-bottom button.active{color:#17202a}
+      .admin-bottom button.active b{background:#eef1f3}
+
+      h1{font-size:1.7rem}
+      .eyebrow{font-size:.65rem}
+      .lead{font-size:.82rem}
+      .hero-card{grid-template-columns:1fr;padding:18px;border-radius:16px}
+      .hero-visual{min-height:130px}
+      .hero-actions .primary-btn,.hero-actions .ghost-btn{flex:1}
+      .grid.kpi{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+      .grid.two,.grid.three,.provider-grid,.settings-grid,.account-layout{grid-template-columns:1fr}
+      .card{padding:14px;border-radius:13px}
+      .section-head{margin-top:22px}
+      .task{grid-template-columns:34px minmax(0,1fr);padding:10px}
+      .task-index{width:34px;height:34px}
+      .task .pill{grid-column:2;justify-self:start}
+      .practice-layout{display:block;height:auto;min-height:0}
+      .conversation-card{min-height:640px;border-radius:13px}
+      .coach-panel{margin-top:12px}
+      .message{max-width:88%}
+      .composer{grid-template-columns:1fr}
+      .composer .primary-btn{height:40px}
+      .profile-card{text-align:left;display:grid;grid-template-columns:58px 1fr;column-gap:12px;align-items:center}
+      .profile-avatar{width:58px;height:58px;margin:0;grid-row:1/3}
+      .table-card{overflow:auto}
+      .table-toolbar{position:sticky;left:0;min-width:720px}
+      table{min-width:720px}
+      .admin-hero{align-items:flex-start}
+      .admin-hero h1{font-size:1.65rem}
+      .admin-hero .primary-btn{display:none}
+      .bar-chart{height:150px;gap:6px}
+      .form-row{grid-template-columns:1fr;gap:9px}
+      .quota-editor{grid-template-columns:1fr 1fr}
+      .quota-editor > div:last-child{grid-column:1/-1}
+      .audit-item{grid-template-columns:30px minmax(0,1fr)}
+      .audit-item time{grid-column:2}
+      .auth-shell{display:block;min-height:100%}
+      .auth-visual{min-height:220px;padding:24px 20px}
+      .auth-copy h1{font-size:2rem;margin-top:26px}
+      .auth-copy p{font-size:.78rem}
+      .auth-points{display:none}
+      .auth-form-side{padding:18px 14px 28px}
+      .auth-card{padding:20px;border-radius:15px}
+    }
+
+    @media(max-width:780px){
+      .prototype{padding:8px}
+      .proto-toolbar{align-items:flex-start;position:relative;top:0}
+      .proto-brand span{display:none}
+      .toolbar-groups{gap:6px}
+      .seg button{padding:6px 8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="prototype">
+    <div class="proto-toolbar">
+      <div class="proto-brand">
+        <div class="brand-mark">ET</div>
+        <div>
+          <strong>English Tutor · SaaS Prototype</strong>
+          <span>Interactive UI · User + Admin · Responsive</span>
+        </div>
+      </div>
+      <div class="toolbar-groups">
+        <div class="seg" id="roleSeg">
+          <button data-role="login">Login / Sign up</button>
+          <button data-role="user" class="active">Learner</button>
+          <button data-role="admin">Admin</button>
+        </div>
+        <div class="seg" id="langSeg">
+          <button data-lang="zh" class="active">中文</button>
+          <button data-lang="en">English</button>
+        </div>
+        <div class="seg" id="deviceSeg">
+          <button data-device="desktop" class="active">桌面</button>
+          <button data-device="mobile">手机</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-stage">
+      <div class="prototype-frame" id="frame">
+        <div id="loginRoot" class="app-root hidden">
+          <section class="auth-shell">
+            <div class="auth-visual">
+              <div class="sidebar-brand">
+                <div class="brand-mark">ET</div>
+                <div>
+                  <strong>English Tutor</strong>
+                  <small>Your personal AI speaking coach</small>
+                </div>
+              </div>
+              <div class="auth-copy">
+                <p class="eyebrow" style="color:#82b9ab">Speak more. Think less.</p>
+                <h1>Practice the English you actually need.</h1>
+                <p>Short, focused sessions for workplace meetings, speaking confidence and natural expression — with immediate correction after every turn.</p>
+                <div class="auth-points">
+                  <span>Daily practice plan</span>
+                  <span>Instant correction</span>
+                  <span>Learning memory</span>
+                  <span>Progress tracking</span>
+                </div>
+              </div>
+              <small style="color:#89a69f;position:relative;z-index:1">English Tutor Agent · SaaS Edition</small>
+            </div>
+            <div class="auth-form-side">
+              <div class="auth-card">
+                <div id="loginForm">
+                  <p class="eyebrow">Welcome back</p>
+                  <h2>Sign in to continue</h2>
+                  <p>Your learning history and daily quota are tied to your email account.</p>
+                  <div class="input-group">
+                    <label>Email</label>
+                    <input value="alex@example.com" placeholder="you@example.com" />
+                  </div>
+                  <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" value="password123" placeholder="••••••••" />
+                  </div>
+                  <div class="auth-row">
+                    <label><input type="checkbox" checked /> Keep me signed in</label>
+                    <a href="#" onclick="event.preventDefault();showToast('Password reset email sent (prototype)')">Forgot password?</a>
+                  </div>
+                  <button class="primary-btn full" onclick="switchRole('user')">Sign in</button>
+                  <div class="auth-divider">or</div>
+                  <p class="auth-note">New to English Tutor? <button class="auth-switch" onclick="toggleRegister(true)">Create an account</button></p>
+                </div>
+
+                <div id="registerForm" class="hidden">
+                  <p class="eyebrow">Create your account</p>
+                  <h2>Start learning today</h2>
+                  <p>Your email is your unique account identifier. We’ll keep all learning data private to your account.</p>
+                  <div class="input-group">
+                    <label>Email</label>
+                    <input placeholder="you@example.com" />
+                  </div>
+                  <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="At least 8 characters" />
+                  </div>
+                  <div class="input-group">
+                    <label>Confirm password</label>
+                    <input type="password" placeholder="Repeat password" />
+                  </div>
+                  <button class="primary-btn full" onclick="showToast('Account created (prototype)');toggleRegister(false)">Create account</button>
+                  <p class="auth-note">Already have an account? <button class="auth-switch" onclick="toggleRegister(false)">Sign in</button></p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="userRoot" class="app-root">
+          <div class="app-shell">
+            <aside class="sidebar">
+              <div class="sidebar-brand">
+                <div class="brand-mark">ET</div>
+                <div>
+                  <strong>English Tutor</strong>
+                  <small>Personal AI coach</small>
+                </div>
+              </div>
+              <nav class="nav-group user-nav">
+                <div class="nav-label">Learn</div>
+                <button class="nav-item active" data-page="user-today"><span class="nav-icon">01</span>Today</button>
+                <button class="nav-item" data-page="user-practice"><span class="nav-icon">02</span>Practice</button>
+                <button class="nav-item" data-page="user-history"><span class="nav-icon">03</span>History</button>
+                <button class="nav-item" data-page="user-progress"><span class="nav-icon">04</span>Progress</button>
+                <div class="nav-label">Account</div>
+                <button class="nav-item" data-page="user-account"><span class="nav-icon">05</span>Account & quota</button>
+              </nav>
+              <div class="sidebar-foot">
+                <div class="quota-box">
+                  <div style="font-size:.68rem;color:#8ca59f;font-weight:800">TODAY'S QUOTA</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin:7px 0;color:#fff;font-size:.75rem"><strong>18 used</strong><span style="color:#9db2ad">32 left</span></div>
+                  <div class="progress-track" style="background:rgba(255,255,255,.12)"><i style="width:36%;background:#7db8a9"></i></div>
+                </div>
+                <div class="mini-user">
+                  <div class="avatar">AL</div>
+                  <div><strong>alex@example.com</strong><small>Free learner</small></div>
+                </div>
+              </div>
+            </aside>
+
+            <div class="content">
+              <header class="topbar">
+                <div class="page-heading"><strong id="userPageTitle">Today</strong><span>Your daily English practice</span></div>
+                <div class="top-actions">
+                  <div class="quota-chip"><span class="quota-dot"></span>32 AI requests left</div>
+                  <button class="ghost-btn" onclick="navigateUser('user-account')">Account</button>
+                </div>
+              </header>
+
+              <div class="mobile-top">
+                <div class="mobile-brand"><div class="brand-mark">ET</div><div><strong>English Tutor</strong><small id="mobileUserTitle">Today</small></div></div>
+                <div class="quota-chip"><span class="quota-dot"></span>32 left</div>
+              </div>
+
+              <main class="main">
+                <section class="user-page" id="user-today">
+                  <div class="hero-card">
+                    <div>
+                      <p class="eyebrow">Friday · Daily coach</p>
+                      <h1>Good afternoon, Alex.</h1>
+                      <p class="lead">Your focus today is speaking more smoothly in workplace meetings. Keep your answers short, clear and natural.</p>
+                      <div class="hero-actions">
+                        <button class="primary-btn" onclick="navigateUser('user-practice')">Start 30-min session</button>
+                        <button class="ghost-btn" onclick="showToast('Today’s plan opened')">View today’s plan</button>
+                      </div>
+                    </div>
+                    <div class="hero-visual">
+                      <small>Current streak</small>
+                      <strong>12 days</strong>
+                      <span>Best streak: 18 days · Keep going</span>
+                    </div>
+                  </div>
+
+                  <div class="grid kpi">
+                    <div class="card kpi-card"><span>Today's practice</span><strong>18 min</strong><small>Goal: 30 min</small></div>
+                    <div class="card kpi-card"><span>AI quota used</span><strong>18 / 50</strong><small class="positive">32 remaining</small></div>
+                    <div class="card kpi-card"><span>Speaking turns</span><strong>14</strong><small>+4 vs. yesterday</small></div>
+                    <div class="card kpi-card"><span>Corrections</span><strong>6</strong><small>2 grammar · 4 naturalness</small></div>
+                  </div>
+
+                  <div class="grid two">
+                    <div>
+                      <div class="section-head"><div><h2>Today’s learning plan</h2><p>Three focused activities based on your recent performance.</p></div><button class="text-link">Adjust plan</button></div>
+                      <div class="card">
+                        <div class="task-list">
+                          <div class="task">
+                            <div class="task-index">01</div>
+                            <div><strong>Workplace meeting warm-up</strong><small>Respond naturally to 6 Singapore-accented prompts</small></div>
+                            <span class="pill success">10 min</span>
+                          </div>
+                          <div class="task">
+                            <div class="task-index">02</div>
+                            <div><strong>Grammar repair</strong><small>Practice tense and article errors from your recent sessions</small></div>
+                            <span class="pill">8 min</span>
+                          </div>
+                          <div class="task">
+                            <div class="task-index">03</div>
+                            <div><strong>IELTS speaking Part 2</strong><small>One timed response with follow-up correction</small></div>
+                            <span class="pill">12 min</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="section-head"><div><h2>Daily quota</h2><p>Quota resets automatically each day.</p></div></div>
+                      <div class="card quota-box">
+                        <div class="quota-numbers"><strong>32 remaining</strong><span>50 / day</span></div>
+                        <div class="progress-track"><i style="width:36%"></i></div>
+                        <div class="stat-row">
+                          <div><strong>18</strong><span>Used today</span></div>
+                          <div><strong>00:00</strong><span>Next reset</span></div>
+                        </div>
+                        <p style="font-size:.72rem;color:var(--muted);line-height:1.55;margin:14px 0 0">Each successful AI learning request uses 1 quota. Reading history and progress does not consume quota.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="user-page hidden" id="user-practice">
+                  <div class="section-head" style="margin-top:0"><div><p class="eyebrow">Live practice</p><h2>Workplace meeting · Clarifying a requirement</h2><p>Speak naturally. Your correction appears after every turn.</p></div><span class="pill success">Session active</span></div>
+                  <div class="practice-layout">
+                    <div class="card conversation-card">
+                      <div class="conversation-head"><div><h2>Conversation</h2><span style="font-size:.7rem;color:var(--muted)">Meeting simulation · Intermediate</span></div><span class="pill">12 min left</span></div>
+                      <div class="message-list">
+                        <div class="message ai"><small>Coach</small>Could you walk me through what changed in the backend deployment?</div>
+                        <div class="message user"><small>You</small>We changed the deployment to Docker, and now Jenkins can build and deploy it automatically.</div>
+                        <div class="message ai"><small>Coach</small>Got it. What would happen if the new deployment failed halfway through?</div>
+                        <div class="message user"><small>You</small>It will rollback to previous image, so the service should still available.</div>
+                        <div class="message ai"><small>Coach</small>Good. One small correction first — then keep going: how do you verify the rollback actually worked?</div>
+                      </div>
+                      <div class="composer">
+                        <textarea placeholder="Type your answer, or use voice input in the app...">I will check the health endpoint and container status...</textarea>
+                        <button class="primary-btn" onclick="showToast('1 quota consumed · response sent')">Send</button>
+                      </div>
+                    </div>
+                    <aside class="coach-panel">
+                      <div class="card">
+                        <p class="eyebrow">Instant correction</p>
+                        <div class="correction">
+                          <div class="label">Your sentence</div>
+                          <p>...the service should still available.</p>
+                        </div>
+                        <div class="correction natural" style="margin-top:9px">
+                          <div class="label">Natural expression</div>
+                          <p>...the service should still be available.</p>
+                        </div>
+                        <p class="coach-tip" style="margin:12px 0 0">After modal verbs such as <strong>should</strong>, use <strong>be + adjective</strong>: “should be available”.</p>
+                      </div>
+                      <div class="card quota-box">
+                        <div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:.82rem">Session quota</strong><span class="pill">18 / 50 used</span></div>
+                        <div class="progress-track" style="margin-top:11px"><i style="width:36%"></i></div>
+                      </div>
+                    </aside>
+                  </div>
+                </section>
+
+                <section class="user-page hidden" id="user-history">
+                  <p class="eyebrow">Learning history</p>
+                  <h1>Your practice archive</h1>
+                  <p class="lead">Review previous sessions without consuming quota.</p>
+                  <div class="section-head"><div><h2>Recent sessions</h2><p>Past 14 days</p></div><button class="ghost-btn">Filter</button></div>
+                  <div class="card table-card">
+                    <table>
+                      <thead><tr><th>Date</th><th>Session</th><th>Duration</th><th>Turns</th><th>Corrections</th><th>Result</th></tr></thead>
+                      <tbody>
+                        <tr><td>Aug 14</td><td>Workplace meeting</td><td>18 min</td><td>14</td><td>6</td><td><span class="pill success">Completed</span></td></tr>
+                        <tr><td>Aug 13</td><td>IELTS Speaking Part 2</td><td>26 min</td><td>19</td><td>9</td><td><span class="pill success">Completed</span></td></tr>
+                        <tr><td>Aug 12</td><td>Grammar repair</td><td>12 min</td><td>10</td><td>7</td><td><span class="pill success">Completed</span></td></tr>
+                        <tr><td>Aug 11</td><td>Meeting listening</td><td>20 min</td><td>12</td><td>4</td><td><span class="pill success">Completed</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="user-page hidden" id="user-progress">
+                  <p class="eyebrow">Progress</p>
+                  <h1>Your English is becoming easier to access.</h1>
+                  <p class="lead">Focus on output quality and consistency rather than isolated test scores.</p>
+                  <div class="grid kpi">
+                    <div class="card kpi-card"><span>Speaking confidence</span><strong>B1+</strong><small class="positive">Improving</small></div>
+                    <div class="card kpi-card"><span>Grammar accuracy</span><strong>78%</strong><small>+7% this month</small></div>
+                    <div class="card kpi-card"><span>Natural expression</span><strong>72%</strong><small>+10% this month</small></div>
+                    <div class="card kpi-card"><span>Practice consistency</span><strong>86%</strong><small>12-day streak</small></div>
+                  </div>
+                  <div class="section-head"><div><h2>Priority areas</h2><p>Generated from your recent sessions.</p></div></div>
+                  <div class="grid three">
+                    <div class="card interactive"><span class="pill warn">Priority 1</span><h3 style="margin:14px 0 6px">Articles in spoken English</h3><p class="coach-tip">You often omit “a / the” when speaking quickly in meetings.</p></div>
+                    <div class="card interactive"><span class="pill">Priority 2</span><h3 style="margin:14px 0 6px">Past tense consistency</h3><p class="coach-tip">Your meaning is usually clear, but tense shifts reduce precision.</p></div>
+                    <div class="card interactive"><span class="pill">Priority 3</span><h3 style="margin:14px 0 6px">Shorter meeting answers</h3><p class="coach-tip">Aim for one main idea per sentence before adding detail.</p></div>
+                  </div>
+                </section>
+
+                <section class="user-page hidden" id="user-account">
+                  <p class="eyebrow">Account</p>
+                  <h1>Account & daily quota</h1>
+                  <p class="lead">Your email identifies your account. Learning data is isolated to this account.</p>
+                  <div class="section-head"><div><h2>Profile</h2></div></div>
+                  <div class="account-layout">
+                    <div class="card profile-card">
+                      <div class="profile-avatar">AL</div>
+                      <div><h2>Alex</h2><p>alex@example.com</p></div>
+                      <span class="pill success" style="margin-top:14px">Active account</span>
+                    </div>
+                    <div class="card settings-list">
+                      <div class="settings-row"><div><strong>Email</strong><span>Unique account identifier</span></div><strong>alex@example.com</strong></div>
+                      <div class="settings-row"><div><strong>Password</strong><span>Last changed 32 days ago</span></div><button class="ghost-btn">Change</button></div>
+                      <div class="settings-row"><div><strong>Daily AI quota</strong><span>Managed by the service administrator</span></div><strong>50 / day</strong></div>
+                      <div class="settings-row"><div><strong>Quota reset</strong><span>Automatically resets every day</span></div><strong>00:00</strong></div>
+                    </div>
+                  </div>
+                  <div class="section-head"><div><h2>Today's quota</h2></div></div>
+                  <div class="card quota-box">
+                    <div class="quota-numbers"><strong>32 requests remaining</strong><span>18 of 50 used</span></div>
+                    <div class="progress-track"><i style="width:36%"></i></div>
+                    <p style="font-size:.72rem;color:var(--muted);margin:13px 0 0">Only AI generation actions consume quota. Reading saved lessons, history and progress does not.</p>
+                  </div>
+                </section>
+              </main>
+
+              <nav class="bottom-nav user-bottom">
+                <button class="active" data-page="user-today"><b>01</b>Today</button>
+                <button data-page="user-practice"><b>02</b>Practice</button>
+                <button data-page="user-history"><b>03</b>History</button>
+                <button data-page="user-progress"><b>04</b>Progress</button>
+                <button data-page="user-account"><b>05</b>Account</button>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <div id="adminRoot" class="app-root hidden">
+          <div class="app-shell admin-shell">
+            <aside class="sidebar admin">
+              <div class="sidebar-brand">
+                <div class="brand-mark">ET</div>
+                <div><strong>English Tutor</strong><small>Admin Console</small></div>
+              </div>
+              <nav class="nav-group admin-nav">
+                <div class="nav-label">Operations</div>
+                <button class="nav-item active" data-page="admin-overview"><span class="nav-icon">01</span>Overview</button>
+                <button class="nav-item" data-page="admin-users"><span class="nav-icon">02</span>Users</button>
+                <button class="nav-item" data-page="admin-providers"><span class="nav-icon">03</span>AI Providers</button>
+                <div class="nav-label">System</div>
+                <button class="nav-item" data-page="admin-settings"><span class="nav-icon">04</span>System settings</button>
+                <button class="nav-item" data-page="admin-audit"><span class="nav-icon">05</span>Audit log</button>
+              </nav>
+              <div class="sidebar-foot">
+                <div class="mini-user"><div class="avatar admin-av">AD</div><div><strong>admin@example.com</strong><small>Administrator</small></div></div>
+              </div>
+            </aside>
+
+            <div class="content">
+              <header class="topbar">
+                <div class="page-heading"><strong id="adminPageTitle">Overview</strong><span>SaaS operations & configuration</span></div>
+                <div class="top-actions"><span class="pill success">System healthy</span><button class="ghost-btn">Admin account</button></div>
+              </header>
+
+              <div class="mobile-top">
+                <div class="mobile-brand"><div class="brand-mark" style="background:#17202a">ET</div><div><strong>Admin Console</strong><small id="mobileAdminTitle">Overview</small></div></div>
+                <span class="pill success">Healthy</span>
+              </div>
+
+              <main class="main">
+                <section class="admin-page" id="admin-overview">
+                  <div class="admin-hero"><div><p class="eyebrow">SaaS operations</p><h1>Good afternoon, Admin.</h1><p class="lead">Monitor users, quota usage and provider health from one place.</p></div><button class="primary-btn" onclick="navigateAdmin('admin-users')">Manage users</button></div>
+
+                  <div class="grid kpi">
+                    <div class="card kpi-card"><span>Total users</span><strong>1,248</strong><small class="positive">+36 this week</small></div>
+                    <div class="card kpi-card"><span>Active today</span><strong>482</strong><small>38.6% of users</small></div>
+                    <div class="card kpi-card"><span>AI requests today</span><strong>8,764</strong><small>Avg. 18.2 / active user</small></div>
+                    <div class="card kpi-card"><span>Quota-limited users</span><strong>27</strong><small>5.6% of active users</small></div>
+                  </div>
+
+                  <div class="grid two">
+                    <div>
+                      <div class="section-head"><div><h2>AI requests · last 7 days</h2><p>Business requests, not raw model tokens.</p></div><button class="text-link">View usage report</button></div>
+                      <div class="card chart-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center"><div><strong style="font-size:1.4rem">56.4k</strong><span style="display:block;color:var(--muted);font-size:.7rem;margin-top:3px">Total requests</span></div><span class="pill success">+12.8%</span></div>
+                        <div class="bar-chart">
+                          <div class="bar-col"><div class="bar" style="height:54%"></div><span>Sat</span></div>
+                          <div class="bar-col"><div class="bar" style="height:67%"></div><span>Sun</span></div>
+                          <div class="bar-col"><div class="bar" style="height:73%"></div><span>Mon</span></div>
+                          <div class="bar-col"><div class="bar" style="height:64%"></div><span>Tue</span></div>
+                          <div class="bar-col"><div class="bar" style="height:81%"></div><span>Wed</span></div>
+                          <div class="bar-col"><div class="bar" style="height:90%"></div><span>Thu</span></div>
+                          <div class="bar-col"><div class="bar" style="height:76%"></div><span>Fri</span></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="section-head"><div><h2>Provider health</h2><p>Runtime AI configuration.</p></div><button class="text-link" onclick="navigateAdmin('admin-providers')">Configure</button></div>
+                      <div class="card provider-list">
+                        <div class="provider-mini"><div><strong>OpenAI</strong><small>Default · gpt-5-mini</small></div><span class="status-dot"></span></div>
+                        <div class="provider-mini"><div><strong>DeepSeek</strong><small>Fallback · deepseek-chat</small></div><span class="status-dot"></span></div>
+                        <div class="provider-mini"><div><strong>Gemini</strong><small>Disabled</small></div><span class="status-dot off"></span></div>
+                        <div style="padding-top:3px"><span class="pill success">No provider incidents</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="admin-page hidden" id="admin-users">
+                  <div class="admin-hero"><div><p class="eyebrow">User management</p><h1>Users</h1><p class="lead">Search accounts, manage status and adjust daily quota.</p></div><button class="primary-btn" onclick="showToast('Invite user flow opened (prototype)')">Invite user</button></div>
+                  <div class="section-head"><div><h2>All users</h2><p>1,248 accounts · Email is the unique account identifier</p></div></div>
+                  <div class="card table-card">
+                    <div class="table-toolbar">
+                      <div class="search-wrap"><input id="userSearch" placeholder="Search email or user ID..." oninput="filterUsers(this.value)" /></div>
+                      <div style="display:flex;gap:8px"><button class="ghost-btn">Status: All</button><button class="ghost-btn">Export</button></div>
+                    </div>
+                    <table id="usersTable">
+                      <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Used today</th><th>Daily quota</th><th>Last active</th><th></th></tr></thead>
+                      <tbody>
+                        <tr data-search="alex@example.com usr_01hx8a">
+                          <td><div class="email-cell"><div class="tiny-avatar">AL</div><div><strong>alex@example.com</strong><small>usr_01HX8A</small></div></div></td>
+                          <td><span class="pill dark">USER</span></td><td><span class="pill success">ACTIVE</span></td><td>18</td><td>50</td><td>2 min ago</td><td><button class="row-action" onclick="openUserModal('alex@example.com','18','50','ACTIVE')">Manage</button></td>
+                        </tr>
+                        <tr data-search="julia.chen@example.com usr_01hx9f">
+                          <td><div class="email-cell"><div class="tiny-avatar">JC</div><div><strong>julia.chen@example.com</strong><small>usr_01HX9F</small></div></div></td>
+                          <td><span class="pill dark">USER</span></td><td><span class="pill success">ACTIVE</span></td><td>50</td><td>50</td><td>8 min ago</td><td><button class="row-action" onclick="openUserModal('julia.chen@example.com','50','50','ACTIVE')">Manage</button></td>
+                        </tr>
+                        <tr data-search="mike.wu@example.com usr_01hy11">
+                          <td><div class="email-cell"><div class="tiny-avatar">MW</div><div><strong>mike.wu@example.com</strong><small>usr_01HY11</small></div></div></td>
+                          <td><span class="pill dark">USER</span></td><td><span class="pill warn">DISABLED</span></td><td>4</td><td>100</td><td>Yesterday</td><td><button class="row-action" onclick="openUserModal('mike.wu@example.com','4','100','DISABLED')">Manage</button></td>
+                        </tr>
+                        <tr data-search="sarah.lim@example.com usr_01hy28">
+                          <td><div class="email-cell"><div class="tiny-avatar">SL</div><div><strong>sarah.lim@example.com</strong><small>usr_01HY28</small></div></div></td>
+                          <td><span class="pill dark">USER</span></td><td><span class="pill success">ACTIVE</span></td><td>67</td><td>100</td><td>14 min ago</td><td><button class="row-action" onclick="openUserModal('sarah.lim@example.com','67','100','ACTIVE')">Manage</button></td>
+                        </tr>
+                        <tr data-search="ops@example.com usr_01admin">
+                          <td><div class="email-cell"><div class="tiny-avatar">OP</div><div><strong>ops@example.com</strong><small>usr_01ADMIN</small></div></div></td>
+                          <td><span class="pill">ADMIN</span></td><td><span class="pill success">ACTIVE</span></td><td>—</td><td>Unlimited</td><td>1 hr ago</td><td><button class="row-action" onclick="showToast('Admin account opened')">Manage</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="admin-page hidden" id="admin-providers">
+                  <div class="admin-hero"><div><p class="eyebrow">Runtime configuration</p><h1>AI Providers</h1><p class="lead">Manage models and API credentials without rebuilding or redeploying the application.</p></div><button class="primary-btn" onclick="showToast('New provider form opened')">Add provider</button></div>
+                  <div class="section-head"><div><h2>Configured providers</h2><p>API keys are masked after saving and never returned in full.</p></div></div>
+                  <div class="provider-grid">
+                    <div class="card provider-card" data-provider="OpenAI">
+                      <div class="provider-head"><div class="provider-logo">OA</div><span class="pill success default-badge">Default</span></div>
+                      <div><h3>OpenAI</h3><p>Primary conversational provider</p></div>
+                      <div><label class="field-label">Model</label><select class="field"><option>gpt-5-mini</option><option>gpt-5</option></select></div>
+                      <div><label class="field-label">API key</label><div class="token-field"><input class="field" value="sk-proj-•••••••••••8F2A" readonly /><button class="ghost-btn" onclick="replaceToken('OpenAI')">Replace</button></div></div>
+                      <div class="provider-foot"><div><span class="field-label" style="margin:0">Enabled</span></div><button class="switch on" onclick="toggleSwitch(this)"></button></div>
+                    </div>
+
+                    <div class="card provider-card" data-provider="DeepSeek">
+                      <div class="provider-head"><div class="provider-logo">DS</div><button class="ghost-btn set-default" onclick="setDefaultProvider(this)">Set default</button></div>
+                      <div><h3>DeepSeek</h3><p>Fallback / cost-optimized provider</p></div>
+                      <div><label class="field-label">Model</label><select class="field"><option>deepseek-chat</option><option>deepseek-reasoner</option></select></div>
+                      <div><label class="field-label">API key</label><div class="token-field"><input class="field" value="sk-••••••••••••••67CB" readonly /><button class="ghost-btn" onclick="replaceToken('DeepSeek')">Replace</button></div></div>
+                      <div class="provider-foot"><div><span class="field-label" style="margin:0">Enabled</span></div><button class="switch on" onclick="toggleSwitch(this)"></button></div>
+                    </div>
+
+                    <div class="card provider-card" data-provider="Gemini">
+                      <div class="provider-head"><div class="provider-logo">GM</div><button class="ghost-btn set-default" onclick="setDefaultProvider(this)">Set default</button></div>
+                      <div><h3>Gemini</h3><p>Optional multimodal provider</p></div>
+                      <div><label class="field-label">Model</label><select class="field"><option>gemini-2.5-flash</option><option>gemini-2.5-pro</option></select></div>
+                      <div><label class="field-label">API key</label><div class="token-field"><input class="field" value="AIza••••••••••••••J1K9" readonly /><button class="ghost-btn" onclick="replaceToken('Gemini')">Replace</button></div></div>
+                      <div class="provider-foot"><div><span class="field-label" style="margin:0">Enabled</span></div><button class="switch" onclick="toggleSwitch(this)"></button></div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="admin-page hidden" id="admin-settings">
+                  <div class="admin-hero"><div><p class="eyebrow">System configuration</p><h1>System settings</h1><p class="lead">Central SaaS defaults. User-specific overrides take precedence where supported.</p></div><button class="primary-btn" onclick="showToast('Settings saved')">Save changes</button></div>
+                  <div class="section-head"><div><h2>SaaS defaults</h2><p>Changes affect runtime behavior without a Jenkins rebuild.</p></div></div>
+                  <div class="settings-grid">
+                    <div class="card form-stack">
+                      <div class="form-row"><div><h3>Default daily quota</h3><p>Applied to users without an individual quota override.</p></div><input class="field" type="number" value="50" /></div>
+                      <div class="form-row"><div><h3>Quota reset timezone</h3><p>Defines when a new daily quota period begins.</p></div><select class="field"><option>Asia/Shanghai (UTC+8)</option><option>Asia/Singapore (UTC+8)</option><option>UTC</option></select></div>
+                      <div class="form-row"><div><h3>Public registration</h3><p>When disabled, new users cannot self-register.</p></div><div style="display:flex;justify-content:flex-end"><button class="switch on" onclick="toggleSwitch(this)"></button></div></div>
+                      <div class="form-row"><div><h3>Email verification</h3><p>Require users to verify their email before AI learning requests.</p></div><div style="display:flex;justify-content:flex-end"><button class="switch" onclick="toggleSwitch(this)"></button></div></div>
+                    </div>
+                    <div class="card">
+                      <p class="eyebrow">Current policy</p>
+                      <h2 style="margin-bottom:16px">Quota precedence</h2>
+                      <div class="task-list">
+                        <div class="task"><div class="task-index">1</div><div><strong>User override</strong><small>Explicit admin-set daily quota</small></div></div>
+                        <div class="task"><div class="task-index">2</div><div><strong>Global default</strong><small>Used when no override exists</small></div></div>
+                        <div class="task"><div class="task-index">3</div><div><strong>Temporary bonus</strong><small>Applies only to the current quota period</small></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="admin-page hidden" id="admin-audit">
+                  <div class="admin-hero"><div><p class="eyebrow">Security & operations</p><h1>Audit log</h1><p class="lead">Sensitive administrative actions are recorded without storing passwords or API keys.</p></div><button class="ghost-btn">Export log</button></div>
+                  <div class="section-head"><div><h2>Recent actions</h2><p>Administrator activity</p></div></div>
+                  <div class="card audit-list">
+                    <div class="audit-item"><div class="audit-icon">Q</div><div><strong>Quota reset</strong><p>admin@example.com reset today’s quota for julia.chen@example.com.</p></div><time>2 min ago</time></div>
+                    <div class="audit-item"><div class="audit-icon">AI</div><div><strong>Provider credential replaced</strong><p>admin@example.com replaced the OpenAI API key. Secret value was not logged.</p></div><time>26 min ago</time></div>
+                    <div class="audit-item"><div class="audit-icon">U</div><div><strong>User disabled</strong><p>ops@example.com disabled mike.wu@example.com.</p></div><time>1 hr ago</time></div>
+                    <div class="audit-item"><div class="audit-icon">S</div><div><strong>System setting changed</strong><p>Default daily quota changed from 40 to 50.</p></div><time>Yesterday</time></div>
+                  </div>
+                </section>
+              </main>
+
+              <nav class="bottom-nav admin-bottom">
+                <button class="active" data-page="admin-overview"><b>01</b>Overview</button>
+                <button data-page="admin-users"><b>02</b>Users</button>
+                <button data-page="admin-providers"><b>03</b>Providers</button>
+                <button data-page="admin-settings"><b>04</b>Settings</button>
+                <button data-page="admin-audit"><b>05</b>Audit</button>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-backdrop hidden" id="userModal" onclick="if(event.target===this)closeUserModal()">
+          <div class="modal">
+            <div class="modal-head"><h3>Manage user</h3><button class="modal-close" onclick="closeUserModal()">×</button></div>
+            <div class="modal-body">
+              <div class="user-summary"><div class="profile-avatar">US</div><div><strong id="modalEmail">alex@example.com</strong><small>USER · <span id="modalStatus">ACTIVE</span></small></div></div>
+              <div><label class="field-label">Daily quota override</label><input id="modalQuotaInput" class="field" type="number" value="50" /></div>
+              <div class="quota-editor">
+                <div><span>USED TODAY</span><strong id="modalUsed">18</strong></div>
+                <div><span>DAILY QUOTA</span><strong id="modalQuota">50</strong></div>
+                <div><span>REMAINING</span><strong id="modalRemaining">32</strong></div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="soft-btn" onclick="resetQuota()">Reset today</button>
+                <button class="ghost-btn" onclick="addBonus()">+20 temporary</button>
+                <button class="danger-btn" id="statusBtn" onclick="toggleUserStatus()">Disable user</button>
+              </div>
+              <p style="font-size:.68rem;color:var(--muted);line-height:1.5;margin:14px 0 0">Resetting only changes the current quota period. Updating the daily quota changes the user-specific override for future periods.</p>
+            </div>
+            <div class="modal-actions"><button class="ghost-btn" onclick="closeUserModal()">Cancel</button><button class="primary-btn" onclick="saveUserQuota()">Save changes</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const frame = document.getElementById('frame');
+    const loginRoot = document.getElementById('loginRoot');
+    const userRoot = document.getElementById('userRoot');
+    const adminRoot = document.getElementById('adminRoot');
+
+    const userTitles = {
+      'user-today':'Today',
+      'user-practice':'Practice',
+      'user-history':'History',
+      'user-progress':'Progress',
+      'user-account':'Account & quota'
+    };
+    const adminTitles = {
+      'admin-overview':'Overview',
+      'admin-users':'Users',
+      'admin-providers':'AI Providers',
+      'admin-settings':'System settings',
+      'admin-audit':'Audit log'
+    };
+
+    function switchRole(role){
+      [loginRoot,userRoot,adminRoot].forEach(x=>x.classList.add('hidden'));
+      document.getElementById(role+'Root').classList.remove('hidden');
+      document.querySelectorAll('#roleSeg button').forEach(b=>b.classList.toggle('active',b.dataset.role===role));
+      if(role==='user') navigateUser('user-today');
+      if(role==='admin') navigateAdmin('admin-overview');
+    }
+
+    function setDevice(device){
+      frame.classList.toggle('mobile',device==='mobile');
+      document.querySelectorAll('#deviceSeg button').forEach(b=>b.classList.toggle('active',b.dataset.device===device));
+      frame.scrollTop = 0;
+    }
+
+    function navigateUser(page){
+      document.querySelectorAll('.user-page').forEach(x=>x.classList.add('hidden'));
+      document.getElementById(page).classList.remove('hidden');
+      document.querySelectorAll('.user-nav .nav-item,.user-bottom button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+      document.getElementById('userPageTitle').textContent=userTitles[page];
+      document.getElementById('mobileUserTitle').textContent=userTitles[page];
+      frame.scrollTop=0;
+    }
+
+    function navigateAdmin(page){
+      document.querySelectorAll('.admin-page').forEach(x=>x.classList.add('hidden'));
+      document.getElementById(page).classList.remove('hidden');
+      document.querySelectorAll('.admin-nav .nav-item,.admin-bottom button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+      document.getElementById('adminPageTitle').textContent=adminTitles[page];
+      document.getElementById('mobileAdminTitle').textContent=adminTitles[page];
+      frame.scrollTop=0;
+    }
+
+    document.querySelectorAll('#roleSeg button').forEach(b=>b.addEventListener('click',()=>switchRole(b.dataset.role)));
+    document.querySelectorAll('#deviceSeg button').forEach(b=>b.addEventListener('click',()=>setDevice(b.dataset.device)));
+    document.querySelectorAll('.user-nav .nav-item,.user-bottom button').forEach(b=>b.addEventListener('click',()=>navigateUser(b.dataset.page)));
+    document.querySelectorAll('.admin-nav .nav-item,.admin-bottom button').forEach(b=>b.addEventListener('click',()=>navigateAdmin(b.dataset.page)));
+
+    function toggleRegister(show){
+      document.getElementById('loginForm').classList.toggle('hidden',show);
+      document.getElementById('registerForm').classList.toggle('hidden',!show);
+    }
+
+    let toastTimer;
+    function showToast(message){
+      const t=document.getElementById('toast');
+      t.textContent=message;t.classList.add('show');
+      clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+    }
+
+    function toggleSwitch(btn){btn.classList.toggle('on');showToast(btn.classList.contains('on')?'Enabled':'Disabled')}
+
+    function setDefaultProvider(btn){
+      document.querySelectorAll('.provider-card').forEach(card=>{
+        const badge=card.querySelector('.default-badge');
+        if(badge) badge.remove();
+        const existing=card.querySelector('.set-default');
+        if(!existing){
+          const newBtn=document.createElement('button');
+          newBtn.className='ghost-btn set-default';
+          newBtn.textContent='Set default';
+          newBtn.onclick=function(){setDefaultProvider(this)};
+          card.querySelector('.provider-head').appendChild(newBtn);
+        }
+      });
+      const card=btn.closest('.provider-card');
+      btn.remove();
+      const badge=document.createElement('span');
+      badge.className='pill success default-badge';
+      badge.textContent='Default';
+      card.querySelector('.provider-head').appendChild(badge);
+      showToast(card.dataset.provider+' is now the default provider');
+    }
+
+    function replaceToken(provider){
+      const value=prompt('Prototype: enter a new API key for '+provider+'\\n(The real product should never display the saved secret again.)');
+      if(value){showToast(provider+' API key replaced and masked');}
+    }
+
+    function filterUsers(query){
+      query=query.toLowerCase().trim();
+      document.querySelectorAll('#usersTable tbody tr').forEach(row=>{
+        row.style.display=row.dataset.search.includes(query)?'':'none';
+      });
+    }
+
+    let currentUserStatus='ACTIVE';
+    function openUserModal(email,used,quota,status){
+      currentUserStatus=status;
+      document.getElementById('modalEmail').textContent=email;
+      document.getElementById('modalStatus').textContent=status;
+      document.getElementById('modalUsed').textContent=used;
+      document.getElementById('modalQuota').textContent=quota;
+      document.getElementById('modalRemaining').textContent=Math.max(0,Number(quota)-Number(used));
+      document.getElementById('modalQuotaInput').value=quota;
+      updateStatusButton();
+      document.getElementById('userModal').classList.remove('hidden');
+    }
+    function closeUserModal(){document.getElementById('userModal').classList.add('hidden')}
+    function resetQuota(){
+      document.getElementById('modalUsed').textContent='0';
+      const quota=Number(document.getElementById('modalQuota').textContent);
+      document.getElementById('modalRemaining').textContent=quota;
+      showToast('Today’s quota reset to 0 used');
+    }
+    function addBonus(){
+      const remaining=Number(document.getElementById('modalRemaining').textContent)+20;
+      document.getElementById('modalRemaining').textContent=remaining;
+      showToast('+20 temporary quota added for today');
+    }
+    function toggleUserStatus(){
+      currentUserStatus=currentUserStatus==='ACTIVE'?'DISABLED':'ACTIVE';
+      document.getElementById('modalStatus').textContent=currentUserStatus;
+      updateStatusButton();
+      showToast('User status changed to '+currentUserStatus);
+    }
+    function updateStatusButton(){
+      const btn=document.getElementById('statusBtn');
+      btn.textContent=currentUserStatus==='ACTIVE'?'Disable user':'Enable user';
+      btn.className=currentUserStatus==='ACTIVE'?'danger-btn':'soft-btn';
+    }
+    function saveUserQuota(){
+      const quota=Math.max(0,Number(document.getElementById('modalQuotaInput').value||0));
+      const used=Number(document.getElementById('modalUsed').textContent);
+      document.getElementById('modalQuota').textContent=quota;
+      document.getElementById('modalRemaining').textContent=Math.max(0,quota-used);
+      showToast('User quota override saved');
+      setTimeout(closeUserModal,450);
+    }
+  </script>
+
+<script>
+  /* Bilingual UI layer.
+     The learning conversation itself intentionally remains in English. */
+  const uiTranslations = {
+    "English Tutor · SaaS Prototype":"English Tutor · SaaS 原型",
+    "Interactive UI · User + Admin · Responsive":"可交互 UI 稿 · 用户端 + 管理端 · 响应式",
+    "Login / Sign up":"登录/注册",
+    "Learner":"普通用户",
+    "Admin":"管理员",
+    "Interactive UI · User + Admin · Responsive":"可交互 UI 稿 · 用户端 + 管理端 · 响应式",
+    "登录/注册":"登录/注册",
+    "普通用户":"普通用户",
+    "管理员":"管理员",
+    "Desktop":"桌面",
+    "Mobile":"手机",
+    "Your personal AI speaking coach":"你的专属 AI 口语教练",
+    "Speak more. Think less.":"多开口，少犹豫。",
+    "Practice the English you actually need.":"练习真正用得上的英语。",
+    "Short, focused sessions for workplace meetings, speaking confidence and natural expression — with immediate correction after every turn.":"针对职场会议、口语自信和自然表达的短时高效练习；每轮回答后立即获得纠正。",
+    "Daily practice plan":"每日练习计划",
+    "Instant correction":"即时纠错",
+    "Learning memory":"学习记忆",
+    "Progress tracking":"进度追踪",
+    "English Tutor Agent · SaaS Edition":"English Tutor Agent · SaaS 版",
+    "Welcome back":"欢迎回来",
+    "Sign in to continue":"登录后继续学习",
+    "Your learning history and daily quota are tied to your email account.":"你的学习记录和每日额度都会绑定到邮箱账号。",
+    "Email":"邮箱",
+    "Password":"密码",
+    "Keep me signed in":"保持登录",
+    "Forgot password?":"忘记密码？",
+    "Sign in":"登录",
+    "or":"或",
+    "New to English Tutor?":"第一次使用 English Tutor？",
+    "Create an account":"创建账号",
+    "Create your account":"创建你的账号",
+    "Start learning today":"今天就开始学习",
+    "Your email is your unique account identifier. We’ll keep all learning data private to your account.":"邮箱将作为你的唯一账号标识；所有学习数据仅归属于你的账号。",
+    "Confirm password":"确认密码",
+    "Create account":"创建账号",
+    "Already have an account?":"已经有账号？",
+    "Personal AI coach":"专属 AI 教练",
+    "Learn":"学习",
+    "Today":"今日",
+    "Practice":"练习",
+    "History":"历史",
+    "Progress":"进度",
+    "Account":"账号",
+    "Account & quota":"账号与额度",
+    "TODAY'S QUOTA":"今日额度",
+    "18 used":"已用 18",
+    "32 left":"剩余 32",
+    "Free learner":"普通学习用户",
+    "Your daily English practice":"你的每日英语练习",
+    "32 AI requests left":"剩余 32 次 AI 请求",
+    "Friday · Daily coach":"周五 · 每日教练",
+    "Good afternoon, Alex.":"下午好，Alex。",
+    "Your focus today is speaking more smoothly in workplace meetings. Keep your answers short, clear and natural.":"今天重点练习在职场会议中更流畅地表达。回答尽量简短、清晰、自然。",
+    "Start 30-min session":"开始 30 分钟练习",
+    "View today’s plan":"查看今日计划",
+    "Current streak":"连续学习",
+    "12 days":"12 天",
+    "Best streak: 18 days · Keep going":"最佳连续：18 天 · 继续保持",
+    "Today's practice":"今日练习",
+    "18 min":"18 分钟",
+    "Goal: 30 min":"目标：30 分钟",
+    "AI quota used":"AI 额度使用",
+    "32 remaining":"剩余 32",
+    "Speaking turns":"口语轮次",
+    "+4 vs. yesterday":"较昨日 +4",
+    "Corrections":"纠错次数",
+    "2 grammar · 4 naturalness":"2 个语法 · 4 个自然表达",
+    "Today’s learning plan":"今日学习计划",
+    "Three focused activities based on your recent performance.":"根据近期表现生成的 3 项重点练习。",
+    "Adjust plan":"调整计划",
+    "Workplace meeting warm-up":"职场会议热身",
+    "Respond naturally to 6 Singapore-accented prompts":"自然回答 6 个新加坡口音的提示",
+    "10 min":"10 分钟",
+    "Grammar repair":"语法修复",
+    "Practice tense and article errors from your recent sessions":"针对近期练习中的时态和冠词错误进行训练",
+    "8 min":"8 分钟",
+    "IELTS speaking Part 2":"IELTS 口语 Part 2",
+    "One timed response with follow-up correction":"完成一次限时回答，并进行后续纠错",
+    "12 min":"12 分钟",
+    "Daily quota":"每日额度",
+    "Quota resets automatically each day.":"额度每天自动重置。",
+    "50 / day":"每天 50 次",
+    "Used today":"今日已用",
+    "Next reset":"下次重置",
+    "Each successful AI learning request uses 1 quota. Reading history and progress does not consume quota.":"每次成功的 AI 学习请求消耗 1 次额度；查看历史记录和学习进度不消耗额度。",
+    "Live practice":"实时练习",
+    "Workplace meeting · Clarifying a requirement":"职场会议 · 澄清需求",
+    "Speak naturally. Your correction appears after every turn.":"自然表达即可，每轮回答后都会显示纠错。",
+    "Session active":"练习进行中",
+    "Conversation":"对话",
+    "Meeting simulation · Intermediate":"会议模拟 · 中级",
+    "12 min left":"剩余 12 分钟",
+    "Coach":"教练",
+    "You":"你",
+    "Send":"发送",
+    "Your sentence":"你的原句",
+    "Natural expression":"更自然的表达",
+    "Session quota":"本次练习额度",
+    "18 / 50 used":"已用 18 / 50",
+    "Learning history":"学习历史",
+    "Your practice archive":"你的练习记录",
+    "Review previous sessions without consuming quota.":"查看以往练习不会消耗额度。",
+    "Recent sessions":"最近练习",
+    "Past 14 days":"最近 14 天",
+    "Filter":"筛选",
+    "Date":"日期",
+    "Session":"练习",
+    "Duration":"时长",
+    "Turns":"轮次",
+    "Result":"结果",
+    "Workplace meeting":"职场会议",
+    "Completed":"已完成",
+    "Meeting listening":"会议听力",
+    "Your English is becoming easier to access.":"你的英语正在变得越来越“随手可用”。",
+    "Focus on output quality and consistency rather than isolated test scores.":"关注输出质量和持续性，而不只是单次测试分数。",
+    "Speaking confidence":"口语自信",
+    "Improving":"持续提升",
+    "Grammar accuracy":"语法准确率",
+    "+7% this month":"本月 +7%",
+    "+10% this month":"本月 +10%",
+    "Practice consistency":"练习稳定性",
+    "12-day streak":"连续 12 天",
+    "Priority areas":"重点提升方向",
+    "Generated from your recent sessions.":"根据近期练习自动生成。",
+    "Priority 1":"优先级 1",
+    "Articles in spoken English":"口语中的冠词",
+    "You often omit “a / the” when speaking quickly in meetings.":"你在会议中快速表达时，经常遗漏 “a / the”。",
+    "Priority 2":"优先级 2",
+    "Past tense consistency":"过去时一致性",
+    "Your meaning is usually clear, but tense shifts reduce precision.":"你的意思通常很清楚，但时态切换会降低表达准确性。",
+    "Priority 3":"优先级 3",
+    "Shorter meeting answers":"更简洁的会议回答",
+    "Aim for one main idea per sentence before adding detail.":"先确保每句话只表达一个核心观点，再补充细节。",
+    "Account & daily quota":"账号与每日额度",
+    "Your email identifies your account. Learning data is isolated to this account.":"邮箱用于唯一标识账号；学习数据仅属于当前账号。",
+    "Profile":"个人资料",
+    "Active account":"账号正常",
+    "Unique account identifier":"唯一账号标识",
+    "Last changed 32 days ago":"32 天前修改",
+    "Change":"修改",
+    "Daily AI quota":"每日 AI 额度",
+    "Managed by the service administrator":"由系统管理员配置",
+    "Quota reset":"额度重置",
+    "Automatically resets every day":"每天自动重置",
+    "Today's quota":"今日额度",
+    "32 requests remaining":"剩余 32 次请求",
+    "18 of 50 used":"已使用 18 / 50",
+    "Only AI generation actions consume quota. Reading saved lessons, history and progress does not.":"只有 AI 生成类操作会消耗额度；查看已保存课程、历史记录和进度不消耗额度。",
+    "Admin Console":"管理后台",
+    "Operations":"运营管理",
+    "Overview":"概览",
+    "Users":"用户",
+    "AI Providers":"AI 服务商",
+    "System":"系统",
+    "System settings":"系统设置",
+    "Audit log":"审计日志",
+    "Administrator":"管理员",
+    "SaaS operations & configuration":"SaaS 运营与配置",
+    "System healthy":"系统正常",
+    "Admin account":"管理员账号",
+    "Healthy":"正常",
+    "SaaS operations":"SaaS 运营",
+    "Good afternoon, Admin.":"下午好，管理员。",
+    "Monitor users, quota usage and provider health from one place.":"统一查看用户、额度使用情况和 AI 服务商状态。",
+    "Manage users":"管理用户",
+    "Total users":"用户总数",
+    "+36 this week":"本周 +36",
+    "Active today":"今日活跃",
+    "38.6% of users":"占全部用户 38.6%",
+    "AI requests today":"今日 AI 请求",
+    "Avg. 18.2 / active user":"活跃用户平均 18.2 次",
+    "Quota-limited users":"额度已用完用户",
+    "5.6% of active users":"占活跃用户 5.6%",
+    "AI requests · last 7 days":"AI 请求 · 最近 7 天",
+    "Business requests, not raw model tokens.":"按业务请求次数统计，不按模型 Token 统计。",
+    "View usage report":"查看使用报告",
+    "Total requests":"总请求数",
+    "Sat":"周六",
+    "Sun":"周日",
+    "Mon":"周一",
+    "Tue":"周二",
+    "Wed":"周三",
+    "Thu":"周四",
+    "Fri":"周五",
+    "Provider health":"服务商状态",
+    "Runtime AI configuration.":"运行时 AI 配置。",
+    "Configure":"配置",
+    "Default · gpt-5-mini":"默认 · gpt-5-mini",
+    "Fallback · deepseek-chat":"备用 · deepseek-chat",
+    "Disabled":"已禁用",
+    "No provider incidents":"服务商均正常",
+    "User management":"用户管理",
+    "Search accounts, manage status and adjust daily quota.":"搜索账号、管理用户状态并调整每日额度。",
+    "Invite user":"邀请用户",
+    "All users":"全部用户",
+    "1,248 accounts · Email is the unique account identifier":"1,248 个账号 · 邮箱是唯一账号标识",
+    "Status: All":"状态：全部",
+    "Export":"导出",
+    "User":"用户",
+    "Role":"角色",
+    "Status":"状态",
+    "Last active":"最近活跃",
+    "USER":"普通用户",
+    "ACTIVE":"正常",
+    "DISABLED":"已禁用",
+    "Yesterday":"昨天",
+    "Unlimited":"不限额",
+    "Manage":"管理",
+    "Runtime configuration":"运行时配置",
+    "Manage models and API credentials without rebuilding or redeploying the application.":"无需重新构建或部署，即可管理模型和 API 凭证。",
+    "Add provider":"添加服务商",
+    "Configured providers":"已配置服务商",
+    "API keys are masked after saving and never returned in full.":"API Key 保存后仅显示掩码，不会再次完整返回。",
+    "Default":"默认",
+    "Primary conversational provider":"主要对话服务商",
+    "Model":"模型",
+    "API key":"API Key",
+    "Replace":"替换",
+    "Enabled":"启用",
+    "Set default":"设为默认",
+    "Fallback / cost-optimized provider":"备用 / 成本优化服务商",
+    "Optional multimodal provider":"可选多模态服务商",
+    "System configuration":"系统配置",
+    "Central SaaS defaults. User-specific overrides take precedence where supported.":"统一配置 SaaS 默认值；支持时，用户级单独配置优先。",
+    "Save changes":"保存修改",
+    "SaaS defaults":"SaaS 默认设置",
+    "Changes affect runtime behavior without a Jenkins rebuild.":"配置会直接影响运行时行为，无需重新执行 Jenkins 构建。",
+    "Default daily quota":"默认每日额度",
+    "Applied to users without an individual quota override.":"适用于未设置个人额度的用户。",
+    "Quota reset timezone":"额度重置时区",
+    "Defines when a new daily quota period begins.":"用于确定每日额度周期从何时开始。",
+    "Public registration":"开放注册",
+    "When disabled, new users cannot self-register.":"关闭后，新用户无法自行注册。",
+    "Email verification":"邮箱验证",
+    "Require users to verify their email before AI learning requests.":"用户必须验证邮箱后才能发起 AI 学习请求。",
+    "Current policy":"当前策略",
+    "Quota precedence":"额度优先级",
+    "User override":"用户单独配置",
+    "Explicit admin-set daily quota":"管理员为该用户单独设置的每日额度",
+    "Global default":"全局默认",
+    "Used when no override exists":"用户没有单独配置时使用",
+    "Temporary bonus":"临时加额",
+    "Applies only to the current quota period":"仅在当前额度周期内有效",
+    "Security & operations":"安全与运营",
+    "Sensitive administrative actions are recorded without storing passwords or API keys.":"记录敏感管理操作，但不会保存密码或 API Key。",
+    "Export log":"导出日志",
+    "Recent actions":"最近操作",
+    "Administrator activity":"管理员操作记录",
+    "Quota reset":"额度重置",
+    "Provider credential replaced":"服务商凭证已替换",
+    "User disabled":"用户已禁用",
+    "System setting changed":"系统设置已修改",
+    "Providers":"服务商",
+    "Settings":"设置",
+    "Audit":"审计",
+    "Manage user":"管理用户",
+    "Daily quota override":"每日额度单独配置",
+    "USED TODAY":"今日已用",
+    "DAILY QUOTA":"每日额度",
+    "REMAINING":"剩余",
+    "Reset today":"重置今日额度",
+    "+20 temporary":"+20 临时额度",
+    "Disable user":"禁用用户",
+    "Enable user":"启用用户",
+    "Resetting only changes the current quota period. Updating the daily quota changes the user-specific override for future periods.":"重置仅影响当前额度周期；修改每日额度会更新该用户后续周期的单独额度设置。",
+    "Cancel":"取消",
+    "2 min ago":"2 分钟前",
+    "8 min ago":"8 分钟前",
+    "14 min ago":"14 分钟前",
+    "1 hr ago":"1 小时前",
+    "26 min ago":"26 分钟前",
+    "1 hr ago":"1 小时前"
+  };
+
+  const placeholderTranslations = {
+    "you@example.com":"you@example.com",
+    "••••••••":"••••••••",
+    "At least 8 characters":"至少 8 个字符",
+    "Repeat password":"再次输入密码",
+    "Type your answer, or use voice input in the app...":"输入你的回答，或在 App 中使用语音输入……",
+    "Search email or user ID...":"搜索邮箱或用户 ID……"
+  };
+
+  const reverseUiTranslations = Object.fromEntries(
+    Object.entries(uiTranslations).map(([en, zh]) => [zh, en])
+  );
+
+  let currentUiLanguage = "zh";
+  const originalText = new WeakMap();
+  const originalPlaceholder = new WeakMap();
+
+  function translateTextNode(node, lang){
+    if(!originalText.has(node)) originalText.set(node, node.nodeValue);
+    const original = originalText.get(node);
+    const trimmed = original.trim();
+    if(!trimmed) return;
+
+    const prefix = original.match(/^\s*/)?.[0] || "";
+    const suffix = original.match(/\s*$/)?.[0] || "";
+    if(lang === "zh" && uiTranslations[trimmed]){
+      node.nodeValue = prefix + uiTranslations[trimmed] + suffix;
+    } else if(lang === "en" && reverseUiTranslations[trimmed]){
+      node.nodeValue = prefix + reverseUiTranslations[trimmed] + suffix;
+    } else {
+      node.nodeValue = original;
+    }
+  }
+
+  function applyLanguage(lang){
+    currentUiLanguage = lang;
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while(walker.nextNode()) {
+      const node = walker.currentNode;
+      if(["SCRIPT","STYLE"].includes(node.parentElement?.tagName)) continue;
+      nodes.push(node);
+    }
+    nodes.forEach(node => translateTextNode(node, lang));
+
+    document.querySelectorAll("input[placeholder],textarea[placeholder]").forEach(el=>{
+      if(!originalPlaceholder.has(el)) originalPlaceholder.set(el, el.placeholder);
+      const original = originalPlaceholder.get(el);
+      el.placeholder = lang === "zh" && placeholderTranslations[original]
+        ? placeholderTranslations[original]
+        : original;
+    });
+
+    document.querySelectorAll("#langSeg button").forEach(b=>{
+      b.classList.toggle("active", b.dataset.lang === lang);
+    });
+
+    const desktopBtn = document.querySelector('#deviceSeg button[data-device="desktop"]');
+    const mobileBtn = document.querySelector('#deviceSeg button[data-device="mobile"]');
+    if(desktopBtn) desktopBtn.textContent = lang === "zh" ? "桌面" : "Desktop";
+    if(mobileBtn) mobileBtn.textContent = lang === "zh" ? "手机" : "Mobile";
+
+    localStorage.setItem("english-tutor-prototype-language", lang);
+  }
+
+  document.querySelectorAll("#langSeg button").forEach(btn=>{
+    btn.addEventListener("click",()=>applyLanguage(btn.dataset.lang));
+  });
+
+  // Patch navigation so page titles also honor the active language.
+  const originalNavigateUser = navigateUser;
+  navigateUser = function(page){
+    originalNavigateUser(page);
+    setTimeout(()=>applyLanguage(currentUiLanguage),0);
+  };
+
+  const originalNavigateAdmin = navigateAdmin;
+  navigateAdmin = function(page){
+    originalNavigateAdmin(page);
+    setTimeout(()=>applyLanguage(currentUiLanguage),0);
+  };
+
+  const originalSwitchRole = switchRole;
+  switchRole = function(role){
+    originalSwitchRole(role);
+    setTimeout(()=>applyLanguage(currentUiLanguage),0);
+  };
+
+  // Dynamic modal/status labels.
+  const originalUpdateStatusButton = updateStatusButton;
+  updateStatusButton = function(){
+    originalUpdateStatusButton();
+    if(currentUiLanguage === "zh"){
+      const btn=document.getElementById("statusBtn");
+      btn.textContent=currentUserStatus==="ACTIVE" ? "禁用用户" : "启用用户";
+    }
+  };
+
+
+  const dynamicTranslations = {
+    "Password reset email sent (prototype)":"密码重置邮件已发送（原型）",
+    "Account created (prototype)":"账号创建成功（原型）",
+    "Today’s plan opened":"已打开今日计划",
+    "1 quota consumed · response sent":"已消耗 1 次额度 · 回答已发送",
+    "Invite user flow opened (prototype)":"已打开邀请用户流程（原型）",
+    "New provider form opened":"已打开新增服务商表单",
+    "Settings saved":"设置已保存",
+    "Admin account opened":"已打开管理员账号",
+    "Enabled":"已启用",
+    "Disabled":"已禁用",
+    "Today’s quota reset to 0 used":"今日额度已重置为 0 次使用",
+    "+20 temporary quota added for today":"今日已增加 +20 临时额度",
+    "User quota override saved":"用户每日额度设置已保存"
+  };
+
+  const baseShowToast = showToast;
+  showToast = function(message){
+    const rendered = currentUiLanguage === "zh" && dynamicTranslations[message]
+      ? dynamicTranslations[message]
+      : message;
+    baseShowToast(rendered);
+  };
+
+  const savedLanguage = localStorage.getItem("english-tutor-prototype-language") || "zh";
+  applyLanguage(savedLanguage);
+</script>
+
+</body>
+</html>

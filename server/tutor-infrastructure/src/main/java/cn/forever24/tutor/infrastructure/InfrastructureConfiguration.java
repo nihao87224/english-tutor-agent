@@ -8,12 +8,25 @@ import cn.forever24.tutor.application.assessment.OpenAnswerEvaluator;
 import cn.forever24.tutor.application.conversation.ConversationApplicationService;
 import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
 import cn.forever24.tutor.application.assessment.SelfAssessmentRepository;
+import cn.forever24.tutor.application.auth.AccessTokenIssuer;
+import cn.forever24.tutor.application.auth.AuthApplicationService;
+import cn.forever24.tutor.application.auth.PasswordHasher;
+import cn.forever24.tutor.application.auth.RefreshSessionRepository;
+import cn.forever24.tutor.application.auth.RefreshTokenService;
+import cn.forever24.tutor.application.auth.UserAccountRepository;
 import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.planning.LearningPlanApplicationService;
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
 import cn.forever24.tutor.application.training.TrainingSessionRepository;
+import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
+import cn.forever24.tutor.infrastructure.auth.HmacJwtAccessTokenService;
+import cn.forever24.tutor.infrastructure.auth.InMemoryRefreshSessionRepository;
+import cn.forever24.tutor.infrastructure.auth.InMemoryUserAccountRepository;
+import cn.forever24.tutor.infrastructure.auth.JdbcRefreshSessionRepository;
+import cn.forever24.tutor.infrastructure.auth.JdbcUserAccountRepository;
+import cn.forever24.tutor.infrastructure.auth.Sha256RefreshTokenService;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentAnswerRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentSessionRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemorySelfAssessmentRepository;
@@ -33,9 +46,13 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Clock;
+import java.time.Duration;
 
 @Configuration
 public class InfrastructureConfiguration {
@@ -44,6 +61,74 @@ public class InfrastructureConfiguration {
     @ConditionalOnMissingBean
     public Clock clock() {
         return Clock.systemUTC();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PasswordHasher passwordHasher(PasswordEncoder passwordEncoder) {
+        return new BcryptPasswordHasher(passwordEncoder);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RefreshTokenService refreshTokenService() {
+        return new Sha256RefreshTokenService();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public HmacJwtAccessTokenService accessTokenIssuer(
+            Environment environment,
+            Clock clock,
+            ObjectProvider<ObjectMapper> objectMapperProvider
+    ) {
+        String secret = environment.getProperty("tutor.auth.jwt-signing-secret", "test-only-jwt-signing-secret-change-me-32");
+        Duration ttl = environment.getProperty("tutor.auth.access-token-ttl", Duration.class, Duration.ofMinutes(15));
+        return new HmacJwtAccessTokenService(secret, ttl, clock, objectMapperProvider.getIfAvailable(ObjectMapper::new));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(UserAccountRepository.class)
+    public UserAccountRepository userAccountRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryUserAccountRepository();
+        }
+        return new JdbcUserAccountRepository(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(RefreshSessionRepository.class)
+    public RefreshSessionRepository refreshSessionRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryRefreshSessionRepository();
+        }
+        return new JdbcRefreshSessionRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public AuthApplicationService authApplicationService(
+            UserAccountRepository userAccountRepository,
+            RefreshSessionRepository refreshSessionRepository,
+            PasswordHasher passwordHasher,
+            RefreshTokenService refreshTokenService,
+            AccessTokenIssuer accessTokenIssuer,
+            Clock clock
+    ) {
+        return new AuthApplicationService(
+                userAccountRepository,
+                refreshSessionRepository,
+                passwordHasher,
+                refreshTokenService,
+                accessTokenIssuer,
+                clock);
     }
 
     @Bean

@@ -22,6 +22,7 @@ English Tutor Agent helps learners move beyond one-off grammar correction. It tu
 - Deployment guide: [docs/deploy/PRODUCTION_DEPLOYMENT.md](docs/deploy/PRODUCTION_DEPLOYMENT.md)
 - Product requirements: [docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md](docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md)
 - Architecture docs: [docs/design/00_README.md](docs/design/00_README.md)
+- SaaS Foundation v1.1.0: [docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md](docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md)
 - API contract: [contracts/openapi/english-tutor-api.yaml](contracts/openapi/english-tutor-api.yaml)
 
 > Replace the demo URL after production deployment.
@@ -58,7 +59,7 @@ English Tutor Agent is designed around a learning loop rather than a chat window
 - Try Again loop: feedback leads back to rewritten or retold output.
 - Adaptive daily plans: task focus can change from learning evidence instead of static lessons.
 - Structured AI boundary: provider output is parsed, schema-validated, and business-validated.
-- Fake provider first: local demos and tests can run without paid model keys.
+- OpenAI-backed providers: production runtime uses real LLM, ASR, and TTS integrations configured by environment variables.
 - Contract-first backend: OpenAPI, JSON Schema, Flyway migrations, and validation scripts keep implementation aligned.
 - Production-oriented baseline: Nginx, systemd, environment template, and deployment scripts are included.
 
@@ -81,7 +82,7 @@ The key design choice is separation of responsibility:
 - deterministic rules decide learning priority, due review, state transitions, and persistence;
 - AI providers generate constrained coaching content, analysis, and language feedback;
 - provider-specific SDKs stay behind project-owned interfaces;
-- tests default to fake providers and fixed responses.
+- automated tests use local stubs or fixed responses instead of calling paid model APIs.
 
 ## Architecture
 
@@ -103,7 +104,7 @@ server/
 ├── tutor-domain          domain rules, aggregates, value objects
 ├── tutor-application     use-case orchestration
 ├── tutor-api             HTTP controllers, DTOs, SSE mapping
-├── tutor-agent           AI provider abstraction and fake providers
+├── tutor-agent           AI provider abstraction and OpenAI adapters
 ├── tutor-infrastructure  JDBC repositories, cache, storage adapters
 ├── tutor-observability   tracing, metrics, audit extension points
 └── tutor-bootstrap       Spring Boot entrypoint and Flyway migrations
@@ -115,7 +116,7 @@ Runtime view:
 Browser / Android
       |
       v
-Spring Boot API  -----> AI Provider Interface -----> Fake or real provider
+Spring Boot API  -----> AI Provider Interface -----> OpenAI provider
       |
       +-------------> MySQL + Flyway
       +-------------> Redis
@@ -208,6 +209,7 @@ Start here:
 
 ## Roadmap
 
+- SaaS Foundation: email/password auth, CurrentActor isolation, daily quota, admin console, runtime AI provider configuration, and audit.
 - Voice practice: Android recording, upload, ASR, TTS, low-confidence confirmation.
 - Long-term learning: review scheduler, mastery state, weekly reports.
 - IELTS Speaking: Part 1/2/3 practice, full simulation, rubric-based practice feedback.
@@ -225,6 +227,8 @@ Start here:
 
 - [PRD](docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md)
 - [Design index](docs/design/00_README.md)
+- [SaaS Foundation design v1.1.0](docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md)
+- [SaaS Foundation implementation plan](docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md)
 - [Current task](docs/plans/CURRENT_TASK.md)
 - [Task backlog](docs/plans/TASK_BACKLOG.md)
 - [Definition of Done](docs/process/DEFINITION_OF_DONE.md)

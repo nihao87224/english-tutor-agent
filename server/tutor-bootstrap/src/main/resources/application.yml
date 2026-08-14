@@ -33,6 +33,13 @@ management:
       show-details: when_authorized
 
 tutor:
+  auth:
+    jwt-signing-secret: ${TUTOR_JWT_SIGNING_SECRET}
+    access-token-ttl: ${TUTOR_ACCESS_TOKEN_TTL:15m}
+    bootstrap-admin:
+      enabled: ${TUTOR_BOOTSTRAP_ADMIN_ENABLED:false}
+      email: ${TUTOR_BOOTSTRAP_ADMIN_EMAIL:}
+      password: ${TUTOR_BOOTSTRAP_ADMIN_PASSWORD:}
   ai:
     llm-provider: ${LLM_PROVIDER:openai}
     asr-provider: ${ASR_PROVIDER:openai}
