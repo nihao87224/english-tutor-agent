@@ -4,7 +4,7 @@
 
 ## Task
 
-`DOCS-T07 Dockerized Jenkins Backend Deployment`
+`DOCS-T08 Independent Web Jenkins Docker Deployment`
 
 ## Status
 
@@ -12,57 +12,51 @@
 
 ## Goal
 
-Switch backend production deployment to Docker images built by Jenkins and run on the VPS through Docker Compose, so future work can focus on business code rather than deployment mechanics.
+Add an independent Jenkins pipeline for building and deploying the React/Vite Web frontend as an Nginx Docker container, without changing the existing backend Jenkinsfile or backend deployment logic.
 
 ## Related documents
 
-- `Jenkinsfile`
-- `server/Dockerfile`
-- `.dockerignore`
-- `scripts/deploy/docker-compose.backend.yml`
-- `scripts/deploy/deploy_backend_container_with_jenkins.sh`
-- `scripts/deploy/rollback_backend_container.sh`
-- `scripts/deploy/production.env.example`
-- `docs/deploy/BACKEND_PRODUCTION_DEPLOYMENT.md`
+- `Jenkinsfile.web`
+- `web/Dockerfile`
+- `web/nginx.container.conf`
+- `web/package.json`
+- `web/pnpm-lock.yaml`
 - `docs/process/DEFINITION_OF_DONE.md`
 
 ## In Scope
 
-- Add a backend Docker image definition.
-- Add Docker build context exclusions.
-- Add a production Docker Compose backend service.
-- Update Jenkins to build and deploy backend Docker images.
-- Add controlled container deploy and rollback scripts.
-- Rewrite backend deployment documentation around Docker Compose.
+- Add a multi-stage Web Dockerfile using Node 22, pnpm 11.16.0, `pnpm test` and a same-origin production build.
+- Add an Nginx container config listening on `18082`, serving the SPA and proxying `/api/` and `/actuator/` to the backend on host loopback.
+- Add an independent Web Jenkins pipeline that builds, deploys, health-checks and rolls back the `english-tutor-web` container.
 - Update changelog and task record.
 
 ## Out of Scope
 
-- Changing backend, Web or Android implementation code.
-- Deploying Jenkins or the backend from this local machine.
-- Frontend containerization.
-- Adding a remote container registry flow.
-- Storing production secrets in the repository or Docker image.
+- Changing Web business code.
+- Changing the existing backend `Jenkinsfile`.
+- Changing backend deployment logic.
+- Adding a remote image registry flow.
+- Deploying Jenkins or containers from this local machine.
 - Committing or pushing unless separately requested.
 
 ## Acceptance Criteria
 
-1. Jenkins builds a backend Docker image after backend verification.
-2. Backend production runtime is described as Docker Compose, not Jar + systemd.
-3. Production secrets remain outside Git and outside Docker image layers.
-4. Deployment and rollback scripts use fixed `/opt/english-tutor-agent` conventions and validate inputs.
-5. Documentation explains VPS setup, Jenkins setup, daily deployment, rollback and security risks.
-6. Documentation and static checks pass.
+1. Web Docker image build runs `pnpm install --frozen-lockfile`, `pnpm test` and `VITE_API_BASE_URL="" pnpm run build`.
+2. Runtime image uses `nginx:alpine` and serves `dist` from the Nginx static directory.
+3. Container Nginx listens on `18082`, supports SPA fallback and proxies `/api/` plus `/actuator/`.
+4. SSE proxying disables buffering.
+5. `Jenkinsfile.web` is independent, uses commit SHA plus UTC timestamp image tags and deploys `english-tutor-web` with `--restart unless-stopped --network host`.
+6. Deployment checks `/` and `/actuator/health`, and restores the previous image when startup or health checks fail.
+7. Existing backend deployment files are not modified.
 
 ## Verification Record
 
-- Temporary validation venv with `scripts\requirements-ci.txt`: `scripts\validate_project.py` - PASS.
-- Docker Compose backend YAML parse with PyYAML - PASS.
-- Static secret scan for Jenkins, Docker, deployment scripts and docs - PASS.
-- Static checks for Dockerfile, Compose health check, Jenkins Docker build stage and LF-only deployment files - PASS.
-- `git diff --check` - PASS. Only Git line-ending conversion warnings were reported.
-- Local `docker build`, `docker compose config`, `bash -n` and `shellcheck` were not run because this Windows environment has no Docker, bash or shellcheck; verify on the VPS/Jenkins Linux runtime during first setup.
+- `pnpm test` from `web/` - PASS.
+- `VITE_API_BASE_URL="" pnpm run build` from `web/` - PASS.
+- Static checks for Web Dockerfile, Nginx proxy/SSE config and Web Jenkins rollback flow - PASS.
+- `git diff --check` - PASS.
+- Local `docker build` was not run because Docker is not available in this Windows environment; verify the full image build and deploy flow on the Jenkins Linux runtime.
 
 ## Review Status
 
-Completed for Dockerized Jenkins backend deployment files and documentation.
+Completed for independent Web Jenkins Docker deployment files and task documentation.

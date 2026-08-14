@@ -1,0 +1,169 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  environment {
+    WEB_CONTAINER_NAME = 'english-tutor-web'
+    WEB_IMAGE_REPOSITORY = 'english-tutor-agent-web'
+    WEB_RELEASE_METADATA_DIR = '.jenkins-web-release'
+    WEB_ROOT_URL = 'http://127.0.0.1:18082/'
+    WEB_HEALTH_URL = 'http://127.0.0.1:18082/actuator/health'
+  }
+
+  stages {
+    stage('Validate Workspace') {
+      steps {
+        sh '''
+          set -euo pipefail
+          echo "[validate] Checking required Web deployment inputs"
+          docker version
+          test -f web/package.json
+          test -f web/pnpm-lock.yaml
+          test -f web/pnpm-workspace.yaml
+          test -f web/Dockerfile
+          test -f web/nginx.container.conf
+          grep -q '"packageManager": "pnpm@11.16.0"' web/package.json
+          grep -q '"build": "tsc -b && vite build"' web/package.json
+          echo "[validate] Workspace is ready"
+        '''
+      }
+    }
+
+    stage('Build Web Docker Image') {
+      steps {
+        sh '''
+          set -euo pipefail
+          rm -rf "$WEB_RELEASE_METADATA_DIR"
+          mkdir -p "$WEB_RELEASE_METADATA_DIR"
+
+          commit_sha="$(git rev-parse --short=12 HEAD)"
+          build_timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          web_image="${WEB_IMAGE_REPOSITORY}:${commit_sha}-${build_timestamp}"
+
+          echo "$web_image" > "$WEB_RELEASE_METADATA_DIR/web_image"
+          echo "$commit_sha" > "$WEB_RELEASE_METADATA_DIR/commit_sha"
+          echo "$build_timestamp" > "$WEB_RELEASE_METADATA_DIR/build_timestamp"
+
+          echo "[build] Building Web image: $web_image"
+          docker build -f web/Dockerfile -t "$web_image" web
+          echo "[build] Built Web image: $web_image"
+        '''
+      }
+    }
+
+    stage('Deploy Web Container') {
+      steps {
+        sh '''
+          set -euo pipefail
+
+          web_image="$(cat "$WEB_RELEASE_METADATA_DIR/web_image")"
+          previous_image="$(docker inspect -f '{{.Config.Image}}' "$WEB_CONTAINER_NAME" 2>/dev/null || true)"
+
+          echo "$previous_image" > "$WEB_RELEASE_METADATA_DIR/previous_image"
+          echo "[deploy] New image: $web_image"
+          if [ -n "$previous_image" ]; then
+            echo "[deploy] Previous image: $previous_image"
+          else
+            echo "[deploy] No previous Web container found"
+          fi
+
+          check_url() {
+            url="$1"
+            label="$2"
+            attempts="${3:-30}"
+            delay_seconds="${4:-2}"
+
+            echo "[check] Waiting for $label at $url"
+            for attempt in $(seq 1 "$attempts"); do
+              if curl -fsS "$url" >/dev/null; then
+                echo "[check] $label is reachable on attempt $attempt"
+                return 0
+              fi
+              echo "[check] $label is not ready yet (attempt $attempt/$attempts)"
+              sleep "$delay_seconds"
+            done
+
+            echo "[check] $label failed after $attempts attempts"
+            return 1
+          }
+
+          start_container() {
+            image="$1"
+            echo "[deploy] Starting $WEB_CONTAINER_NAME from $image"
+            docker rm -f "$WEB_CONTAINER_NAME" >/dev/null 2>&1 || true
+            docker run -d \
+              --name "$WEB_CONTAINER_NAME" \
+              --restart unless-stopped \
+              --network host \
+              "$image"
+
+            running_state="$(docker inspect -f '{{.State.Running}}' "$WEB_CONTAINER_NAME")"
+            if [ "$running_state" != "true" ]; then
+              echo "[deploy] Container did not stay running"
+              docker logs --tail=200 "$WEB_CONTAINER_NAME" || true
+              return 1
+            fi
+          }
+
+          rollback_to_previous() {
+            if [ -z "$previous_image" ]; then
+              echo "[rollback] No previous image is available"
+              return 1
+            fi
+
+            echo "[rollback] Restoring previous image: $previous_image"
+            start_container "$previous_image"
+            check_url "$WEB_ROOT_URL" "rollback Web root" 30 2
+            check_url "$WEB_HEALTH_URL" "rollback backend health proxy" 30 2
+            echo "[rollback] Previous Web image restored"
+          }
+
+          if ! start_container "$web_image"; then
+            echo "[deploy] New Web container failed to start"
+            rollback_to_previous
+            exit 1
+          fi
+
+          if ! check_url "$WEB_ROOT_URL" "Web root" 30 2 || ! check_url "$WEB_HEALTH_URL" "backend health proxy" 30 2; then
+            echo "[deploy] New Web health checks failed"
+            docker logs --tail=200 "$WEB_CONTAINER_NAME" || true
+            rollback_to_previous
+            exit 1
+          fi
+
+          echo "[deploy] Web deployment succeeded: $web_image"
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: '.jenkins-web-release/*', allowEmptyArchive: true
+    }
+    success {
+      sh '''
+        if [ -f "$WEB_RELEASE_METADATA_DIR/web_image" ]; then
+          echo "Web deployment succeeded: $(cat "$WEB_RELEASE_METADATA_DIR/web_image")"
+        fi
+      '''
+    }
+    failure {
+      sh '''
+        set +e
+        echo "Web deployment failed. Check Jenkins console output and docker logs for english-tutor-web."
+        if [ -f "$WEB_RELEASE_METADATA_DIR/previous_image" ]; then
+          previous_image="$(cat "$WEB_RELEASE_METADATA_DIR/previous_image")"
+          if [ -n "$previous_image" ]; then
+            echo "Previous image recorded before deploy: $previous_image"
+          fi
+        fi
+      '''
+    }
+  }
+}

@@ -23,6 +23,7 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added an independent Web Jenkins pipeline, multi-stage Web Docker image and container Nginx config for same-origin `/api` production deployment.
 - Added a backend Dockerfile, Docker Compose production backend service, Jenkins image pipeline, controlled container deploy script and container rollback script.
 - Added a Chinese root README for Chinese-speaking users and linked it from the English README.
 - Added a Chinese backend-only production deployment guide with step-by-step commands, environment placeholders, systemd setup, health checks, rollback and troubleshooting.
