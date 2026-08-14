@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.profile;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -16,12 +17,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class ProfileController {
 
-    private static final String DEFAULT_USER_KEY = "local-dev-user";
-
     private final OnboardingApplicationService onboardingApplicationService;
+    private final CurrentUserKeyResolver currentUserKeyResolver;
 
-    public ProfileController(OnboardingApplicationService onboardingApplicationService) {
+    public ProfileController(
+            OnboardingApplicationService onboardingApplicationService,
+            CurrentUserKeyResolver currentUserKeyResolver
+    ) {
         this.onboardingApplicationService = onboardingApplicationService;
+        this.currentUserKeyResolver = currentUserKeyResolver;
     }
 
     @PutMapping("/profile/primary-goal")
@@ -33,7 +37,7 @@ public class ProfileController {
             throw new IllegalArgumentException("request body is required");
         }
         return ProfileSummaryResponse.from(onboardingApplicationService.savePrimaryGoal(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 request.goal()));
     }
 
@@ -46,7 +50,7 @@ public class ProfileController {
             throw new IllegalArgumentException("request body is required");
         }
         return ProfileSummaryResponse.from(onboardingApplicationService.savePreferences(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 request.dailyMinutes(),
                 request.correctionStyle(),
                 request.reminderEnabled(),
@@ -58,14 +62,14 @@ public class ProfileController {
     public OnboardingProgressResponse getOnboardingProgress(
             @RequestHeader(name = "X-User-Key", required = false) String userKey
     ) {
-        return OnboardingProgressResponse.from(onboardingApplicationService.getProgress(resolveUserKey(userKey)));
+        return OnboardingProgressResponse.from(onboardingApplicationService.getProgress(currentUserKeyResolver.resolve(userKey)));
     }
 
     @GetMapping("/settings/privacy")
     public PrivacySettingsResponse getPrivacySettings(
             @RequestHeader(name = "X-User-Key", required = false) String userKey
     ) {
-        return PrivacySettingsResponse.from(onboardingApplicationService.getPrivacySettings(resolveUserKey(userKey)));
+        return PrivacySettingsResponse.from(onboardingApplicationService.getPrivacySettings(currentUserKeyResolver.resolve(userKey)));
     }
 
     @PutMapping("/settings/privacy")
@@ -77,7 +81,7 @@ public class ProfileController {
             throw new IllegalArgumentException("request body is required");
         }
         return PrivacySettingsResponse.from(onboardingApplicationService.savePrivacySettings(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 request.saveRawText(),
                 request.saveRawAudio(),
                 request.rawAudioRetentionDays()));
@@ -88,12 +92,5 @@ public class ProfileController {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
         problem.setTitle("Invalid onboarding request");
         return ResponseEntity.badRequest().body(problem);
-    }
-
-    private String resolveUserKey(String userKey) {
-        if (userKey == null || userKey.isBlank()) {
-            return DEFAULT_USER_KEY;
-        }
-        return userKey;
     }
 }

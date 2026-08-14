@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.training;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
 import cn.forever24.tutor.training.TaskAttemptInputType;
 import cn.forever24.tutor.training.TrainingSessionMode;
@@ -19,12 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class TrainingSessionController {
 
-    private static final String DEFAULT_USER_KEY = "local-dev-user";
-
     private final TrainingSessionApplicationService trainingSessionApplicationService;
+    private final CurrentUserKeyResolver currentUserKeyResolver;
 
-    public TrainingSessionController(TrainingSessionApplicationService trainingSessionApplicationService) {
+    public TrainingSessionController(
+            TrainingSessionApplicationService trainingSessionApplicationService,
+            CurrentUserKeyResolver currentUserKeyResolver
+    ) {
         this.trainingSessionApplicationService = trainingSessionApplicationService;
+        this.currentUserKeyResolver = currentUserKeyResolver;
     }
 
     @PostMapping("/training-sessions")
@@ -35,7 +39,7 @@ public class TrainingSessionController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(TrainingSessionResponse.from(
                 trainingSessionApplicationService.startDailySession(
-                        resolveUserKey(userKey),
+                        currentUserKeyResolver.resolve(userKey),
                         request == null ? null : request.planId(),
                         parseMode(request == null ? null : request.mode()),
                         idempotencyKey)));
@@ -47,7 +51,7 @@ public class TrainingSessionController {
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionResponse.from(
-                trainingSessionApplicationService.getSession(resolveUserKey(userKey), sessionId));
+                trainingSessionApplicationService.getSession(currentUserKeyResolver.resolve(userKey), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/pause")
@@ -56,7 +60,7 @@ public class TrainingSessionController {
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionResponse.from(
-                trainingSessionApplicationService.pause(resolveUserKey(userKey), sessionId));
+                trainingSessionApplicationService.pause(currentUserKeyResolver.resolve(userKey), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/resume")
@@ -65,7 +69,7 @@ public class TrainingSessionController {
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionResponse.from(
-                trainingSessionApplicationService.resume(resolveUserKey(userKey), sessionId));
+                trainingSessionApplicationService.resume(currentUserKeyResolver.resolve(userKey), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/complete")
@@ -74,7 +78,7 @@ public class TrainingSessionController {
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionCompletionResponse.from(
-                trainingSessionApplicationService.complete(resolveUserKey(userKey), sessionId));
+                trainingSessionApplicationService.complete(currentUserKeyResolver.resolve(userKey), sessionId));
     }
 
     @GetMapping("/training-sessions/{sessionId}/current-task")
@@ -83,7 +87,7 @@ public class TrainingSessionController {
             @PathVariable("sessionId") String sessionId
     ) {
         return CurrentTrainingTaskResponse.from(
-                trainingSessionApplicationService.getCurrentTask(resolveUserKey(userKey), sessionId));
+                trainingSessionApplicationService.getCurrentTask(currentUserKeyResolver.resolve(userKey), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/tasks/{taskId}/attempts")
@@ -96,7 +100,7 @@ public class TrainingSessionController {
     ) {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(TaskAttemptReceiptResponse.from(
                 trainingSessionApplicationService.submitTaskAttempt(
-                        resolveUserKey(userKey),
+                        currentUserKeyResolver.resolve(userKey),
                         sessionId,
                         taskId,
                         parseInputType(request == null ? null : request.inputType()),
@@ -127,12 +131,5 @@ public class TrainingSessionController {
             throw new IllegalArgumentException("inputType is required");
         }
         return TaskAttemptInputType.valueOf(inputType);
-    }
-
-    private String resolveUserKey(String userKey) {
-        if (userKey == null || userKey.isBlank()) {
-            return DEFAULT_USER_KEY;
-        }
-        return userKey;
     }
 }

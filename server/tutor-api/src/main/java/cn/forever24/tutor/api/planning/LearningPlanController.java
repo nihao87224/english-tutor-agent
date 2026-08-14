@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.planning;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.planning.LearningPlanApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -14,19 +15,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class LearningPlanController {
 
-    private static final String DEFAULT_USER_KEY = "local-dev-user";
-
     private final LearningPlanApplicationService learningPlanApplicationService;
+    private final CurrentUserKeyResolver currentUserKeyResolver;
 
-    public LearningPlanController(LearningPlanApplicationService learningPlanApplicationService) {
+    public LearningPlanController(
+            LearningPlanApplicationService learningPlanApplicationService,
+            CurrentUserKeyResolver currentUserKeyResolver
+    ) {
         this.learningPlanApplicationService = learningPlanApplicationService;
+        this.currentUserKeyResolver = currentUserKeyResolver;
     }
 
     @GetMapping("/plans/today")
     public LearningPlanResponse getTodayPlan(
             @RequestHeader(name = "X-User-Key", required = false) String userKey
     ) {
-        return LearningPlanResponse.from(learningPlanApplicationService.getTodayPlan(resolveUserKey(userKey)));
+        return LearningPlanResponse.from(learningPlanApplicationService.getTodayPlan(currentUserKeyResolver.resolve(userKey)));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -34,12 +38,5 @@ public class LearningPlanController {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
         problem.setTitle("Invalid learning plan request");
         return ResponseEntity.badRequest().body(problem);
-    }
-
-    private String resolveUserKey(String userKey) {
-        if (userKey == null || userKey.isBlank()) {
-            return DEFAULT_USER_KEY;
-        }
-        return userKey;
     }
 }

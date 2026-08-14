@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.training;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
 import cn.forever24.tutor.application.training.TrainingSessionCompletion;
@@ -42,7 +43,8 @@ class TrainingSessionControllerTest {
                     new ReadyProfileRepository(),
                     new FakeLearningPlanRepository(),
                     new FakeTrainingSessionRepository(),
-                    Clock.fixed(Instant.parse("2026-08-10T08:00:00Z"), ZoneOffset.UTC)));
+                    Clock.fixed(Instant.parse("2026-08-10T08:00:00Z"), ZoneOffset.UTC)),
+            CurrentUserKeyResolver.legacyOnly());
 
     @Test
     void startsAndMovesTrainingSessionThroughLifecycle() {

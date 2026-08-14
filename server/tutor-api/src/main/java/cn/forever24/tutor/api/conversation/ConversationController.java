@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.conversation;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.conversation.ConversationApplicationService;
 import cn.forever24.tutor.application.conversation.ConversationMessageType;
 import cn.forever24.tutor.application.conversation.ConversationStreamEvent;
@@ -26,12 +27,15 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1")
 public class ConversationController {
 
-    private static final String DEFAULT_USER_KEY = "local-dev-user";
-
     private final ConversationApplicationService conversationApplicationService;
+    private final CurrentUserKeyResolver currentUserKeyResolver;
 
-    public ConversationController(ConversationApplicationService conversationApplicationService) {
+    public ConversationController(
+            ConversationApplicationService conversationApplicationService,
+            CurrentUserKeyResolver currentUserKeyResolver
+    ) {
         this.conversationApplicationService = conversationApplicationService;
+        this.currentUserKeyResolver = currentUserKeyResolver;
     }
 
     @PostMapping(
@@ -45,7 +49,7 @@ public class ConversationController {
     ) {
         List<ConversationStreamEvent> events = conversationApplicationService.streamMessage(
                 new ConversationStreamRequest(
-                        resolveUserKey(userKey),
+                        currentUserKeyResolver.resolve(userKey),
                         sessionId,
                         parseMessageType(request == null ? null : request.messageType()),
                         request == null ? null : request.text(),
@@ -115,12 +119,5 @@ public class ConversationController {
             throw new IllegalArgumentException("messageType is required");
         }
         return ConversationMessageType.valueOf(messageType);
-    }
-
-    private String resolveUserKey(String userKey) {
-        if (userKey == null || userKey.isBlank()) {
-            return DEFAULT_USER_KEY;
-        }
-        return userKey;
     }
 }

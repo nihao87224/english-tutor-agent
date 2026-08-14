@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.assessment;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.assessment.AssessmentApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -18,12 +19,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class AssessmentController {
 
-    private static final String DEFAULT_USER_KEY = "local-dev-user";
-
     private final AssessmentApplicationService assessmentApplicationService;
+    private final CurrentUserKeyResolver currentUserKeyResolver;
 
-    public AssessmentController(AssessmentApplicationService assessmentApplicationService) {
+    public AssessmentController(
+            AssessmentApplicationService assessmentApplicationService,
+            CurrentUserKeyResolver currentUserKeyResolver
+    ) {
         this.assessmentApplicationService = assessmentApplicationService;
+        this.currentUserKeyResolver = currentUserKeyResolver;
     }
 
     @PostMapping("/assessments")
@@ -34,7 +38,7 @@ public class AssessmentController {
     ) {
         Integer targetMinutes = request == null ? null : request.targetMinutes();
         return AssessmentSessionResponse.from(assessmentApplicationService.startInitialAssessment(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 targetMinutes));
     }
 
@@ -48,7 +52,7 @@ public class AssessmentController {
             throw new IllegalArgumentException("request body is required");
         }
         return AnswerReceiptResponse.from(assessmentApplicationService.submitAssessmentAnswer(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 assessmentId,
                 request.itemId(),
                 request.answerType(),
@@ -64,7 +68,7 @@ public class AssessmentController {
             @PathVariable("assessmentId") String assessmentId
     ) {
         return AssessmentCompletionResponse.from(assessmentApplicationService.completeAssessment(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 assessmentId));
     }
 
@@ -74,7 +78,7 @@ public class AssessmentController {
             @PathVariable("assessmentId") String assessmentId
     ) {
         return AssessmentResultResponse.from(assessmentApplicationService.getAssessmentResult(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 assessmentId));
     }
 
@@ -88,7 +92,7 @@ public class AssessmentController {
             throw new IllegalArgumentException("request body is required");
         }
         return SelfAssessmentResponse.from(assessmentApplicationService.submitSelfAssessment(
-                resolveUserKey(userKey),
+                currentUserKeyResolver.resolve(userKey),
                 request.listening(),
                 request.speaking(),
                 request.reading(),
@@ -100,12 +104,5 @@ public class AssessmentController {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
         problem.setTitle("Invalid assessment request");
         return ResponseEntity.badRequest().body(problem);
-    }
-
-    private String resolveUserKey(String userKey) {
-        if (userKey == null || userKey.isBlank()) {
-            return DEFAULT_USER_KEY;
-        }
-        return userKey;
     }
 }

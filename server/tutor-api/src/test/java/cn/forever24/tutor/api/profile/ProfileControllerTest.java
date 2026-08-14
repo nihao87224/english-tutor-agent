@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.profile;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.profile.CorrectionStyle;
@@ -23,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class ProfileControllerTest {
 
     private final ProfileController controller = new ProfileController(
-            new OnboardingApplicationService(new FakeUserProfileRepository()));
+            new OnboardingApplicationService(new FakeUserProfileRepository()),
+            CurrentUserKeyResolver.legacyOnly());
 
     @Test
     void savesPrimaryGoalAndRestoresProgress() {

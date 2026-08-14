@@ -1,5 +1,6 @@
 package cn.forever24.tutor.api.assessment;
 
+import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.assessment.AssessmentApplicationService;
 import cn.forever24.tutor.application.assessment.AssessmentResultRepository;
 import cn.forever24.tutor.application.assessment.AssessmentAnswerRepository;
@@ -44,7 +45,8 @@ class AssessmentControllerTest {
                     new FakeAssessmentSessionRepository(),
                     new FakeAssessmentAnswerRepository(),
                     new FakeAssessmentResultRepository(),
-                    new StubOpenAnswerEvaluator()));
+                    new StubOpenAnswerEvaluator()),
+            CurrentUserKeyResolver.legacyOnly());
 
     @Test
     void submitsSelfAssessment() {
