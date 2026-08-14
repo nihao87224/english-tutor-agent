@@ -87,7 +87,7 @@
 ## 7. AI feature rules
 
 - Prompt 必须版本化。
-- 测试默认使用 Fake Provider 或固定响应。
+- 测试默认使用本地 stub、mocked transport 或固定响应，不调用真实付费模型。
 - 不在单元测试中依赖真实付费模型。
 - Provider 输出先解析，再 Schema 校验，再业务校验。
 - AI 失败不得导致已完成的用户学习进度丢失。

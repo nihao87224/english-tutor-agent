@@ -44,7 +44,7 @@ class AssessmentControllerTest {
                     new FakeAssessmentSessionRepository(),
                     new FakeAssessmentAnswerRepository(),
                     new FakeAssessmentResultRepository(),
-                    new FakeOpenAnswerEvaluator()));
+                    new StubOpenAnswerEvaluator()));
 
     @Test
     void submitsSelfAssessment() {
@@ -190,7 +190,7 @@ class AssessmentControllerTest {
         }
     }
 
-    private static final class FakeOpenAnswerEvaluator implements OpenAnswerEvaluator {
+    private static final class StubOpenAnswerEvaluator implements OpenAnswerEvaluator {
 
         @Override
         public String promptVersion() {

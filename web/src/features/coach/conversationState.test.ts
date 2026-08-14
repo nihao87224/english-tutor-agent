@@ -44,8 +44,8 @@ describe("conversationState", () => {
         promptVersion: "p1",
         schemaVersion: "s1",
         traceId: "t1",
-        providerId: "fake",
-        modelId: "fake",
+        providerId: "openai",
+        modelId: "test-chat-model",
       },
     });
 

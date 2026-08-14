@@ -1,6 +1,6 @@
 # ADR-0010：M0/M1 优先使用 Fake Provider
 
-状态：Accepted
+状态：Superseded by ADR-0013
 
 ## Decision
 

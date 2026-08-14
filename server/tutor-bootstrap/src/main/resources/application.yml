@@ -34,6 +34,6 @@ management:
 
 tutor:
   ai:
-    llm-provider: ${LLM_PROVIDER:fake}
-    asr-provider: ${ASR_PROVIDER:fake}
-    tts-provider: ${TTS_PROVIDER:fake}
+    llm-provider: ${LLM_PROVIDER:openai}
+    asr-provider: ${ASR_PROVIDER:openai}
+    tts-provider: ${TTS_PROVIDER:openai}

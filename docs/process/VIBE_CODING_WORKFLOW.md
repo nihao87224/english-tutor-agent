@@ -66,5 +66,5 @@
 - 计划和实现分离；
 - 实现和 Review 使用不同会话；
 - 每个任务一个或少量清晰提交；
-- 优先 Fake Provider 跑通确定性闭环；
+- 优先用本地 stub 或 mocked transport 跑通确定性闭环；
 - 真实 Provider 接入后使用回归样本控制质量。

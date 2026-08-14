@@ -10,7 +10,7 @@ M0-T02 后端工程基线。
 - Maven multi-module project
 - Spring MVC compatible bootstrap
 - ArchUnit module boundary test
-- Fake LLM, ASR and TTS providers for local deterministic flows
+- OpenAI-backed LLM, ASR and TTS providers behind project-owned interfaces
 
 ## Modules
 
@@ -22,7 +22,7 @@ tutor-domain          Aggregates, value objects and domain rules
 tutor-agent           Agent prompts, structured output and AI strategies
 tutor-infrastructure  Persistence, cache, object storage and provider adapters
 tutor-observability   Tracing, metrics and audit instrumentation
-tutor-test-support    Shared test fixtures and fakes
+tutor-test-support    Shared test fixtures and local stubs
 ```
 
 The module shape follows `docs/design/02_DETAILED_DESIGN_BACKEND.md`.
@@ -91,17 +91,23 @@ auto-configuration so regular unit tests do not require external services.
 Testcontainers when a Docker-compatible runtime is available; it is skipped on
 machines without Docker.
 
-## Fake AI providers
+## OpenAI AI providers
 
-Local development defaults to fake providers:
+Runtime defaults to real OpenAI-backed providers:
 
 ```dotenv
-LLM_PROVIDER=fake
-ASR_PROVIDER=fake
-TTS_PROVIDER=fake
+LLM_PROVIDER=openai
+ASR_PROVIDER=openai
+TTS_PROVIDER=openai
+OPENAI_API_KEY=<local-or-production-secret>
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_LLM_MODEL=<responses-model>
+OPENAI_ASR_MODEL=<transcription-model>
+OPENAI_TTS_MODEL=<speech-model>
+OPENAI_TTS_VOICE=<speech-voice>
 ```
 
-The fake providers live in `tutor-agent` and expose project-owned interfaces:
+The provider implementations live in `tutor-agent` and expose project-owned interfaces:
 
 ```text
 ChatProvider
@@ -110,11 +116,7 @@ TextToSpeechProvider
 ```
 
 `ChatProvider.completeStructured` accepts a project-owned `JsonSchema` contract so
-later real providers can keep schema validation behind the provider abstraction.
-
-Fake responses are deterministic and include provider/model identifiers, trace id,
-prompt version, schema version, usage metadata and zero estimated cost. They do
-not call real LLM, ASR or TTS services and do not require API keys.
+schema validation stays behind the provider abstraction.
 
 ## Namespace
 
@@ -123,5 +125,4 @@ Java 根包名固定为：`cn.forever24.tutor`。
 ## Current out of scope
 
 - Business API endpoints
-- Real LLM/ASR/TTS provider SDKs
 - Formal business database tables

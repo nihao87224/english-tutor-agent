@@ -13,6 +13,6 @@ public record VoiceOptions(
     }
 
     public static VoiceOptions englishPcm() {
-        return new VoiceOptions("fake-en-neutral", "en-US", "audio/wav");
+        return new VoiceOptions("english-neutral", "en-US", "audio/wav");
     }
 }

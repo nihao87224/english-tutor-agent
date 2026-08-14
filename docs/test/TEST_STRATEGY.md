@@ -41,7 +41,7 @@
 
 ### Deterministic tests
 
-使用 Fake Provider 返回固定结果，验证：
+使用 local stub 或 mocked transport 返回固定结果，验证：
 
 - 解析；
 - Schema；

@@ -54,9 +54,9 @@ class ConversationApplicationServiceTest {
                             "correction-analyzer-v1",
                             "correction-result-v1",
                             "trace-correction-1",
-                            "fake",
-                            "fake-chat")),
-                    ConversationStreamEvent.done(4, "trace-1", "fake", "fake-chat")));
+                            "openai",
+                            "test-chat-model")),
+                    ConversationStreamEvent.done(4, "trace-1", "openai", "test-chat-model")));
 
     @Test
     void streamsConversationForActiveCurrentTask() {

@@ -130,8 +130,8 @@ async function mockBackend(page: Page) {
       promptVersion: "correction-analyzer-v1",
       schemaVersion: "correction-result-v1",
       traceId: "correction-1",
-      providerId: "fake",
-      modelId: "fake-chat",
+      providerId: "openai",
+      modelId: "test-chat-model",
     };
     const retryCorrection = {
       ...firstCorrection,
@@ -148,7 +148,7 @@ async function mockBackend(page: Page) {
         'event: status\ndata: {"stage":"THINKING","message":"Thinking..."}\n\n',
         `event: text_delta\ndata: {"delta":"${streamCallCount === 1 ? "Try: I really like this movie." : "Nice improvement."}"}\n\n`,
         `event: correction_ready\ndata: ${JSON.stringify(streamCallCount === 1 ? firstCorrection : retryCorrection)}\n\n`,
-        'event: done\ndata: {"traceId":"conversation-1","providerId":"fake","modelId":"fake-chat"}\n\n',
+        'event: done\ndata: {"traceId":"conversation-1","providerId":"openai","modelId":"test-chat-model"}\n\n',
       ].join(""),
     });
   });

@@ -431,11 +431,11 @@ paths:
 
                     id: 3
                     event: correction_ready
-                    data: {"hasError":true,"corrections":[{"original":"very like","corrected":"really like","errorType":"word_order","severity":"MEDIUM","explanationZh":"Use 'really' before verbs like 'like'; 'very' usually modifies adjectives.","shouldInterrupt":false,"memoryWorthy":true,"naturalSuggestions":[{"sentence":"I really like it.","style":"NEUTRAL"}]}],"overallFeedback":"Good communication. Focus on these small fixes while continuing the exchange.","promptVersion":"correction-analyzer-v1","schemaVersion":"correction-result-v1","traceId":"correction-...","providerId":"fake","modelId":"fake-chat"}
+                    data: {"hasError":true,"corrections":[{"original":"very like","corrected":"really like","errorType":"word_order","severity":"MEDIUM","explanationZh":"Use 'really' before verbs like 'like'; 'very' usually modifies adjectives.","shouldInterrupt":false,"memoryWorthy":true,"naturalSuggestions":[{"sentence":"I really like it.","style":"NEUTRAL"}]}],"overallFeedback":"Good communication. Focus on these small fixes while continuing the exchange.","promptVersion":"correction-analyzer-v1","schemaVersion":"correction-result-v1","traceId":"correction-...","providerId":"openai","modelId":"configured-chat-model"}
 
                     id: 4
                     event: done
-                    data: {"traceId":"conversation-...","providerId":"fake","modelId":"fake-chat"}
+                    data: {"traceId":"conversation-...","providerId":"openai","modelId":"configured-chat-model"}
         '400':
           description: Invalid session state, ownership, idempotency key, message type, task id, or text payload
 

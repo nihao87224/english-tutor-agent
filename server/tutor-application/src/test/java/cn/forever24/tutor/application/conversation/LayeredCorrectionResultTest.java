@@ -27,8 +27,8 @@ class LayeredCorrectionResultTest {
                 "prompt-v1",
                 "schema-v1",
                 "trace-1",
-                "fake",
-                "fake-chat"));
+                "openai",
+                "test-chat-model"));
         assertThrows(IllegalArgumentException.class, () -> new LayeredCorrectionResult(
                 false,
                 List.of(lowInterrupting),
@@ -36,8 +36,8 @@ class LayeredCorrectionResultTest {
                 "prompt-v1",
                 "schema-v1",
                 "trace-1",
-                "fake",
-                "fake-chat"));
+                "openai",
+                "test-chat-model"));
         assertThrows(IllegalArgumentException.class, () -> new LayeredCorrectionItem(
                 "maybe because",
                 "may be because",
@@ -54,7 +54,7 @@ class LayeredCorrectionResultTest {
                 "prompt-v1",
                 "schema-v1",
                 "trace-1",
-                "fake",
-                "fake-chat"));
+                "openai",
+                "test-chat-model"));
     }
 }

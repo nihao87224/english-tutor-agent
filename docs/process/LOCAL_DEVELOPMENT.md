@@ -206,22 +206,24 @@ http://10.0.2.2:8080
 
 真机调试需要使用局域网地址或 `adb reverse`。
 
-## 7. Fake provider mode
+## 7. OpenAI provider mode
 
 本地默认：
 
 ```dotenv
-LLM_PROVIDER=fake
-ASR_PROVIDER=fake
-TTS_PROVIDER=fake
+LLM_PROVIDER=openai
+ASR_PROVIDER=openai
+TTS_PROVIDER=openai
+OPENAI_API_KEY=<local-secret>
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_LLM_MODEL=<responses-model>
+OPENAI_ASR_MODEL=<transcription-model>
+OPENAI_TTS_MODEL=<speech-model>
+OPENAI_TTS_VOICE=<speech-voice>
 ```
 
-M0/M1 不应要求真实付费密钥。默认 fake provider 由后端 `tutor-agent` 模块装配：
-
-- `ChatProvider` 返回固定结构化 JSON 和固定 stream chunks；
-- `SpeechToTextProvider` 返回固定英文转写和置信度；
-- `TextToSpeechProvider` 返回固定 fake audio bytes；
-- 所有 fake 结果都包含 trace、provider/model、promptVersion、schemaVersion 和 usage metadata。
+真实 provider 由后端 `tutor-agent` 模块装配。单元测试使用本地 stub 或 mocked transport，
+不得调用真实付费模型。
 
 ## 8. Common failures
 

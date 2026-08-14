@@ -28,8 +28,8 @@ This repository is currently at the M3 Web Expression Coach milestone. It can be
 deployed for controlled production-like access, but the following are still not
 complete product-hardening items:
 
-- Android voice/listening features start in M4.
-- Real ASR/TTS provider integration starts in M4.
+- Android voice/listening UI features start in M4.
+- Backend AI provider integration uses OpenAI-backed real providers.
 - Long-term review, IELTS Speaking and release-hardening are later milestones.
 - The first production deployment should be treated as a limited-access pilot
   until authentication, abuse controls, monitoring and data retention policies
@@ -83,8 +83,8 @@ Important rules:
   belongs at the edge/UI layer.
 - For the current M3 build, set `VITE_API_BASE_URL=` to an empty value when
   building the Web bundle for same-origin Nginx reverse proxying.
-- Use `LLM_PROVIDER=fake`, `ASR_PROVIDER=fake` and `TTS_PROVIDER=fake` unless a
-  real provider adapter has been implemented and reviewed.
+- Use `LLM_PROVIDER=openai`, `ASR_PROVIDER=openai` and `TTS_PROVIDER=openai`.
+  Configure `OPENAI_API_KEY` and model variables in the VPS environment file.
 - If a secret contains shell-sensitive characters such as spaces, `#`, `$`, `"`
   or `'`, quote and escape it according to the shell that will read the file.
 - Keep optional `SPRING_DATASOURCE_*` overrides commented out unless they are

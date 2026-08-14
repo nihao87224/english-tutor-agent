@@ -1,14 +1,28 @@
 package cn.forever24.tutor;
 
 import com.jayway.jsonpath.JsonPath;
+import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
+import cn.forever24.tutor.application.conversation.ConversationStreamEvent;
+import cn.forever24.tutor.application.conversation.CorrectionAnalysisContext;
+import cn.forever24.tutor.application.conversation.CorrectionAnalyzer;
+import cn.forever24.tutor.application.conversation.CorrectionSeverity;
+import cn.forever24.tutor.application.conversation.CorrectionSuggestion;
+import cn.forever24.tutor.application.conversation.CorrectionSuggestionStyle;
+import cn.forever24.tutor.application.conversation.LayeredCorrectionItem;
+import cn.forever24.tutor.application.conversation.LayeredCorrectionResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -28,6 +42,45 @@ class ProfileEndpointIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @TestConfiguration
+    static class AiStubConfiguration {
+
+        @Bean
+        @Primary
+        ConversationReplyStreamer testConversationReplyStreamer(CorrectionAnalyzer correctionAnalyzer) {
+            return context -> List.of(
+                    ConversationStreamEvent.status(1, "THINKING", "Understanding your message..."),
+                    ConversationStreamEvent.textDelta(2, "This is a real-provider-shaped response."),
+                    ConversationStreamEvent.correctionReady(3, correctionAnalyzer.analyze(new CorrectionAnalysisContext(
+                            context.session(),
+                            context.currentTask(),
+                            context.message()))),
+                    ConversationStreamEvent.done(4, "trace-test", "openai", "test-model"));
+        }
+
+        @Bean
+        @Primary
+        CorrectionAnalyzer testCorrectionAnalyzer() {
+            return context -> new LayeredCorrectionResult(
+                    true,
+                    List.of(new LayeredCorrectionItem(
+                            "very like",
+                            "really like",
+                            "word_order",
+                            CorrectionSeverity.MEDIUM,
+                            "Use 'really' before verbs like 'like'.",
+                            false,
+                            true,
+                            List.of(new CorrectionSuggestion("I really like it.", CorrectionSuggestionStyle.NEUTRAL)))),
+                    "Good communication. Focus on these small fixes while continuing the exchange.",
+                    "correction-analyzer-v1",
+                    "correction-result-v1",
+                    "trace-test",
+                    "openai",
+                    "test-model");
+        }
+    }
 
     @Test
     void restoresGoalProgressForUserWithoutProfile() throws Exception {

@@ -5,6 +5,7 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Replaced the legacy deterministic AI provider baseline with OpenAI-backed real LLM, ASR and TTS provider implementations configured by environment variables.
 - Reworked backend production deployment around Jenkins-built Docker images and Docker Compose releases on the VPS.
 - Rewrote the Chinese README user-facing motivation and highlights around original user pain points and product differences instead of technical implementation details.
 - Refined the README toward a high-star open-source layout, removed the progress table, replaced the unreliable SVG hero with screenshot placeholders, and documented future screenshot paths.

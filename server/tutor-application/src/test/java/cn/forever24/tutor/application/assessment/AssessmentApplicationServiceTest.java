@@ -38,7 +38,7 @@ class AssessmentApplicationServiceTest {
     private final FakeAssessmentSessionRepository assessmentSessionRepository = new FakeAssessmentSessionRepository();
     private final FakeAssessmentAnswerRepository assessmentAnswerRepository = new FakeAssessmentAnswerRepository();
     private final FakeAssessmentResultRepository assessmentResultRepository = new FakeAssessmentResultRepository();
-    private final FakeOpenAnswerEvaluator openAnswerEvaluator = new FakeOpenAnswerEvaluator();
+    private final StubOpenAnswerEvaluator openAnswerEvaluator = new StubOpenAnswerEvaluator();
     private final AssessmentApplicationService service = new AssessmentApplicationService(
             profileRepository,
             selfAssessmentRepository,
@@ -461,7 +461,7 @@ class AssessmentApplicationServiceTest {
         }
     }
 
-    private static final class FakeOpenAnswerEvaluator implements OpenAnswerEvaluator {
+    private static final class StubOpenAnswerEvaluator implements OpenAnswerEvaluator {
 
         private boolean fail;
 

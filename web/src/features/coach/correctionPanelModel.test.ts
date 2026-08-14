@@ -14,8 +14,8 @@ describe("toCorrectionPanelModel", () => {
       promptVersion: "p",
       schemaVersion: "s",
       traceId: "t",
-      providerId: "fake",
-      modelId: "fake",
+      providerId: "openai",
+      modelId: "test-chat-model",
     });
 
     expect(model.status).toBe("no-error");
@@ -39,8 +39,8 @@ describe("toCorrectionPanelModel", () => {
       promptVersion: "p",
       schemaVersion: "s",
       traceId: "t",
-      providerId: "fake",
-      modelId: "fake",
+      providerId: "openai",
+      modelId: "test-chat-model",
     });
 
     expect(model.status).toBe("has-corrections");

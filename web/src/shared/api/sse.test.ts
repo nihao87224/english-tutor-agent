@@ -6,7 +6,7 @@ describe("parseSseStream", () => {
     const events: SseEvent[] = [];
     const stream = streamFromChunks([
       'id: 1\nevent: status\ndata: {"stage":"THINKING","message":"Working"}\n\nid: 2\nevent: text_delta\ndata:',
-      ' {"delta":"This is "}\n\nid: 3\nevent: done\ndata: {"traceId":"t","providerId":"fake","modelId":"fake-chat"}\n\n',
+      ' {"delta":"This is "}\n\nid: 3\nevent: done\ndata: {"traceId":"t","providerId":"openai","modelId":"test-chat-model"}\n\n',
     ]);
 
     await parseSseStream(stream, (event) => events.push(event));
