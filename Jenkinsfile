@@ -22,72 +22,76 @@ pipeline {
   stages {
     stage('Validate Workspace') {
       steps {
-        sh '''
-          set -euo pipefail
-          java -version
-          docker version
-          docker compose version
-          test -f server/mvnw
-          chmod +x server/mvnw
-          test -f server/Dockerfile
-          test -f scripts/deploy/docker-compose.backend.yml
-          test -f scripts/deploy/deploy_backend_container_with_jenkins.sh
-          test -f scripts/deploy/rollback_backend_container.sh
-        '''
+        sh '''#!/bin/bash
+set -euo pipefail
+
+java -version
+docker version
+docker compose version
+test -f server/mvnw
+chmod +x server/mvnw
+test -f server/Dockerfile
+test -f scripts/deploy/docker-compose.backend.yml
+test -f scripts/deploy/deploy_backend_container_with_jenkins.sh
+test -f scripts/deploy/rollback_backend_container.sh
+'''
       }
     }
 
     stage('Build Backend') {
       steps {
-        sh '''
-          set -euo pipefail
-          cd server
-          if [ "${SKIP_TESTS}" = "true" ]; then
-            ./mvnw -pl tutor-bootstrap -am -DskipTests package
-          else
-            ./mvnw -pl tutor-bootstrap -am clean verify
-          fi
-        '''
+        sh '''#!/bin/bash
+set -euo pipefail
+
+cd server
+if [ "${SKIP_TESTS}" = "true" ]; then
+  ./mvnw -pl tutor-bootstrap -am -DskipTests package
+else
+  ./mvnw -pl tutor-bootstrap -am clean verify
+fi
+'''
       }
     }
 
     stage('Build Image') {
       steps {
-        sh '''
-          set -euo pipefail
-          test -f "$BACKEND_JAR"
-          rm -rf "$RELEASE_METADATA_DIR"
-          mkdir -p "$RELEASE_METADATA_DIR"
+        sh '''#!/bin/bash
+set -euo pipefail
 
-          commit_sha="$(git rev-parse --short HEAD)"
-          release_id="$(date -u +%Y%m%dT%H%M%SZ)-${commit_sha}"
-          backend_image="${BACKEND_IMAGE_REPOSITORY}:${release_id}"
+test -f "$BACKEND_JAR"
+rm -rf "$RELEASE_METADATA_DIR"
+mkdir -p "$RELEASE_METADATA_DIR"
 
-          echo "$release_id" > "$RELEASE_METADATA_DIR/release_id"
-          echo "$backend_image" > "$RELEASE_METADATA_DIR/backend_image"
+commit_sha="$(git rev-parse --short HEAD)"
+release_id="$(date -u +%Y%m%dT%H%M%SZ)-${commit_sha}"
+backend_image="${BACKEND_IMAGE_REPOSITORY}:${release_id}"
 
-          docker build \
-            -f server/Dockerfile \
-            --build-arg JAR_FILE="$BACKEND_JAR" \
-            -t "$backend_image" \
-            .
-        '''
+echo "$release_id" > "$RELEASE_METADATA_DIR/release_id"
+echo "$backend_image" > "$RELEASE_METADATA_DIR/backend_image"
+
+docker build \
+  -f server/Dockerfile \
+  --build-arg JAR_FILE="$BACKEND_JAR" \
+  -t "$backend_image" \
+  .
+'''
       }
     }
 
     stage('Deploy Backend') {
       steps {
-        sh '''
-          set -euo pipefail
-          release_id="$(cat "$RELEASE_METADATA_DIR/release_id")"
-          backend_image="$(cat "$RELEASE_METADATA_DIR/backend_image")"
+        sh '''#!/bin/bash
+set -euo pipefail
 
-          sudo "$DEPLOY_SCRIPT" \
-            --image "$backend_image" \
-            --release-id "$release_id" \
-            --deploy-root "$DEPLOY_ROOT" \
-            --metadata-dir "$WORKSPACE/$RELEASE_METADATA_DIR"
-        '''
+release_id="$(cat "$RELEASE_METADATA_DIR/release_id")"
+backend_image="$(cat "$RELEASE_METADATA_DIR/backend_image")"
+
+sudo "$DEPLOY_SCRIPT" \
+  --image "$backend_image" \
+  --release-id "$release_id" \
+  --deploy-root "$DEPLOY_ROOT" \
+  --metadata-dir "$WORKSPACE/$RELEASE_METADATA_DIR"
+'''
       }
     }
   }
