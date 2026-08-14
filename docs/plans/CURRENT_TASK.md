@@ -4,7 +4,7 @@
 
 ## Task
 
-`SaaS-M3 Daily Quota Engine`
+`SaaS-M4 Runtime AI Provider + Secret`
 
 ## Status
 
@@ -12,44 +12,44 @@
 
 ## Goal
 
-Atomically enforce daily AI learning request quota for quota-consuming learner
-actions, expose the current authenticated user's quota state, and preserve
-idempotency so retries do not double-consume quota.
+Allow runtime AI provider configuration changes without redeploying, store
+provider secrets encrypted, and keep the production provider backed by real
+OpenAI adapters only.
 
 ## Related documents
 
 - `docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md`
 - `docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md`
+- `docs/decisions/ADR-0013-openai-real-provider.md`
 - `docs/decisions/ADR-0014-saas-foundation.md`
 - `contracts/openapi/english-tutor-api.yaml`
-- `server/tutor-bootstrap/src/main/resources/db/migration/V14__saas_daily_quota.sql`
+- `server/tutor-bootstrap/src/main/resources/db/migration/V15__ai_provider_config.sql`
 
 ## In Scope
 
-- Add daily quota policy, usage and reservation persistence.
-- Add quota date calculation from configured reset timezone.
-- Add reserve, commit, refund and stale reservation cleanup.
-- Enforce quota for conversation AI replies and open assessment answer scoring.
-- Return `DAILY_QUOTA_EXCEEDED` as a 429 ProblemDetail.
-- Add `GET /api/v1/me/quota`.
-- Add default quota environment configuration.
+- Add provider config and encrypted provider secret persistence.
+- Add AES-GCM secret encryption using `TUTOR_SECRET_ENCRYPTION_KEY`.
+- Resolve default LLM/ASR/TTS OpenAI configuration at request time.
+- Add admin provider list/detail/update and secret replacement endpoints.
+- Add masked secret responses and admin audit records for provider changes.
+- Keep tests deterministic with local stubs/test doubles only.
 
 ## Out of Scope
 
-- Admin quota override/reset/bonus APIs.
-- Web quota UI.
-- Android quota UI.
+- Full admin dashboard, user management and audit query APIs.
+- Web admin console.
+- Android admin/configuration UI.
 - Billing, subscription, organization or workspace features.
 - Removing the temporary legacy `X-User-Key` compatibility path.
 
 ## Acceptance Criteria
 
-1. With remaining quota = 1, 10-20 concurrent requests allow exactly one success.
-2. Repeated idempotency key does not double-consume quota.
-3. Provider failure before usable output refunds quota.
-4. `/api/v1/me/quota` returns daily limit, used, bonus, remaining, unlimited and reset time.
-5. Quota exhaustion returns `429 DAILY_QUOTA_EXCEEDED`.
-6. Released Flyway V1-V13 are not modified.
+1. Changing default provider/model configuration affects the next request without restart.
+2. Full API secrets never appear in API responses.
+3. Provider API keys are encrypted at rest with AES-GCM.
+4. Provider secret replacement writes an admin audit record.
+5. Automated tests do not call real paid model APIs.
+6. Released Flyway V1-V14 are not modified.
 
 ## Verification Record
 
@@ -57,4 +57,4 @@ idempotency so retries do not double-consume quota.
 
 ## Review Status
 
-Completed for SaaS-M3.
+Completed for SaaS-M4.

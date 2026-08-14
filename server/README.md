@@ -105,6 +105,8 @@ OPENAI_LLM_MODEL=<responses-model>
 OPENAI_ASR_MODEL=<transcription-model>
 OPENAI_TTS_MODEL=<speech-model>
 OPENAI_TTS_VOICE=<speech-voice>
+TUTOR_SECRET_ENCRYPTION_KEY=<32-byte-or-base64-encoded-32-byte-secret>
+TUTOR_SECRET_ENCRYPTION_KEY_VERSION=v1
 ```
 
 The provider implementations live in `tutor-agent` and expose project-owned interfaces:
@@ -117,6 +119,11 @@ TextToSpeechProvider
 
 `ChatProvider.completeStructured` accepts a project-owned `JsonSchema` contract so
 schema validation stays behind the provider abstraction.
+
+Runtime provider configuration is persisted in `ai_provider_config`; provider API
+keys are stored in `ai_provider_secret` encrypted with AES-GCM. Admin endpoints
+under `/api/v1/admin/ai-providers` return only `apiKeyConfigured` and a masked
+hint, never the raw key.
 
 ## Namespace
 

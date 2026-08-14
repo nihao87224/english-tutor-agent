@@ -1,5 +1,6 @@
 package cn.forever24.tutor.ai.openai;
 
+import cn.forever24.tutor.application.provider.ActiveAiProviderConfiguration;
 import org.springframework.core.env.Environment;
 
 import java.net.URI;
@@ -45,6 +46,17 @@ public final class OpenAiProviderProperties {
                 firstNonBlank(environment, "OPENAI_TTS_MODEL", "TTS_MODEL"),
                 firstNonBlank(environment, "OPENAI_TTS_VOICE", "TTS_VOICE"),
                 environment.getProperty("OPENAI_TIMEOUT", Duration.class, Duration.ofSeconds(30)));
+    }
+
+    public static OpenAiProviderProperties fromActiveConfiguration(ActiveAiProviderConfiguration configuration) {
+        return new OpenAiProviderProperties(
+                configuration.baseUrl(),
+                configuration.apiKey(),
+                configuration.llmModel(),
+                configuration.asrModel(),
+                configuration.ttsModel(),
+                configuration.ttsVoice(),
+                configuration.timeout());
     }
 
     public URI baseUrl() {

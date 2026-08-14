@@ -2,24 +2,27 @@ package cn.forever24.tutor.ai;
 
 import cn.forever24.tutor.ai.conversation.ProviderConversationReplyStreamer;
 import cn.forever24.tutor.ai.conversation.ProviderLayeredCorrectionAnalyzer;
-import cn.forever24.tutor.ai.openai.OpenAiChatProvider;
-import cn.forever24.tutor.ai.openai.OpenAiHttpClient;
 import cn.forever24.tutor.ai.openai.OpenAiOpenAnswerEvaluator;
-import cn.forever24.tutor.ai.openai.OpenAiProviderProperties;
-import cn.forever24.tutor.ai.openai.OpenAiSpeechToTextProvider;
-import cn.forever24.tutor.ai.openai.OpenAiTextToSpeechProvider;
+import cn.forever24.tutor.ai.runtime.EnvironmentAiProviderConfigurationRepository;
+import cn.forever24.tutor.ai.runtime.RuntimeOpenAiChatProvider;
+import cn.forever24.tutor.ai.runtime.RuntimeOpenAiSpeechToTextProvider;
+import cn.forever24.tutor.ai.runtime.RuntimeOpenAiTextToSpeechProvider;
 import cn.forever24.tutor.application.assessment.OpenAnswerEvaluator;
 import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
 import cn.forever24.tutor.application.conversation.CorrectionAnalyzer;
 import cn.forever24.tutor.ai.provider.ChatProvider;
 import cn.forever24.tutor.ai.provider.SpeechToTextProvider;
 import cn.forever24.tutor.ai.provider.TextToSpeechProvider;
+import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
+import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+
+import java.time.Clock;
 
 @Configuration
 public class AgentConfiguration {
@@ -31,34 +34,45 @@ public class AgentConfiguration {
     }
 
     @Bean
-    OpenAiProviderProperties openAiProviderProperties(Environment environment) {
-        return OpenAiProviderProperties.fromEnvironment(environment);
+    @ConditionalOnMissingBean(AiProviderConfigurationRepository.class)
+    AiProviderConfigurationRepository environmentAiProviderConfigurationRepository(Environment environment) {
+        return new EnvironmentAiProviderConfigurationRepository(environment);
     }
 
     @Bean
-    OpenAiHttpClient openAiHttpClient(ObjectMapper objectMapper, OpenAiProviderProperties properties) {
-        return new OpenAiHttpClient(objectMapper, properties);
+    @ConditionalOnMissingBean
+    AiProviderConfigurationApplicationService aiProviderConfigurationApplicationService(
+            AiProviderConfigurationRepository repository,
+            Clock clock
+    ) {
+        return new AiProviderConfigurationApplicationService(repository, clock);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    Clock clock() {
+        return Clock.systemUTC();
     }
 
     @Bean
     @ConditionalOnMissingBean(ChatProvider.class)
     @ConditionalOnProperty(name = "tutor.ai.llm-provider", havingValue = "openai", matchIfMissing = true)
-    ChatProvider openAiChatProvider(OpenAiHttpClient client, OpenAiProviderProperties properties) {
-        return new OpenAiChatProvider(client, properties);
+    ChatProvider openAiChatProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
+        return new RuntimeOpenAiChatProvider(configurationService, objectMapper);
     }
 
     @Bean
     @ConditionalOnMissingBean(SpeechToTextProvider.class)
     @ConditionalOnProperty(name = "tutor.ai.asr-provider", havingValue = "openai", matchIfMissing = true)
-    SpeechToTextProvider openAiSpeechToTextProvider(OpenAiHttpClient client, OpenAiProviderProperties properties) {
-        return new OpenAiSpeechToTextProvider(client, properties);
+    SpeechToTextProvider openAiSpeechToTextProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
+        return new RuntimeOpenAiSpeechToTextProvider(configurationService, objectMapper);
     }
 
     @Bean
     @ConditionalOnMissingBean(TextToSpeechProvider.class)
     @ConditionalOnProperty(name = "tutor.ai.tts-provider", havingValue = "openai", matchIfMissing = true)
-    TextToSpeechProvider openAiTextToSpeechProvider(OpenAiHttpClient client, OpenAiProviderProperties properties) {
-        return new OpenAiTextToSpeechProvider(client, properties);
+    TextToSpeechProvider openAiTextToSpeechProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
+        return new RuntimeOpenAiTextToSpeechProvider(configurationService, objectMapper);
     }
 
     @Bean

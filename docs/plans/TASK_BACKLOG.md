@@ -84,7 +84,7 @@ M5 长期复习与动态掌握、M6 IELTS Speaking、M7 发布准备在对应里
 | SaaS-M1 | Identity Schema + Auth Backend | DONE | v1.0 baseline | Email 唯一、USER/ADMIN 登录、refresh rotation、bootstrap admin |
 | SaaS-M2 | CurrentActor + Multi-user Isolation | DONE | SaaS-M1 | User A 无法访问 User B 学习资源，admin 不走 legacy identity |
 | SaaS-M3 | Daily Quota Engine | DONE | SaaS-M2 | remaining=1 并发下仅 1 次成功，幂等不重复扣减 |
-| SaaS-M4 | Runtime AI Provider + Secret | TODO | SaaS-M3, ADR-0013 | 默认 provider 可运行时切换，secret 加密且不回显 |
+| SaaS-M4 | Runtime AI Provider + Secret | DONE | SaaS-M3, ADR-0013 | 默认 provider 可运行时切换，secret 加密且不回显 |
 | SaaS-M5 | Admin Backend | TODO | SaaS-M4 | USER 访问 admin API = 403，敏感操作写 audit |
 | SaaS-M6 | Web Learner SaaS UX + i18n | TODO | SaaS-M2, SaaS-M3 | register/login/practice/quota/history/logout 闭环 |
 | SaaS-M7 | Web Admin Console | TODO | SaaS-M5 | Admin UI 与真实 API 联通，不使用生产 mock 数据 |

@@ -1,11 +1,11 @@
 package cn.forever24.tutor.ai;
 
-import cn.forever24.tutor.ai.openai.OpenAiChatProvider;
-import cn.forever24.tutor.ai.openai.OpenAiSpeechToTextProvider;
-import cn.forever24.tutor.ai.openai.OpenAiTextToSpeechProvider;
 import cn.forever24.tutor.ai.provider.ChatProvider;
 import cn.forever24.tutor.ai.provider.SpeechToTextProvider;
 import cn.forever24.tutor.ai.provider.TextToSpeechProvider;
+import cn.forever24.tutor.ai.runtime.RuntimeOpenAiChatProvider;
+import cn.forever24.tutor.ai.runtime.RuntimeOpenAiSpeechToTextProvider;
+import cn.forever24.tutor.ai.runtime.RuntimeOpenAiTextToSpeechProvider;
 import cn.forever24.tutor.application.conversation.CorrectionAnalyzer;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -25,9 +25,9 @@ class AgentConfigurationTest {
             context.register(AgentConfiguration.class);
             context.refresh();
 
-            assertInstanceOf(OpenAiChatProvider.class, context.getBean(ChatProvider.class));
-            assertInstanceOf(OpenAiSpeechToTextProvider.class, context.getBean(SpeechToTextProvider.class));
-            assertInstanceOf(OpenAiTextToSpeechProvider.class, context.getBean(TextToSpeechProvider.class));
+            assertInstanceOf(RuntimeOpenAiChatProvider.class, context.getBean(ChatProvider.class));
+            assertInstanceOf(RuntimeOpenAiSpeechToTextProvider.class, context.getBean(SpeechToTextProvider.class));
+            assertInstanceOf(RuntimeOpenAiTextToSpeechProvider.class, context.getBean(TextToSpeechProvider.class));
             assertInstanceOf(CorrectionAnalyzer.class, context.getBean(CorrectionAnalyzer.class));
         }
     }

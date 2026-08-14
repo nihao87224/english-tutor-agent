@@ -19,8 +19,100 @@ tags:
   - name: IELTS
   - name: Privacy
   - name: Quota
+  - name: Admin AI Providers
 
 paths:
+  /api/v1/admin/ai-providers:
+    get:
+      tags: [Admin AI Providers]
+      summary: List runtime AI provider configurations
+      operationId: listAiProviders
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Provider configurations with masked secret state
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AiProvider'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/ai-providers/{providerCode}:
+    get:
+      tags: [Admin AI Providers]
+      summary: Get a runtime AI provider configuration
+      operationId: getAiProvider
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProviderCode'
+      responses:
+        '200':
+          description: Provider configuration with masked secret state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProvider'
+        '404':
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [Admin AI Providers]
+      summary: Upsert a runtime AI provider configuration
+      operationId: putAiProvider
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProviderCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiProviderUpdateRequest'
+      responses:
+        '200':
+          description: Saved provider configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProvider'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/ai-providers/{providerCode}/secret:
+    put:
+      tags: [Admin AI Providers]
+      summary: Replace a provider API key
+      description: Stores the API key encrypted with AES-GCM and never returns the raw secret.
+      operationId: replaceAiProviderSecret
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProviderCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiProviderSecretRequest'
+      responses:
+        '200':
+          description: Provider configuration with masked secret state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProvider'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/me/quota:
     get:
       tags: [Quota]
@@ -630,6 +722,19 @@ components:
       required: true
       schema:
         type: string
+    ProviderCode:
+      name: providerCode
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-z0-9._-]{1,64}$'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   responses:
     Problem:
@@ -1150,6 +1255,117 @@ components:
         resetAt:
           type: string
           format: date-time
+
+    AiProvider:
+      type: object
+      additionalProperties: false
+      required:
+        - providerCode
+        - providerType
+        - displayName
+        - enabled
+        - defaultLlm
+        - defaultAsr
+        - defaultTts
+        - baseUrl
+        - llmModel
+        - asrModel
+        - ttsModel
+        - ttsVoice
+        - timeoutSeconds
+        - apiKeyConfigured
+      properties:
+        providerCode:
+          type: string
+        providerType:
+          type: string
+          enum: [OPENAI]
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        defaultLlm:
+          type: boolean
+        defaultAsr:
+          type: boolean
+        defaultTts:
+          type: boolean
+        baseUrl:
+          type: string
+          format: uri
+        llmModel:
+          type: string
+        asrModel:
+          type: string
+        ttsModel:
+          type: string
+        ttsVoice:
+          type: string
+        timeoutSeconds:
+          type: integer
+          minimum: 1
+        apiKeyConfigured:
+          type: boolean
+        apiKeyMaskedHint:
+          type: [string, 'null']
+
+    AiProviderUpdateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - providerType
+        - displayName
+        - enabled
+        - defaultLlm
+        - defaultAsr
+        - defaultTts
+        - baseUrl
+        - llmModel
+        - asrModel
+        - ttsModel
+        - ttsVoice
+      properties:
+        providerType:
+          type: string
+          enum: [OPENAI]
+        displayName:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        defaultLlm:
+          type: boolean
+        defaultAsr:
+          type: boolean
+        defaultTts:
+          type: boolean
+        baseUrl:
+          type: string
+          format: uri
+        llmModel:
+          type: string
+          minLength: 1
+        asrModel:
+          type: string
+          minLength: 1
+        ttsModel:
+          type: string
+          minLength: 1
+        ttsVoice:
+          type: string
+          minLength: 1
+        timeoutSeconds:
+          type: integer
+          minimum: 1
+
+    AiProviderSecretRequest:
+      type: object
+      additionalProperties: false
+      required: [apiKey]
+      properties:
+        apiKey:
+          type: string
+          minLength: 1
 
     Problem:
       type: object

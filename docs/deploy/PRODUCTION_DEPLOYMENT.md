@@ -85,6 +85,8 @@ Important rules:
   building the Web bundle for same-origin Nginx reverse proxying.
 - Use `LLM_PROVIDER=openai`, `ASR_PROVIDER=openai` and `TTS_PROVIDER=openai`.
   Configure `OPENAI_API_KEY` and model variables in the VPS environment file.
+- Set `TUTOR_SECRET_ENCRYPTION_KEY` to a 32-byte value or Base64-encoded
+  32-byte value before enabling runtime provider secret storage.
 - If a secret contains shell-sensitive characters such as spaces, `#`, `$`, `"`
   or `'`, quote and escape it according to the shell that will read the file.
 - Keep optional `SPRING_DATASOURCE_*` overrides commented out unless they are

@@ -18,6 +18,8 @@ import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.planning.LearningPlanApplicationService;
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
+import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
+import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
 import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
@@ -40,6 +42,10 @@ import cn.forever24.tutor.infrastructure.profile.InMemoryUserProfileRepository;
 import cn.forever24.tutor.infrastructure.profile.JdbcUserProfileRepository;
 import cn.forever24.tutor.infrastructure.planning.InMemoryLearningPlanRepository;
 import cn.forever24.tutor.infrastructure.planning.JdbcLearningPlanRepository;
+import cn.forever24.tutor.infrastructure.provider.AesGcmSecretCipher;
+import cn.forever24.tutor.infrastructure.provider.AiProviderEnvironmentDefaults;
+import cn.forever24.tutor.infrastructure.provider.InMemoryAiProviderConfigurationRepository;
+import cn.forever24.tutor.infrastructure.provider.JdbcAiProviderConfigurationRepository;
 import cn.forever24.tutor.infrastructure.quota.InMemoryDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.quota.JdbcDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
@@ -243,6 +249,43 @@ public class InfrastructureConfiguration {
             return new InMemoryDailyQuotaRepository();
         }
         return new JdbcDailyQuotaRepository(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AesGcmSecretCipher aiProviderSecretCipher(Environment environment) {
+        return new AesGcmSecretCipher(
+                environment.getProperty("tutor.secret.encryption-key"),
+                environment.getProperty("tutor.secret.encryption-key-version", "v1"));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AiProviderEnvironmentDefaults aiProviderEnvironmentDefaults(Environment environment) {
+        return AiProviderEnvironmentDefaults.openAi(environment);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AiProviderConfigurationRepository.class)
+    public AiProviderConfigurationRepository aiProviderConfigurationRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            AesGcmSecretCipher secretCipher,
+            AiProviderEnvironmentDefaults defaults
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryAiProviderConfigurationRepository(secretCipher, defaults);
+        }
+        return new JdbcAiProviderConfigurationRepository(jdbcTemplate, secretCipher, defaults);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AiProviderConfigurationApplicationService aiProviderConfigurationApplicationService(
+            AiProviderConfigurationRepository repository,
+            Clock clock
+    ) {
+        return new AiProviderConfigurationApplicationService(repository, clock);
     }
 
     @Bean
