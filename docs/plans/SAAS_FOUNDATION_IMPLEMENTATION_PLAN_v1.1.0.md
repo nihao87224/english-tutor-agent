@@ -233,11 +233,12 @@ Gate:
 
 ## Current Implementation Progress
 
-SaaS-M1 through SaaS-M4 have been implemented:
+SaaS-M1 through SaaS-M5 have been implemented:
 
 - `SaaS-M1: Identity Schema + Auth Backend`
 - `SaaS-M2: CurrentActor + Multi-User Isolation`
 - `SaaS-M3: Daily Quota Engine`
 - `SaaS-M4: Runtime AI Provider + Secret`
+- `SaaS-M5: Admin Backend`
 
-The next backend milestone is `SaaS-M5: Admin Backend`.
+The next milestone is `SaaS-M6: Web Learner SaaS UX + i18n`.

@@ -5,6 +5,8 @@ import cn.forever24.tutor.application.assessment.AssessmentAnswerRepository;
 import cn.forever24.tutor.application.assessment.AssessmentResultRepository;
 import cn.forever24.tutor.application.assessment.AssessmentSessionRepository;
 import cn.forever24.tutor.application.assessment.OpenAnswerEvaluator;
+import cn.forever24.tutor.application.admin.AdminApplicationService;
+import cn.forever24.tutor.application.admin.AdminRepository;
 import cn.forever24.tutor.application.conversation.ConversationApplicationService;
 import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
 import cn.forever24.tutor.application.assessment.SelfAssessmentRepository;
@@ -31,6 +33,8 @@ import cn.forever24.tutor.infrastructure.auth.InMemoryUserAccountRepository;
 import cn.forever24.tutor.infrastructure.auth.JdbcRefreshSessionRepository;
 import cn.forever24.tutor.infrastructure.auth.JdbcUserAccountRepository;
 import cn.forever24.tutor.infrastructure.auth.Sha256RefreshTokenService;
+import cn.forever24.tutor.infrastructure.admin.InMemoryAdminRepository;
+import cn.forever24.tutor.infrastructure.admin.JdbcAdminRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentAnswerRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentSessionRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemorySelfAssessmentRepository;
@@ -286,6 +290,24 @@ public class InfrastructureConfiguration {
             Clock clock
     ) {
         return new AiProviderConfigurationApplicationService(repository, clock);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AdminRepository.class)
+    public AdminRepository adminRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryAdminRepository();
+        }
+        return new JdbcAdminRepository(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AdminApplicationService adminApplicationService(AdminRepository adminRepository, Environment environment, Clock clock) {
+        ZoneId resetZone = ZoneId.of(environment.getProperty("tutor.quota.reset-timezone", "Asia/Shanghai"));
+        int defaultDailyLimit = environment.getProperty("tutor.quota.default-daily-limit", Integer.class, 50);
+        return new AdminApplicationService(adminRepository, clock, resetZone, defaultDailyLimit);
     }
 
     @Bean

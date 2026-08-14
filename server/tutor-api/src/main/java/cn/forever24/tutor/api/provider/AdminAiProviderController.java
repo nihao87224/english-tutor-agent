@@ -3,6 +3,7 @@ package cn.forever24.tutor.api.provider;
 import cn.forever24.tutor.application.provider.AiProviderConfiguration;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
 import cn.forever24.tutor.application.provider.AiProviderType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +27,7 @@ public class AdminAiProviderController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('AI_PROVIDER_READ')")
     public List<AiProviderResponse> listProviders() {
         return applicationService.listProviders().stream()
                 .map(AiProviderResponse::from)
@@ -33,13 +35,15 @@ public class AdminAiProviderController {
     }
 
     @GetMapping("/{providerCode}")
-    public AiProviderResponse getProvider(@PathVariable String providerCode) {
+    @PreAuthorize("hasAuthority('AI_PROVIDER_READ')")
+    public AiProviderResponse getProvider(@PathVariable("providerCode") String providerCode) {
         return AiProviderResponse.from(applicationService.getProvider(providerCode));
     }
 
     @PutMapping("/{providerCode}")
+    @PreAuthorize("hasAuthority('AI_PROVIDER_MANAGE')")
     public AiProviderResponse saveProvider(
-            @PathVariable String providerCode,
+            @PathVariable("providerCode") String providerCode,
             @RequestBody AiProviderUpdateRequest request
     ) {
         AiProviderConfiguration configuration = applicationService.saveProvider(
@@ -60,8 +64,9 @@ public class AdminAiProviderController {
     }
 
     @PutMapping("/{providerCode}/secret")
+    @PreAuthorize("hasAuthority('AI_PROVIDER_MANAGE')")
     public AiProviderResponse replaceApiKey(
-            @PathVariable String providerCode,
+            @PathVariable("providerCode") String providerCode,
             @RequestBody AiProviderSecretRequest request,
             Authentication authentication
     ) {

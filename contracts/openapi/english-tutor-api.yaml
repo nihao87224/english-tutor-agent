@@ -19,9 +19,303 @@ tags:
   - name: IELTS
   - name: Privacy
   - name: Quota
+  - name: Admin
   - name: Admin AI Providers
 
 paths:
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Get SaaS administration dashboard metrics
+      operationId: getAdminDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboardSummary'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users:
+    get:
+      tags: [Admin]
+      summary: Search users for SaaS administration
+      operationId: searchAdminUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, DISABLED]
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Matching users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserPage'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users/{userKey}:
+    get:
+      tags: [Admin]
+      summary: Get a user administration detail
+      operationId: getAdminUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserKeyPath'
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetail'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users/{userKey}/status:
+    patch:
+      tags: [Admin]
+      summary: Enable or disable a user
+      operationId: updateAdminUserStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserKeyPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserStatusRequest'
+      responses:
+        '200':
+          description: Updated user detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetail'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users/{userKey}/roles:
+    put:
+      tags: [Admin]
+      summary: Replace user roles
+      operationId: replaceAdminUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserKeyPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserRolesRequest'
+      responses:
+        '200':
+          description: Updated user detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetail'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users/{userKey}/quota-policy:
+    put:
+      tags: [Admin]
+      summary: Update a user's effective quota policy
+      operationId: updateAdminQuotaPolicy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserKeyPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminQuotaPolicyRequest'
+      responses:
+        '200':
+          description: Updated quota state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuotaState'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users/{userKey}/quota/reset-today:
+    post:
+      tags: [Admin]
+      summary: Reset today's quota usage for a user
+      operationId: resetAdminUserQuotaToday
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserKeyPath'
+      responses:
+        '200':
+          description: Updated quota state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuotaState'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/users/{userKey}/quota/bonus:
+    post:
+      tags: [Admin]
+      summary: Add quota bonus for a user today
+      operationId: addAdminUserQuotaBonus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserKeyPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminQuotaBonusRequest'
+      responses:
+        '200':
+          description: Updated quota state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuotaState'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/settings:
+    get:
+      tags: [Admin]
+      summary: List runtime system settings
+      operationId: listAdminSystemSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminSystemSetting'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/settings/{key}:
+    put:
+      tags: [Admin]
+      summary: Update a runtime system setting
+      operationId: updateAdminSystemSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSystemSettingRequest'
+      responses:
+        '200':
+          description: Updated system setting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSystemSetting'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
+  /api/v1/admin/audit:
+    get:
+      tags: [Admin]
+      summary: List admin audit events
+      operationId: listAdminAudit
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Admin audit events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAuditPage'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/admin/ai-providers:
     get:
       tags: [Admin AI Providers]
@@ -710,6 +1004,30 @@ components:
       schema:
         type: string
         pattern: '^[A-Za-z0-9._-]{1,64}$'
+    UserKeyPath:
+      name: userKey
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9._-]{1,64}$'
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    PageSize:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
     AssessmentId:
       name: assessmentId
       in: path
@@ -1253,6 +1571,300 @@ components:
         unlimited:
           type: boolean
         resetAt:
+          type: string
+          format: date-time
+
+    AdminDashboardSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - totalUsers
+        - activeUsersToday
+        - newUsersToday
+        - aiRequestsToday
+        - usersReachedQuotaLimit
+        - activeDefaultProvider
+      properties:
+        totalUsers:
+          type: integer
+          format: int64
+          minimum: 0
+        activeUsersToday:
+          type: integer
+          format: int64
+          minimum: 0
+        newUsersToday:
+          type: integer
+          format: int64
+          minimum: 0
+        aiRequestsToday:
+          type: integer
+          format: int64
+          minimum: 0
+        usersReachedQuotaLimit:
+          type: integer
+          format: int64
+          minimum: 0
+        activeDefaultProvider:
+          type: string
+
+    AdminUserPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserSummary'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+
+    AdminUserSummary:
+      type: object
+      additionalProperties: false
+      required: [userId, userKey, email, status, roles, createdAt]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        userKey:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+        roles:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: [string, 'null']
+          format: date-time
+
+    AdminUserDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - userKey
+        - email
+        - status
+        - locale
+        - timezone
+        - authVersion
+        - roles
+        - authorities
+        - createdAt
+        - updatedAt
+      properties:
+        userId:
+          type: integer
+          format: int64
+        userKey:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+        locale:
+          type: string
+        timezone:
+          type: string
+        authVersion:
+          type: integer
+          format: int64
+        roles:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        authorities:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: [string, 'null']
+          format: date-time
+        disabledAt:
+          type: [string, 'null']
+          format: date-time
+
+    AdminUserStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+
+    AdminUserRolesRequest:
+      type: object
+      additionalProperties: false
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+
+    AdminQuotaPolicyRequest:
+      type: object
+      additionalProperties: false
+      required: [unlimited]
+      properties:
+        dailyLimitOverride:
+          type: [integer, 'null']
+          minimum: 0
+        unlimited:
+          type: boolean
+
+    AdminQuotaBonusRequest:
+      type: object
+      additionalProperties: false
+      required: [bonus]
+      properties:
+        bonus:
+          type: integer
+          minimum: 1
+
+    AdminQuotaState:
+      type: object
+      additionalProperties: false
+      required:
+        - userKey
+        - unlimited
+        - quotaDate
+        - dailyLimit
+        - used
+        - reserved
+        - bonus
+        - remaining
+      properties:
+        userKey:
+          type: string
+        dailyLimitOverride:
+          type: [integer, 'null']
+          minimum: 0
+        unlimited:
+          type: boolean
+        quotaDate:
+          type: string
+          format: date
+        dailyLimit:
+          type: integer
+          minimum: 0
+        used:
+          type: integer
+          minimum: 0
+        reserved:
+          type: integer
+          minimum: 0
+        bonus:
+          type: integer
+          minimum: 0
+        remaining:
+          type: integer
+          minimum: 0
+
+    AdminSystemSetting:
+      type: object
+      additionalProperties: false
+      required: [key, value, valueType, description, updatedAt]
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        valueType:
+          type: string
+          enum: [STRING, INTEGER, BOOLEAN, JSON]
+        description:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminSystemSettingRequest:
+      type: object
+      additionalProperties: false
+      required: [value, valueType]
+      properties:
+        value:
+          type: string
+        valueType:
+          type: string
+          enum: [STRING, INTEGER, BOOLEAN, JSON]
+        description:
+          type: string
+
+    AdminAuditPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAuditEntry'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+
+    AdminAuditEntry:
+      type: object
+      additionalProperties: false
+      required: [id, actionCode, targetType, targetKey, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        actorUserId:
+          type: [integer, 'null']
+          format: int64
+        actorEmail:
+          type: [string, 'null']
+          format: email
+        actionCode:
+          type: string
+        targetType:
+          type: string
+        targetKey:
+          type: string
+        createdAt:
           type: string
           format: date-time
 
