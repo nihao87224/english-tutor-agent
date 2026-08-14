@@ -1,8 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_ONBOARDING_STATE,
-  getOrCreateUserKey,
-  isValidUserKey,
   loadOnboardingState,
   resetLocalSession,
   saveOnboardingState,
@@ -14,22 +12,6 @@ describe("localSession", () => {
 
   beforeEach(() => {
     storage = new MemoryStorage();
-    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("12345678-1234-4123-8123-123456789abc");
-  });
-
-  it("creates and reuses a valid local user key", () => {
-    const created = getOrCreateUserKey(storage);
-    const reused = getOrCreateUserKey(storage);
-
-    expect(created).toBe("web_12345678123441238123123456789abc");
-    expect(reused).toBe(created);
-    expect(isValidUserKey(created)).toBe(true);
-  });
-
-  it("replaces invalid stored user keys", () => {
-    storage.setItem("englishTutor.web.userKey", "bad key with spaces");
-
-    expect(getOrCreateUserKey(storage)).toBe("web_12345678123441238123123456789abc");
   });
 
   it("loads defaults when onboarding state is missing or invalid", () => {
@@ -62,12 +44,10 @@ describe("localSession", () => {
   });
 
   it("clears local session keys", () => {
-    getOrCreateUserKey(storage);
     saveOnboardingState(DEFAULT_ONBOARDING_STATE, storage);
 
     resetLocalSession(storage);
 
-    expect(storage.getItem("englishTutor.web.userKey")).toBeNull();
     expect(storage.getItem("englishTutor.web.onboarding")).toBeNull();
   });
 });

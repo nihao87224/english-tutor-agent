@@ -1,14 +1,21 @@
 import { expect, test, type Page } from "@playwright/test";
 
-test("completes the Web expression coach path", async ({ page }) => {
+test("registers, practices, consumes quota, logs out and logs back in", async ({ page }) => {
   await mockBackend(page);
 
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "先把表达教练跑起来。" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to English Tutor" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign up", exact: true }).first().click();
+  await page.getByLabel("Email").fill("learner@example.com");
+  await page.getByLabel("Password").fill("learner-password");
+  await page.getByRole("button", { name: "Sign up" }).last().click();
+
+  await expect(page.getByRole("heading", { name: "Set up your expression coach." })).toBeVisible();
   await page.getByRole("button", { name: "Enter today's coach" }).click();
 
   await expect(page.getByRole("heading", { name: "Improve one sentence" })).toBeVisible();
+  await expect(page.getByText("50 left")).toBeVisible();
   await page.getByRole("button", { name: "Start practice" }).click();
 
   await expect(page.getByText("Write one sentence or mixed-language idea.")).toBeVisible();
@@ -31,10 +38,92 @@ test("completes the Web expression coach path", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Practice completed." })).toBeVisible();
   await expect(page.getByText("really like")).toBeVisible();
   await expect(page.getByText("Use natural adverbs before verbs.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Back to today's coach" }).click();
+  await expect(page.getByText("48 left")).toBeVisible();
+  await page.getByRole("button", { name: "History" }).click();
+  await expect(page.getByRole("heading", { name: "Practice history" })).toBeVisible();
+  await expect(page.getByText("You replaced direct translation with a natural adverb pattern.")).toBeVisible();
+  await page.getByRole("button", { name: "Log out" }).click();
+
+  await expect(page.getByRole("heading", { name: "Sign in to English Tutor" })).toBeVisible();
+  await page.getByLabel("Email").fill("learner@example.com");
+  await page.getByLabel("Password").fill("learner-password");
+  await page.getByRole("button", { name: "Log in" }).last().click();
+
+  await expect(page.getByRole("heading", { name: "Improve one sentence" })).toBeVisible();
+  await expect(page.getByText("48 left")).toBeVisible();
+  await page.getByRole("button", { name: "History" }).click();
+  await expect(page.getByText("Use natural adverbs before verbs.")).toBeVisible();
 });
 
 async function mockBackend(page: Page) {
   let streamCallCount = 0;
+  let onboardingCompleted = false;
+  let quotaUsed = 0;
+
+  const user = {
+    userKey: "learner-user",
+    email: "learner@example.com",
+    status: "ACTIVE",
+    roles: ["USER"],
+    locale: "en",
+    timezone: "UTC",
+  };
+
+  await page.route("http://localhost:8080/api/v1/auth/refresh", async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: "application/problem+json",
+      body: JSON.stringify({ type: "about:blank", title: "Unauthorized", status: 401 }),
+    });
+  });
+
+  await page.route("http://localhost:8080/api/v1/auth/register", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "set-cookie": "ETA_REFRESH_TOKEN=refresh; Path=/api/v1/auth; HttpOnly; SameSite=Lax" },
+      body: JSON.stringify({ user, accessToken: "access-token", expiresIn: 3600 }),
+    });
+  });
+
+  await page.route("http://localhost:8080/api/v1/auth/login", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "set-cookie": "ETA_REFRESH_TOKEN=refresh; Path=/api/v1/auth; HttpOnly; SameSite=Lax" },
+      body: JSON.stringify({ user, accessToken: "access-token-2", expiresIn: 3600 }),
+    });
+  });
+
+  await page.route("http://localhost:8080/api/v1/auth/logout", async (route) => {
+    await route.fulfill({ status: 200 });
+  });
+
+  await page.route("http://localhost:8080/api/v1/onboarding/progress", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ step: onboardingCompleted ? "COMPLETE" : "GOAL", completed: onboardingCompleted }),
+    });
+  });
+
+  await page.route("http://localhost:8080/api/v1/me/quota", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        quotaDate: "2026-08-10",
+        dailyLimit: 50,
+        used: quotaUsed,
+        bonus: 0,
+        remaining: 50 - quotaUsed,
+        unlimited: false,
+        resetAt: "2026-08-11T00:00:00Z",
+      }),
+    });
+  });
 
   await page.route("http://localhost:8080/api/v1/profile/primary-goal", async (route) => {
     await route.fulfill({
@@ -45,6 +134,7 @@ async function mockBackend(page: Page) {
   });
 
   await page.route("http://localhost:8080/api/v1/profile/preferences", async (route) => {
+    onboardingCompleted = true;
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -112,6 +202,7 @@ async function mockBackend(page: Page) {
 
   await page.route("http://localhost:8080/api/v1/conversations/session-1/messages/stream", async (route) => {
     streamCallCount += 1;
+    quotaUsed += 1;
     const firstCorrection = {
       hasError: true,
       corrections: [

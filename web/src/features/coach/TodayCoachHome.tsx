@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import type { ApiClient, LearningPlan, PlanTask, TrainingSession } from "../../shared/api";
+import type { ApiClient, LearningPlan, PlanTask, QuotaStatus, TrainingSession } from "../../shared/api";
+import { useI18n } from "../../shared/i18n";
 import { formatTaskReason, selectExpressionCoachTask } from "./selectExpressionTask";
 
 interface TodayCoachHomeProps {
   apiClient: ApiClient;
-  userKey: string;
+  quota: QuotaStatus | null;
+  quotaLoading: boolean;
+  onRefreshQuota: () => Promise<void>;
+  onOpenAccount: () => void;
   onStart: (selection: CoachSelection) => void;
 }
 
@@ -21,7 +25,8 @@ type LoadState =
   | { status: "empty"; plan?: LearningPlan }
   | { status: "error"; message: string };
 
-export function TodayCoachHome({ apiClient, userKey, onStart }: TodayCoachHomeProps) {
+export function TodayCoachHome({ apiClient, quota, quotaLoading, onRefreshQuota, onOpenAccount, onStart }: TodayCoachHomeProps) {
+  const { t } = useI18n();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [startState, setStartState] = useState<"idle" | "starting" | "error">("idle");
   const [startError, setStartError] = useState("");
@@ -29,10 +34,10 @@ export function TodayCoachHome({ apiClient, userKey, onStart }: TodayCoachHomePr
   async function loadPlan() {
     setLoadState({ status: "loading" });
     try {
-      const plan = await apiClient.getTodayPlan({ userKey });
+      const plan = await apiClient.getTodayPlan();
       setLoadState(plan.tasks.length > 0 ? { status: "content", plan } : { status: "empty", plan });
     } catch (error) {
-      setLoadState({ status: "error", message: error instanceof Error ? error.message : "Today's plan failed to load." });
+      setLoadState({ status: "error", message: error instanceof Error ? error.message : t("home.error.title") });
     }
   }
 
@@ -41,14 +46,14 @@ export function TodayCoachHome({ apiClient, userKey, onStart }: TodayCoachHomePr
   }, []);
 
   if (loadState.status === "loading") {
-    return <CoachHomeFrame title="Loading today's coach" description="Reading today's expression plan..." />;
+    return <CoachHomeFrame title={t("home.loading.title")} description={t("home.loading.desc")} />;
   }
 
   if (loadState.status === "error") {
     return (
-      <CoachHomeFrame title="Today's coach is unavailable" description={loadState.message}>
+      <CoachHomeFrame title={t("home.error.title")} description={loadState.message}>
         <button className="secondary-action" type="button" onClick={loadPlan}>
-          Retry
+          {t("home.retry")}
         </button>
       </CoachHomeFrame>
     );
@@ -56,12 +61,9 @@ export function TodayCoachHome({ apiClient, userKey, onStart }: TodayCoachHomePr
 
   if (loadState.status === "empty") {
     return (
-      <CoachHomeFrame
-        title="No expression task yet"
-        description="Today's plan does not have a practice task yet. Refresh and try again."
-      >
+      <CoachHomeFrame title={t("home.empty.title")} description={t("home.empty.desc")}>
         <button className="secondary-action" type="button" onClick={loadPlan}>
-          Refresh
+          {t("home.refresh")}
         </button>
       </CoachHomeFrame>
     );
@@ -70,13 +72,17 @@ export function TodayCoachHome({ apiClient, userKey, onStart }: TodayCoachHomePr
   return (
     <CoachHomeContent
       plan={loadState.plan}
+      quota={quota}
+      quotaLoading={quotaLoading}
       startState={startState}
       startError={startError}
+      onRefreshQuota={onRefreshQuota}
+      onOpenAccount={onOpenAccount}
       onStart={async (task) => {
         setStartState("starting");
         setStartError("");
         try {
-          const session = await apiClient.startTrainingSession({ planId: loadState.plan.planId, mode: "TEXT" }, { userKey });
+          const session = await apiClient.startTrainingSession({ planId: loadState.plan.planId, mode: "TEXT" });
           onStart({ plan: loadState.plan, task, session });
           setStartState("idle");
         } catch (error) {
@@ -90,29 +96,38 @@ export function TodayCoachHome({ apiClient, userKey, onStart }: TodayCoachHomePr
 
 function CoachHomeContent({
   plan,
+  quota,
+  quotaLoading,
   startState,
   startError,
+  onRefreshQuota,
+  onOpenAccount,
   onStart,
 }: {
   plan: LearningPlan;
+  quota: QuotaStatus | null;
+  quotaLoading: boolean;
   startState: "idle" | "starting" | "error";
   startError: string;
+  onRefreshQuota: () => Promise<void>;
+  onOpenAccount: () => void;
   onStart: (task: PlanTask) => void;
 }) {
+  const { t } = useI18n();
   const selectedTask = useMemo(() => selectExpressionCoachTask(plan), [plan]);
 
   if (!selectedTask) {
     return (
-      <CoachHomeFrame title="No expression task yet" description="Today's plan does not have a practice task yet.">
+      <CoachHomeFrame title={t("home.empty.title")} description={t("home.empty.desc")}>
         <span />
       </CoachHomeFrame>
     );
   }
 
   return (
-    <main className="coach-home">
+    <section className="coach-home">
       <section className="coach-brief">
-        <p className="eyebrow">Today's expression coach</p>
+        <p className="eyebrow">{t("home.eyebrow")}</p>
         <h1>{selectedTask.title}</h1>
         <p className="summary">{formatTaskReason(plan, selectedTask)}</p>
         <div className="coach-meta">
@@ -121,14 +136,14 @@ function CoachHomeContent({
           <span>{selectedTask.skillFocus.join(" / ") || "expression"}</span>
         </div>
         <button className="primary-action" type="button" disabled={startState === "starting"} onClick={() => onStart(selectedTask)}>
-          {startState === "starting" ? "Starting..." : "Start practice"}
+          {startState === "starting" ? t("home.starting") : t("home.start")}
         </button>
         {startState === "error" ? <p className="form-error">{startError}</p> : null}
       </section>
 
       <aside className="plan-panel" aria-label="Today plan">
         <div className="panel-header">
-          <span>Plan</span>
+          <span>{t("home.plan")}</span>
           <strong>{plan.totalMinutes} min</strong>
         </div>
         <ol className="task-list">
@@ -139,9 +154,50 @@ function CoachHomeContent({
             </li>
           ))}
         </ol>
+        <QuotaBox quota={quota} loading={quotaLoading} onRefreshQuota={onRefreshQuota} onOpenAccount={onOpenAccount} />
       </aside>
-    </main>
+    </section>
   );
+}
+
+function QuotaBox({
+  quota,
+  loading,
+  onRefreshQuota,
+  onOpenAccount,
+}: {
+  quota: QuotaStatus | null;
+  loading: boolean;
+  onRefreshQuota: () => Promise<void>;
+  onOpenAccount: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="quota-box">
+      <div>
+        <span>{t("home.quota")}</span>
+        <strong>{quota ? quotaText(quota, t) : loading ? "..." : "-"}</strong>
+      </div>
+      {quota ? (
+        <small>
+          {t("home.quotaUsed", { used: quota.used, limit: quota.dailyLimit + quota.bonus })} ·{" "}
+          {t("home.quotaReset", { time: new Date(quota.resetAt).toLocaleString() })}
+        </small>
+      ) : null}
+      <div className="quota-actions">
+        <button className="text-button" type="button" onClick={() => void onRefreshQuota()}>
+          {t("home.refresh")}
+        </button>
+        <button className="text-button" type="button" onClick={onOpenAccount}>
+          {t("app.nav.account")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function quotaText(quota: QuotaStatus, t: (key: string, params?: Record<string, string | number>) => string): string {
+  return quota.unlimited ? t("home.quotaUnlimited") : t("home.quotaRemaining", { remaining: quota.remaining });
 }
 
 function CoachHomeFrame({
@@ -153,14 +209,15 @@ function CoachHomeFrame({
   description: string;
   children?: ReactNode;
 }) {
+  const { t } = useI18n();
   return (
-    <main className="app-shell">
+    <section className="app-shell">
       <section className="hero">
-        <p className="eyebrow">Today's expression coach</p>
+        <p className="eyebrow">{t("home.eyebrow")}</p>
         <h1>{title}</h1>
         <p className="summary">{description}</p>
         {children}
       </section>
-    </main>
+    </section>
   );
 }

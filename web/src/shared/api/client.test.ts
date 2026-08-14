@@ -3,13 +3,13 @@ import { ApiError, createApiClient } from "./client";
 import type { SseEvent } from "./sse";
 
 describe("createApiClient", () => {
-  it("sends user key and idempotency headers for mutations", async () => {
+  it("sends bearer token and idempotency headers for mutations", async () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({ primaryGoal: "WORKPLACE", dailyMinutes: 10, correctionStyle: "STANDARD" }),
     );
     const client = createApiClient({
       baseUrl: "http://api.test/",
-      userKey: "local-user",
+      accessToken: "access-token",
       fetchFn,
       idempotencyKeyFactory: () => "fixed-key",
     });
@@ -20,7 +20,9 @@ describe("createApiClient", () => {
     const headers = init.headers as Headers;
     expect(String(url)).toBe("http://api.test/api/v1/profile/primary-goal");
     expect(init.method).toBe("PUT");
-    expect(headers.get("X-User-Key")).toBe("local-user");
+    expect(init.credentials).toBe("include");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-User-Key")).toBeNull();
     expect(headers.get("Idempotency-Key")).toBe("fixed-key");
     expect(JSON.parse(init.body as string)).toEqual({ goal: "WORKPLACE" });
   });
@@ -29,14 +31,14 @@ describe("createApiClient", () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({ planId: "p1", date: "2026-08-10", totalMinutes: 10, tasks: [], reasons: [] }),
     );
-    const client = createApiClient({ baseUrl: "http://api.test", userKey: "local-user", fetchFn });
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "access-token", fetchFn });
 
     await client.getTodayPlan();
 
     const [, init] = lastFetchCall(fetchFn);
     const headers = init.headers as Headers;
     expect(init.method).toBe("GET");
-    expect(headers.get("X-User-Key")).toBe("local-user");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
     expect(headers.get("Idempotency-Key")).toBeNull();
   });
 
@@ -60,7 +62,7 @@ describe("createApiClient", () => {
         headers: { "Content-Type": "text/event-stream" },
       }),
     );
-    const client = createApiClient({ baseUrl: "http://api.test", userKey: "local-user", fetchFn, idempotencyKeyFactory: () => "sse-key" });
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "access-token", fetchFn, idempotencyKeyFactory: () => "sse-key" });
     const events: SseEvent[] = [];
 
     await client.streamConversationMessage("session-1", { messageType: "TEXT", text: "I very like this movie" }, (event) =>
@@ -71,9 +73,54 @@ describe("createApiClient", () => {
     const headers = init.headers as Headers;
     expect(String(url)).toBe("http://api.test/api/v1/conversations/session-1/messages/stream");
     expect(init.method).toBe("POST");
-    expect(headers.get("X-User-Key")).toBe("local-user");
+    expect(init.credentials).toBe("include");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
     expect(headers.get("Idempotency-Key")).toBe("sse-key");
     expect(events).toEqual([{ event: "text_delta", data: { delta: "Hi" } }]);
+  });
+
+  it("keeps X-User-Key fallback only when no access token is configured", async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ planId: "p1", date: "2026-08-10", totalMinutes: 10, tasks: [], reasons: [] }),
+    );
+    const client = createApiClient({ baseUrl: "http://api.test", userKey: "legacy-user", fetchFn });
+
+    await client.getTodayPlan();
+
+    const [, init] = lastFetchCall(fetchFn);
+    const headers = init.headers as Headers;
+    expect(headers.get("Authorization")).toBeNull();
+    expect(headers.get("X-User-Key")).toBe("legacy-user");
+  });
+
+  it("refreshes once and retries after an unauthorized response", async () => {
+    let token = "expired";
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ type: "about:blank", title: "Unauthorized", status: 401 }, 401))
+      .mockResolvedValueOnce(jsonResponse({ planId: "p1", date: "2026-08-10", totalMinutes: 10, tasks: [], reasons: [] }));
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      accessTokenProvider: () => token,
+      fetchFn,
+      onUnauthorized: async () => {
+        token = "fresh";
+        return true;
+      },
+    });
+
+    await client.getTodayPlan();
+
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    const [, retryInit] = lastFetchCall(fetchFn);
+    expect((retryInit.headers as Headers).get("Authorization")).toBe("Bearer fresh");
+  });
+
+  it("accepts empty logout responses", async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response("", { status: 200 }));
+    const client = createApiClient({ baseUrl: "http://api.test", fetchFn });
+
+    await expect(client.logout()).resolves.toBeUndefined();
   });
 });
 

@@ -11,6 +11,26 @@ export type TrainingSessionStatus =
   | "COMPLETION_FAILED"
   | "CANCELLED";
 
+export interface AuthUser {
+  userKey: string;
+  email: string;
+  status: "ACTIVE" | "DISABLED" | string;
+  roles: string[];
+  locale: string;
+  timezone: string;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+  accessToken: string;
+  expiresIn: number;
+}
+
+export interface AuthRequest {
+  email: string;
+  password: string;
+}
+
 export interface ProfileSummary {
   primaryGoal: PrimaryGoal;
   dailyMinutes: number;
@@ -36,6 +56,16 @@ export interface PrivacySettings {
   saveRawText: boolean;
   saveRawAudio: boolean;
   rawAudioRetentionDays?: number;
+}
+
+export interface QuotaStatus {
+  quotaDate: string;
+  dailyLimit: number;
+  used: number;
+  bonus: number;
+  remaining: number;
+  unlimited: boolean;
+  resetAt: string;
 }
 
 export interface LearningPlan {
@@ -182,4 +212,9 @@ export interface ProblemResponse {
   detail?: string;
   instance?: string;
   traceId?: string;
+  code?: string;
+  dailyLimit?: number;
+  used?: number;
+  remaining?: number;
+  resetAt?: string;
 }

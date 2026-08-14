@@ -15,6 +15,7 @@ body {
   margin: 0;
 }
 
+.auth-layout,
 .app-shell,
 .onboarding-layout {
   min-height: 100vh;
@@ -24,12 +25,14 @@ body {
   gap: 28px;
 }
 
+.auth-layout,
 .onboarding-layout {
   grid-template-columns: minmax(0, 0.92fr) minmax(360px, 520px);
   align-items: center;
 }
 
 .hero,
+.auth-copy,
 .onboarding-copy {
   max-width: 820px;
 }
@@ -119,6 +122,64 @@ h1 {
   padding: 24px;
   border: 1px solid #d9dee5;
   background: #ffffff;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid #d9dee5;
+  background: #ffffff;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #d9dee5;
+}
+
+.auth-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-right: 1px solid #d9dee5;
+  background: #ffffff;
+  color: #2b3643;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-tabs button:last-child {
+  border-right: 0;
+}
+
+.auth-tabs button.selected {
+  background: #17202a;
+  color: #ffffff;
+}
+
+.field-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.field-stack span {
+  color: #2b3643;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.field-stack input,
+.auth-form select,
+.learner-topbar select,
+.settings-row select {
+  min-height: 42px;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid #bdc6d0;
+  background: #ffffff;
+  color: #17202a;
+  font: inherit;
 }
 
 fieldset {
@@ -378,6 +439,187 @@ legend {
   cursor: pointer;
 }
 
+.learner-shell {
+  min-height: 100vh;
+  background: #f6f7f9;
+}
+
+.learner-topbar {
+  min-height: 68px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px clamp(20px, 5vw, 72px);
+  border-bottom: 1px solid #d9dee5;
+  background: #ffffff;
+}
+
+.learner-topbar > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.learner-topbar strong,
+.learner-topbar span {
+  overflow-wrap: anywhere;
+}
+
+.learner-topbar span {
+  color: #6c7683;
+  font-size: 0.82rem;
+}
+
+.learner-topbar nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.learner-topbar button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #d9dee5;
+  background: #ffffff;
+  color: #17202a;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.learner-topbar button.selected {
+  border-color: #17202a;
+  background: #17202a;
+  color: #ffffff;
+}
+
+.section-head {
+  display: grid;
+  gap: 8px;
+}
+
+.section-head h1 {
+  font-size: clamp(2rem, 3rem, 3rem);
+}
+
+.account-page,
+.history-page {
+  display: grid;
+  gap: 24px;
+  padding: 40px clamp(20px, 5vw, 72px);
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(320px, 520px);
+  gap: 24px;
+  align-items: start;
+}
+
+.settings-panel {
+  display: grid;
+  gap: 0;
+  border: 1px solid #d9dee5;
+  background: #ffffff;
+}
+
+.settings-row {
+  min-width: 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.settings-row:last-child {
+  border-bottom: 0;
+}
+
+.settings-row span {
+  color: #6c7683;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.settings-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.quota-panel {
+  padding-bottom: 18px;
+}
+
+.quota-meter {
+  height: 10px;
+  margin: 18px 20px 0;
+  overflow: hidden;
+  background: #edf0f3;
+}
+
+.quota-meter div {
+  height: 100%;
+  background: #236457;
+}
+
+.quota-box {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border-top: 1px solid #d9dee5;
+}
+
+.quota-box > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quota-box span,
+.quota-box small {
+  color: #6c7683;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.quota-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.quota-warning {
+  margin: 0 32px 12px;
+}
+
+.history-list {
+  display: grid;
+  gap: 16px;
+  max-width: 920px;
+}
+
+.history-card {
+  border: 1px solid #d9dee5;
+  background: #ffffff;
+}
+
+.history-card ul {
+  margin: 0;
+  padding: 18px 20px 20px 38px;
+  color: #45515f;
+  line-height: 1.7;
+}
+
+.empty-history {
+  max-width: 720px;
+}
+
 .conversation-panel {
   min-width: 0;
   min-height: 100vh;
@@ -603,18 +845,30 @@ legend {
 }
 
 @media (max-width: 720px) {
+  .auth-layout,
   .app-shell,
   .onboarding-layout {
     align-content: start;
     padding-top: 36px;
   }
 
+  .auth-layout,
   .onboarding-layout,
   .coach-home,
   .coach-workspace,
   .summary-view,
-  .status-panel {
+  .status-panel,
+  .account-grid {
     grid-template-columns: 1fr;
+  }
+
+  .learner-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .learner-topbar nav {
+    justify-content: flex-start;
   }
 
   .workspace-sidebar {

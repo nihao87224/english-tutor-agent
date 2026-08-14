@@ -1,5 +1,8 @@
 import { parseSseStream, type SseEventHandler } from "./sse";
 import type {
+  AuthRequest,
+  AuthResponse,
+  AuthUser,
   ConversationMessageRequest,
   CurrentTrainingTask,
   LearningPlan,
@@ -10,6 +13,7 @@ import type {
   PrivacySettings,
   ProblemResponse,
   ProfileSummary,
+  QuotaStatus,
   StartTrainingSessionRequest,
   TaskAttemptReceipt,
   TaskAttemptRequest,
@@ -21,13 +25,22 @@ const DEFAULT_BASE_URL = "http://localhost:8080";
 
 export interface ApiClientOptions {
   baseUrl?: string;
+  accessToken?: string;
+  accessTokenProvider?: () => string | undefined;
   userKey?: string;
   fetchFn?: typeof fetch;
   idempotencyKeyFactory?: () => string;
+  onUnauthorized?: () => Promise<boolean>;
 }
 
 export interface ApiClient {
   readonly baseUrl: string;
+  register(request: AuthRequest): Promise<AuthResponse>;
+  login(request: AuthRequest): Promise<AuthResponse>;
+  refreshSession(): Promise<AuthResponse>;
+  logout(): Promise<void>;
+  me(options?: RequestOptions): Promise<AuthUser>;
+  getCurrentQuota(options?: RequestOptions): Promise<QuotaStatus>;
   putPrimaryGoal(goal: PrimaryGoal, options?: RequestOptions): Promise<ProfileSummary>;
   putPreferences(request: PreferenceRequest, options?: RequestOptions): Promise<ProfileSummary>;
   getOnboardingProgress(options?: RequestOptions): Promise<OnboardingProgress>;
@@ -64,6 +77,7 @@ interface RequestOptions {
 interface JsonRequestOptions extends RequestOptions {
   method?: "GET" | "POST" | "PUT";
   body?: unknown;
+  retryOnUnauthorized?: boolean;
 }
 
 export class ApiError extends Error {
@@ -84,18 +98,35 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
 
   async function requestJson<T>(path: string, requestOptions: JsonRequestOptions = {}): Promise<T> {
     const method = requestOptions.method ?? "GET";
-    const response = await fetchFn(`${baseUrl}${path}`, {
-      method,
-      headers: buildHeaders(options.userKey, requestOptions, method, "application/json"),
-      body: requestOptions.body === undefined ? undefined : JSON.stringify(requestOptions.body),
-      signal: requestOptions.signal,
-    });
+    let response = await fetchJson(path, method, requestOptions);
+
+    if (response.status === 401 && requestOptions.retryOnUnauthorized !== false && options.onUnauthorized) {
+      const refreshed = await options.onUnauthorized();
+      if (refreshed) {
+        response = await fetchJson(path, method, { ...requestOptions, retryOnUnauthorized: false });
+      }
+    }
 
     if (!response.ok) {
       throw await toApiError(response);
     }
 
-    return (await response.json()) as T;
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    return (text ? JSON.parse(text) : undefined) as T;
+  }
+
+  function fetchJson(path: string, method: string, requestOptions: JsonRequestOptions): Promise<Response> {
+    return fetchFn(`${baseUrl}${path}`, {
+      method,
+      headers: buildHeaders(options, requestOptions, method, "application/json"),
+      body: requestOptions.body === undefined ? undefined : JSON.stringify(requestOptions.body),
+      signal: requestOptions.signal,
+      credentials: "include",
+    });
   }
 
   function mutationOptions(requestOptions: RequestOptions = {}): RequestOptions {
@@ -107,6 +138,38 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
 
   return {
     baseUrl,
+    register(request) {
+      return requestJson<AuthResponse>("/api/v1/auth/register", {
+        method: "POST",
+        body: request,
+        retryOnUnauthorized: false,
+      });
+    },
+    login(request) {
+      return requestJson<AuthResponse>("/api/v1/auth/login", {
+        method: "POST",
+        body: request,
+        retryOnUnauthorized: false,
+      });
+    },
+    refreshSession() {
+      return requestJson<AuthResponse>("/api/v1/auth/refresh", {
+        method: "POST",
+        retryOnUnauthorized: false,
+      });
+    },
+    logout() {
+      return requestJson<void>("/api/v1/auth/logout", {
+        method: "POST",
+        retryOnUnauthorized: false,
+      });
+    },
+    me(requestOptions) {
+      return requestJson<AuthUser>("/api/v1/me", requestOptions);
+    },
+    getCurrentQuota(requestOptions) {
+      return requestJson<QuotaStatus>("/api/v1/me/quota", requestOptions);
+    },
     putPrimaryGoal(goal, requestOptions) {
       return requestJson<ProfileSummary>("/api/v1/profile/primary-goal", {
         ...mutationOptions(requestOptions),
@@ -190,15 +253,27 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
     async streamConversationMessage(sessionId, request, onEvent, requestOptions) {
       const optionsWithIdempotency = mutationOptions(requestOptions);
-      const response = await fetchFn(
-        `${baseUrl}/api/v1/conversations/${encodeURIComponent(sessionId)}/messages/stream`,
-        {
-          method: "POST",
-          headers: buildHeaders(options.userKey, optionsWithIdempotency, "POST", "application/json"),
-          body: JSON.stringify(request),
-          signal: requestOptions?.signal,
-        },
-      );
+      const path = `/api/v1/conversations/${encodeURIComponent(sessionId)}/messages/stream`;
+      let response = await fetchFn(`${baseUrl}${path}`, {
+        method: "POST",
+        headers: buildHeaders(options, optionsWithIdempotency, "POST", "application/json"),
+        body: JSON.stringify(request),
+        signal: requestOptions?.signal,
+        credentials: "include",
+      });
+
+      if (response.status === 401 && options.onUnauthorized) {
+        const refreshed = await options.onUnauthorized();
+        if (refreshed) {
+          response = await fetchFn(`${baseUrl}${path}`, {
+            method: "POST",
+            headers: buildHeaders(options, optionsWithIdempotency, "POST", "application/json"),
+            body: JSON.stringify(request),
+            signal: requestOptions?.signal,
+            credentials: "include",
+          });
+        }
+      }
 
       if (!response.ok) {
         throw await toApiError(response);
@@ -221,14 +296,18 @@ function normalizeBaseUrl(baseUrl: string): string {
 }
 
 function buildHeaders(
-  defaultUserKey: string | undefined,
+  clientOptions: ApiClientOptions,
   options: RequestOptions,
   method: string,
   contentType?: string,
 ): Headers {
   const headers = new Headers();
-  const userKey = options.userKey ?? defaultUserKey;
-  if (userKey) {
+  const accessToken = clientOptions.accessTokenProvider?.() ?? clientOptions.accessToken;
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  const userKey = options.userKey ?? clientOptions.userKey;
+  if (!accessToken && userKey) {
     headers.set("X-User-Key", userKey);
   }
   if (method !== "GET" && options.idempotencyKey) {

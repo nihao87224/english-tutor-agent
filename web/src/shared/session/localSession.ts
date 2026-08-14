@@ -1,9 +1,6 @@
 import type { CorrectionStyle, PreferenceRequest, PrimaryGoal } from "../api";
 
-const USER_KEY_STORAGE_KEY = "englishTutor.web.userKey";
 const ONBOARDING_STORAGE_KEY = "englishTutor.web.onboarding";
-
-const USER_KEY_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
 export interface LocalOnboardingState {
   completed: boolean;
@@ -27,17 +24,6 @@ export interface WebStorageLike {
   removeItem(key: string): void;
 }
 
-export function getOrCreateUserKey(storage = getBrowserStorage()): string {
-  const existing = storage?.getItem(USER_KEY_STORAGE_KEY);
-  if (existing && isValidUserKey(existing)) {
-    return existing;
-  }
-
-  const userKey = createUserKey();
-  storage?.setItem(USER_KEY_STORAGE_KEY, userKey);
-  return userKey;
-}
-
 export function loadOnboardingState(storage = getBrowserStorage()): LocalOnboardingState {
   const raw = storage?.getItem(ONBOARDING_STORAGE_KEY);
   if (!raw) {
@@ -56,17 +42,7 @@ export function saveOnboardingState(state: LocalOnboardingState, storage = getBr
 }
 
 export function resetLocalSession(storage = getBrowserStorage()): void {
-  storage?.removeItem(USER_KEY_STORAGE_KEY);
   storage?.removeItem(ONBOARDING_STORAGE_KEY);
-}
-
-export function isValidUserKey(userKey: string): boolean {
-  return USER_KEY_PATTERN.test(userKey);
-}
-
-function createUserKey(): string {
-  const randomPart = globalThis.crypto?.randomUUID?.().replace(/-/g, "") ?? Math.random().toString(36).slice(2);
-  return `web_${randomPart}`.slice(0, 64);
 }
 
 function normalizeOnboardingState(value: unknown): LocalOnboardingState {

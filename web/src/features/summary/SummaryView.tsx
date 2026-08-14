@@ -1,4 +1,5 @@
 import type { TrainingSessionCompletion } from "../../shared/api";
+import { useI18n } from "../../shared/i18n";
 import { toSummaryViewModel } from "./summaryModel";
 
 interface SummaryViewProps {
@@ -7,19 +8,17 @@ interface SummaryViewProps {
 }
 
 export function SummaryView({ completion, onBackToHome }: SummaryViewProps) {
+  const { t } = useI18n();
   const model = toSummaryViewModel(completion);
 
   return (
     <main className="summary-view">
       <section className="summary-hero">
-        <p className="eyebrow">Daily summary</p>
-        <h1>Practice completed.</h1>
-        <p className="summary">
-          {model.completedTaskCount} task completed with {model.evidenceCount} learning evidence item
-          {model.evidenceCount === 1 ? "" : "s"}.
-        </p>
+        <p className="eyebrow">{t("summary.eyebrow")}</p>
+        <h1>{t("summary.title")}</h1>
+        <p className="summary">{t("summary.body", { tasks: model.completedTaskCount, evidence: model.evidenceCount })}</p>
         <button className="primary-action" type="button" onClick={onBackToHome}>
-          Back to today's coach
+          {t("summary.back")}
         </button>
       </section>
 

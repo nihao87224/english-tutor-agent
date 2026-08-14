@@ -1,6 +1,6 @@
 # English Tutor Agent Web
 
-Web client for the V1.0 Expression Coach MVP.
+React + TypeScript + Vite Web client for the learner SaaS experience.
 
 ## Scripts
 
@@ -12,12 +12,18 @@ pnpm run e2e
 pnpm run build
 ```
 
-The app reads `VITE_API_BASE_URL` when present and otherwise talks to `http://localhost:8080`.
+`VITE_API_BASE_URL` controls the API origin. In production it must be an empty
+string so the app uses same-origin `/api` through the Web Nginx container. When
+the variable is not set, local development falls back to `http://localhost:8080`.
 
-## M3-T01 Scope
+## SaaS-M6 Scope
 
-- Vite + React + TypeScript project baseline.
-- Typed REST API client for profile, planning, training, privacy and conversation entry points.
-- POST SSE parsing for `status`, `text_delta`, `correction_ready` and `done`.
-- Unit tests for headers, error handling and stream parsing.
-- Playwright E2E with mocked backend contract responses.
+- Email/password login and registration.
+- Access-token authenticated API client with cookie-based refresh support.
+- Route guard for learner onboarding, today practice, summary and account pages.
+- `/api/v1/me/quota` display on today and account pages.
+- Quota-exceeded UX for AI conversation requests.
+- Email-scoped recent practice history for completed summaries.
+- zh-CN/en i18n foundation without adding a heavy runtime dependency.
+- Playwright learner smoke covering register -> onboarding -> practice -> quota
+  consumed -> logout/login -> data preserved.

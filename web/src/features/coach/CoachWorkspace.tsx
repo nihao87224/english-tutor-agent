@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState, type FormEvent } from "react";
-import type { ApiClient, CurrentTrainingTask, TrainingSessionCompletion } from "../../shared/api";
+import { ApiError, type ApiClient, type CurrentTrainingTask, type QuotaStatus, type TrainingSessionCompletion } from "../../shared/api";
+import { useI18n } from "../../shared/i18n";
 import type { CoachSelection } from "./TodayCoachHome";
 import { CorrectionPanel } from "./CorrectionPanel";
 import {
@@ -12,9 +13,10 @@ import {
 
 interface CoachWorkspaceProps {
   apiClient: ApiClient;
-  userKey: string;
+  quota: QuotaStatus | null;
   selection: CoachSelection;
   onBack: () => void;
+  onQuotaChanged: () => Promise<void>;
   onCompleted: (completion: TrainingSessionCompletion) => void;
 }
 
@@ -23,7 +25,8 @@ type ConversationAction =
   | { type: "event"; event: Parameters<typeof applySseEvent>[1] }
   | { type: "fail"; message: string };
 
-export function CoachWorkspace({ apiClient, userKey, selection, onBack, onCompleted }: CoachWorkspaceProps) {
+export function CoachWorkspace({ apiClient, quota, selection, onBack, onQuotaChanged, onCompleted }: CoachWorkspaceProps) {
+  const { t } = useI18n();
   const [taskState, setTaskState] = useState<"loading" | "content" | "error">("loading");
   const [currentTask, setCurrentTask] = useState<CurrentTrainingTask | null>(null);
   const [draft, setDraft] = useState("");
@@ -33,13 +36,14 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
   const [completionError, setCompletionError] = useState("");
   const [conversation, dispatch] = useReducer(conversationReducer, EMPTY_CONVERSATION_STATE);
   const userMessageCount = conversation.messages.filter((message) => message.role === "user").length;
+  const quotaExhausted = quota ? !quota.unlimited && quota.remaining <= 0 : false;
 
   useEffect(() => {
     let cancelled = false;
     async function loadTask() {
       setTaskState("loading");
       try {
-        const task = await apiClient.getCurrentTrainingTask(selection.session.sessionId, { userKey });
+        const task = await apiClient.getCurrentTrainingTask(selection.session.sessionId);
         if (!cancelled) {
           setCurrentTask(task);
           setTaskState("content");
@@ -54,11 +58,11 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
     return () => {
       cancelled = true;
     };
-  }, [apiClient, selection.session.sessionId, userKey]);
+  }, [apiClient, selection.session.sessionId]);
 
   async function sendMessage(text: string, retry = false) {
     const trimmed = text.trim();
-    if (!trimmed || conversation.streamStatus === "streaming") {
+    if (!trimmed || conversation.streamStatus === "streaming" || quotaExhausted) {
       return;
     }
 
@@ -76,11 +80,12 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
           taskId: currentTask?.taskId ?? selection.task.taskId,
         },
         (event) => dispatch({ type: "event", event }),
-        { userKey },
       );
+      await onQuotaChanged();
     } catch (error) {
       setDraft(trimmed);
-      dispatch({ type: "fail", message: error instanceof Error ? error.message : "Stream failed. Please retry." });
+      dispatch({ type: "fail", message: quotaErrorMessage(error, t("coach.quotaExceeded")) });
+      await onQuotaChanged();
     }
   }
 
@@ -93,7 +98,7 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
     setCompletionState("completing");
     setCompletionError("");
     try {
-      const completion = await apiClient.completeTrainingSession(selection.session.sessionId, { userKey });
+      const completion = await apiClient.completeTrainingSession(selection.session.sessionId);
       setCompletionState("idle");
       onCompleted(completion);
       return completion;
@@ -108,14 +113,15 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
     <main className="coach-workspace">
       <aside className="workspace-sidebar">
         <button className="text-button" type="button" onClick={onBack}>
-          Back
+          {t("coach.back")}
         </button>
-        <p className="eyebrow">Today's task</p>
+        <p className="eyebrow">{t("coach.task")}</p>
         <h2>{currentTask?.title ?? selection.task.title}</h2>
         <p>{currentTask?.reason ?? selection.task.reason ?? "Practice one idea in natural English."}</p>
         <div className="workspace-facts">
           <span>{selection.session.mode}</span>
-          <span>{taskState === "loading" ? "Loading task" : taskState === "error" ? "Task fallback" : "Ready"}</span>
+          <span>{taskState === "loading" ? t("coach.loadingTask") : taskState === "error" ? t("coach.taskFallback") : t("coach.ready")}</span>
+          {quota ? <span>{quota.unlimited ? t("home.quotaUnlimited") : t("home.quotaRemaining", { remaining: quota.remaining })}</span> : null}
         </div>
         <CompletePracticeButton
           disabled={userMessageCount === 0 || conversation.streamStatus === "streaming" || completionState === "completing"}
@@ -129,13 +135,13 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
         <div className="message-list">
           {conversation.messages.length === 0 ? (
             <div className="empty-chat">
-              <strong>Write one sentence or mixed-language idea.</strong>
-              <span>Example: I very like this movie because it makes me relax.</span>
+              <strong>{t("coach.empty.title")}</strong>
+              <span>{t("coach.empty.example")}</span>
             </div>
           ) : (
             conversation.messages.map((message) => (
               <article className={`chat-message ${message.role} ${message.kind === "retry" ? "retry" : ""}`} key={message.id}>
-                <span>{message.role === "user" ? (message.kind === "retry" ? "Try Again" : "You") : "Coach"}</span>
+                <span>{message.role === "user" ? (message.kind === "retry" ? t("coach.tryAgain") : "You") : "Coach"}</span>
                 <p>{message.text || (message.role === "assistant" ? "..." : "")}</p>
               </article>
             ))
@@ -147,21 +153,23 @@ export function CoachWorkspace({ apiClient, userKey, selection, onBack, onComple
           <div className="form-error">
             {conversation.errorMessage}
             <button className="inline-action" type="button" onClick={() => void sendMessage(lastSubmittedText)}>
-              Retry
+              {t("coach.retry")}
             </button>
           </div>
         ) : null}
+
+        {quotaExhausted ? <p className="form-error quota-warning">{t("coach.quotaExceeded")}</p> : null}
 
         <form className="composer" onSubmit={handleSubmit}>
           <textarea
             value={draft}
             maxLength={4000}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder={retryMode ? "Rewrite it using the suggested pattern..." : "Type your English sentence or Chinese idea..."}
-            disabled={conversation.streamStatus === "streaming"}
+            placeholder={retryMode ? t("coach.retryPlaceholder") : t("coach.placeholder")}
+            disabled={conversation.streamStatus === "streaming" || quotaExhausted}
           />
-          <button className="primary-action" type="submit" disabled={!draft.trim() || conversation.streamStatus === "streaming"}>
-            {conversation.streamStatus === "streaming" ? "Streaming..." : retryMode ? "Try Again" : "Send"}
+          <button className="primary-action" type="submit" disabled={!draft.trim() || conversation.streamStatus === "streaming" || quotaExhausted}>
+            {conversation.streamStatus === "streaming" ? t("coach.streaming") : retryMode ? t("coach.tryAgain") : t("coach.send")}
           </button>
         </form>
       </section>
@@ -188,6 +196,7 @@ function CompletePracticeButton({
   errorMessage: string;
   onComplete: () => Promise<TrainingSessionCompletion | null>;
 }) {
+  const { t } = useI18n();
   return (
     <div className="complete-block">
       <button
@@ -198,11 +207,18 @@ function CompletePracticeButton({
           await onComplete();
         }}
       >
-        {completionState === "completing" ? "Completing..." : "Complete practice"}
+        {completionState === "completing" ? t("coach.completing") : t("coach.complete")}
       </button>
       {completionState === "error" ? <p className="form-error">{errorMessage}</p> : null}
     </div>
   );
+}
+
+function quotaErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && (error.status === 429 || error.problem?.code === "DAILY_QUOTA_EXCEEDED")) {
+    return error.problem?.detail ?? fallback;
+  }
+  return error instanceof Error ? error.message : "Stream failed. Please retry.";
 }
 
 function conversationReducer(state: ConversationState, action: ConversationAction): ConversationState {
