@@ -1,6 +1,17 @@
 package cn.forever24.tutor.android
 
+import cn.forever24.tutor.android.auth.AppLocale
+import cn.forever24.tutor.android.auth.AuthenticatedUser
+import cn.forever24.tutor.android.auth.AuthMode
+import cn.forever24.tutor.android.auth.AuthRepository
+import cn.forever24.tutor.android.auth.AuthSession
+import cn.forever24.tutor.android.auth.InMemoryAuthSessionStore
+import cn.forever24.tutor.android.network.ApiRequest
+import cn.forever24.tutor.android.network.ApiResponse
+import cn.forever24.tutor.android.network.ApiTransport
+import cn.forever24.tutor.android.network.TutorApiClient
 import cn.forever24.tutor.android.ui.CorrectionStyle
+import cn.forever24.tutor.android.ui.AuthStatus
 import cn.forever24.tutor.android.ui.OnboardingStep
 import cn.forever24.tutor.android.ui.PrimaryGoal
 import cn.forever24.tutor.android.ui.SelfAssessmentSkill
@@ -16,7 +27,7 @@ class MainViewModelTest {
 
     @Test
     fun initialStateRequiresOnePrimaryGoal() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         assertEquals("Choose your learning goal", viewModel.uiState.value.title)
         assertEquals(3, viewModel.uiState.value.availableGoals.size)
@@ -33,7 +44,7 @@ class MainViewModelTest {
 
     @Test
     fun selectingGoalEnablesContinue() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectGoal(PrimaryGoal.WORKPLACE)
 
@@ -44,7 +55,7 @@ class MainViewModelTest {
 
     @Test
     fun selectingAnotherGoalKeepsOnlyOnePrimaryGoal() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectGoal(PrimaryGoal.WORKPLACE)
         viewModel.selectGoal(PrimaryGoal.IELTS)
@@ -54,7 +65,7 @@ class MainViewModelTest {
 
     @Test
     fun preferenceStateCanBeUpdatedAfterGoalSelection() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectGoal(PrimaryGoal.GENERAL)
         viewModel.selectDailyMinutes(30)
@@ -73,7 +84,7 @@ class MainViewModelTest {
 
     @Test
     fun invalidDailyMinutesAreIgnored() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectDailyMinutes(17)
 
@@ -82,7 +93,7 @@ class MainViewModelTest {
 
     @Test
     fun appliesRecoveredSelfAssessmentProgress() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyOnboardingProgress("SELF_ASSESSMENT", completed = false, assessmentId = null)
 
@@ -92,7 +103,7 @@ class MainViewModelTest {
 
     @Test
     fun preservesAssessmentIdOnlyForAssessmentStep() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyOnboardingProgress("ASSESSMENT", completed = false, assessmentId = "assessment-1")
         assertEquals("assessment-1", viewModel.uiState.value.assessmentId)
@@ -103,7 +114,7 @@ class MainViewModelTest {
 
     @Test
     fun appliesAssessmentSessionState() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyAssessmentSession(
             assessmentId = "assessment-1",
@@ -121,7 +132,7 @@ class MainViewModelTest {
 
     @Test
     fun ignoresInvalidAssessmentSessionState() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyAssessmentSession(
             assessmentId = "",
@@ -136,7 +147,7 @@ class MainViewModelTest {
 
     @Test
     fun appliesAssessmentAnswerReceipt() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyAssessmentAnswerReceipt(answerId = "answer-1", accepted = true)
 
@@ -146,7 +157,7 @@ class MainViewModelTest {
 
     @Test
     fun ignoresBlankAssessmentAnswerReceipt() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyAssessmentAnswerReceipt(answerId = " ", accepted = true)
 
@@ -156,7 +167,7 @@ class MainViewModelTest {
 
     @Test
     fun appliesOpenAnswerEvaluation() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyOpenAnswerEvaluation(
             feedback = "Clear response with a reason.",
@@ -169,7 +180,7 @@ class MainViewModelTest {
 
     @Test
     fun ignoresInvalidOpenAnswerEvaluation() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyOpenAnswerEvaluation(feedback = " ", scorePercent = 101)
 
@@ -179,7 +190,7 @@ class MainViewModelTest {
 
     @Test
     fun completedFlagOnlyAppliesToCompleteStep() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyOnboardingProgress("RESULT", completed = true, assessmentId = null)
         assertFalse(viewModel.uiState.value.onboardingCompleted)
@@ -190,7 +201,7 @@ class MainViewModelTest {
 
     @Test
     fun unknownRecoveredStepFallsBackToGoal() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyOnboardingProgress("BROKEN", completed = false, assessmentId = null)
 
@@ -199,7 +210,7 @@ class MainViewModelTest {
 
     @Test
     fun selfAssessmentRequiresAllFourSkills() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectSelfRating(SelfAssessmentSkill.LISTENING, SelfRating.INTERMEDIATE)
         viewModel.selectSelfRating(SelfAssessmentSkill.SPEAKING, SelfRating.BASIC)
@@ -214,7 +225,7 @@ class MainViewModelTest {
 
     @Test
     fun selectingSelfRatingReplacesPreviousValueForSkill() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectSelfRating(SelfAssessmentSkill.SPEAKING, SelfRating.BASIC)
         viewModel.selectSelfRating(SelfAssessmentSkill.SPEAKING, SelfRating.ADVANCED)
@@ -224,7 +235,7 @@ class MainViewModelTest {
 
     @Test
     fun firstUseFlowReachesResultAndTodayPlan() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.selectGoal(PrimaryGoal.WORKPLACE)
         viewModel.selectDailyMinutes(20)
@@ -269,7 +280,7 @@ class MainViewModelTest {
                 TodayPlanTaskUiModel(
                     taskId = "task-1",
                     type = "CONVERSATION",
-                    title = "工作场景快速回应",
+                    title = "Workplace quick response",
                     durationMinutes = 20,
                     skillFocus = listOf("speaking"),
                     difficulty = "EASY",
@@ -293,7 +304,7 @@ class MainViewModelTest {
 
     @Test
     fun ignoresInvalidTodayPlan() {
-        val viewModel = MainViewModel()
+        val viewModel = viewModel()
 
         viewModel.applyTodayPlan(
             planId = "plan-1",
@@ -315,5 +326,273 @@ class MainViewModelTest {
 
         assertEquals(null, viewModel.uiState.value.todayPlan)
         assertFalse(viewModel.uiState.value.canStartFirstTraining)
+    }
+
+    @Test
+    fun invalidAuthInputShowsErrorWithoutCallingApi() {
+        val transport = TestTransport()
+        val viewModel = MainViewModel(repository(transport))
+
+        viewModel.updateEmailInput("bad")
+        viewModel.updatePasswordInput("short")
+        viewModel.submitAuth()
+
+        assertEquals("Enter a valid email and an 8+ character password.", viewModel.uiState.value.authError)
+        assertEquals(0, transport.requests.size)
+    }
+
+    @Test
+    fun loginStoresAuthenticatedAccountAndLoadsQuota() {
+        val transport = TestTransport(
+            ApiResponse(
+                status = 200,
+                headers = mapOf("Set-Cookie" to listOf("ETA_REFRESH_TOKEN=refresh-1; HttpOnly")),
+                body = authBody(locale = "en"),
+            ),
+            ApiResponse(status = 200, body = quotaBody(used = 4, remaining = 46)),
+            ApiResponse(status = 200, body = onboardingBody()),
+            ApiResponse(status = 200, body = todayPlanBody()),
+        )
+        val viewModel = MainViewModel(repository(transport))
+
+        viewModel.updateEmailInput("learner@example.com")
+        viewModel.updatePasswordInput("password-1")
+        viewModel.submitAuth()
+        waitUntil {
+            viewModel.uiState.value.authStatus == AuthStatus.AUTHENTICATED &&
+                    viewModel.uiState.value.quota?.remaining == 46 &&
+                    viewModel.uiState.value.todayPlan?.planId == "plan-1"
+        }
+
+        val state = viewModel.uiState.value
+        assertEquals("learner@example.com", state.authenticatedEmail)
+        assertEquals(46, state.quota?.remaining)
+        assertEquals("Improve one sentence", state.todayPlan?.tasks?.single()?.title)
+        assertEquals("Bearer access-token", transport.requests.last().headers["Authorization"])
+    }
+
+    @Test
+    fun registerUsesRegisterEndpointAndAppliesBackendLocale() {
+        val transport = TestTransport(
+            ApiResponse(
+                status = 200,
+                headers = mapOf("Set-Cookie" to listOf("ETA_REFRESH_TOKEN=refresh-1; HttpOnly")),
+                body = authBody(locale = "zh-CN"),
+            ),
+            ApiResponse(status = 200, body = quotaBody(used = 0, remaining = 50)),
+        )
+        val viewModel = MainViewModel(repository(transport))
+
+        viewModel.switchAuthMode(AuthMode.REGISTER)
+        viewModel.updateEmailInput("learner@example.com")
+        viewModel.updatePasswordInput("password-1")
+        viewModel.submitAuth()
+        waitUntil { viewModel.uiState.value.authStatus == AuthStatus.AUTHENTICATED }
+
+        assertEquals("/api/v1/auth/register", transport.requests.first().path)
+        assertEquals(AppLocale.ZH_CN, viewModel.uiState.value.locale)
+    }
+
+    @Test
+    fun quotaExceededSetsLearnerFriendlyState() {
+        val transport = TestTransport(
+            ApiResponse(
+                status = 200,
+                headers = mapOf("Set-Cookie" to listOf("ETA_REFRESH_TOKEN=refresh-1; HttpOnly")),
+                body = authBody(locale = "en"),
+            ),
+            ApiResponse(
+                status = 429,
+                body = """
+                    {
+                      "type":"https://english-tutor/errors/daily-quota-exceeded",
+                      "title":"Daily quota exceeded",
+                      "status":429,
+                      "remaining":0
+                    }
+                """.trimIndent(),
+            ),
+        )
+        val viewModel = MainViewModel(repository(transport))
+
+        viewModel.updateEmailInput("learner@example.com")
+        viewModel.updatePasswordInput("password-1")
+        viewModel.submitAuth()
+        waitUntil { viewModel.uiState.value.quotaExceeded }
+
+        assertTrue(viewModel.uiState.value.quotaExceeded)
+        assertEquals("Daily quota exceeded.", viewModel.uiState.value.quotaError)
+    }
+
+    @Test
+    fun expiredStoredSessionReturnsToSignInWhenRefreshIsRejected() {
+        val sessionStore = InMemoryAuthSessionStore(
+            AuthSession(
+                user = authenticatedUser(),
+                accessToken = "expired-token",
+                expiresAtEpochMillis = 1_000L,
+                refreshToken = "revoked-refresh-token",
+            ),
+        )
+        val viewModel = MainViewModel(
+            repository(
+                transport = TestTransport(ApiResponse(status = 401, body = "{\"title\":\"Unauthorized\"}")),
+                sessionStore = sessionStore,
+                clockMillis = { 2_000L },
+            ),
+        )
+
+        waitUntil { viewModel.uiState.value.authError == "Session expired. Please sign in again." }
+
+        assertEquals("Session expired. Please sign in again.", viewModel.uiState.value.authError)
+        assertEquals(null, sessionStore.load())
+    }
+
+    @Test
+    fun logoutClearsAccountButKeepsSelectedLocale() {
+        val transport = TestTransport(
+            ApiResponse(status = 200, headers = mapOf("Set-Cookie" to listOf("ETA_REFRESH_TOKEN=refresh-1")), body = authBody("en")),
+            ApiResponse(status = 200, body = quotaBody(used = 0, remaining = 50)),
+            ApiResponse(status = 200),
+        )
+        val viewModel = MainViewModel(repository(transport))
+
+        viewModel.setLocale(AppLocale.ZH_CN)
+        viewModel.updateEmailInput("learner@example.com")
+        viewModel.updatePasswordInput("password-1")
+        viewModel.submitAuth()
+        waitUntil { viewModel.uiState.value.authStatus == AuthStatus.AUTHENTICATED }
+        viewModel.setLocale(AppLocale.ZH_CN)
+        viewModel.logout()
+        waitUntil { viewModel.uiState.value.authStatus == AuthStatus.SIGNED_OUT }
+
+        assertEquals(null, viewModel.uiState.value.authenticatedEmail)
+        assertEquals(AppLocale.ZH_CN, viewModel.uiState.value.locale)
+    }
+
+    @Test
+    fun logoutReturnsToSignInEvenWhenTheServerCannotBeReached() {
+        val transport = TestTransport(
+            ApiResponse(status = 200, headers = mapOf("Set-Cookie" to listOf("ETA_REFRESH_TOKEN=refresh-1")), body = authBody("en")),
+            ApiResponse(status = 200, body = quotaBody(used = 0, remaining = 50)),
+            ApiResponse(status = 200, body = onboardingBody()),
+            ApiResponse(status = 200, body = todayPlanBody()),
+            ApiResponse(status = 500, body = "{\"title\":\"Server error\"}"),
+        )
+        val viewModel = MainViewModel(repository(transport))
+
+        viewModel.updateEmailInput("learner@example.com")
+        viewModel.updatePasswordInput("password-1")
+        viewModel.submitAuth()
+        waitUntil { viewModel.uiState.value.todayPlan?.planId == "plan-1" }
+
+        viewModel.logout()
+        waitUntil { viewModel.uiState.value.authStatus == AuthStatus.SIGNED_OUT }
+
+        assertEquals(null, viewModel.uiState.value.authenticatedEmail)
+    }
+
+    private fun viewModel(): MainViewModel =
+        MainViewModel(repository(TestTransport()))
+
+    private fun repository(
+        transport: TestTransport,
+        sessionStore: InMemoryAuthSessionStore = InMemoryAuthSessionStore(),
+        clockMillis: () -> Long = { 1_000L },
+    ): AuthRepository =
+        AuthRepository(
+            apiClient = TutorApiClient("http://api.test", transport),
+            sessionStore = sessionStore,
+            clockMillis = clockMillis,
+        )
+
+    private fun authenticatedUser(): AuthenticatedUser =
+        AuthenticatedUser(
+            userKey = "learner-user",
+            email = "learner@example.com",
+            status = "ACTIVE",
+            roles = listOf("USER"),
+            locale = "en",
+            timezone = "UTC",
+        )
+
+    private fun waitUntil(assertion: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + 2_000L
+        while (System.currentTimeMillis() < deadline) {
+            if (assertion()) {
+                return
+            }
+            Thread.sleep(20L)
+        }
+        assertTrue("condition was not met before timeout", assertion())
+    }
+
+    private fun authBody(locale: String): String =
+        """
+            {
+              "user":{
+                "userKey":"learner-user",
+                "email":"learner@example.com",
+                "status":"ACTIVE",
+                "roles":["USER"],
+                "locale":"$locale",
+                "timezone":"UTC"
+              },
+              "accessToken":"access-token",
+              "expiresIn":3600
+            }
+        """.trimIndent()
+
+    private fun quotaBody(used: Int, remaining: Int): String =
+        """
+            {
+              "quotaDate":"2026-08-10",
+              "dailyLimit":50,
+              "used":$used,
+              "bonus":0,
+              "remaining":$remaining,
+              "unlimited":false,
+              "resetAt":"2026-08-11T00:00:00Z"
+            }
+        """.trimIndent()
+
+    private fun onboardingBody(): String =
+        """
+            {
+              "step":"COMPLETE",
+              "completed":true,
+              "assessmentId":null
+            }
+        """.trimIndent()
+
+    private fun todayPlanBody(): String =
+        """
+            {
+              "planId":"plan-1",
+              "date":"2026-08-10",
+              "totalMinutes":10,
+              "reasons":["Same account plan"],
+              "tasks":[{
+                "taskId":"task-1",
+                "type":"CONVERSATION",
+                "title":"Improve one sentence",
+                "durationMinutes":10,
+                "skillFocus":["speaking"],
+                "difficulty":"EASY",
+                "reason":"Practice expression"
+              }]
+            }
+        """.trimIndent()
+}
+
+private class TestTransport(
+    private vararg val responses: ApiResponse,
+) : ApiTransport {
+    val requests = mutableListOf<ApiRequest>()
+    private var nextResponse = 0
+
+    override fun execute(request: ApiRequest): ApiResponse {
+        requests += request
+        return responses[nextResponse++]
     }
 }

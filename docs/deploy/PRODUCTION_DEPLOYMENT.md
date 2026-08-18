@@ -10,6 +10,10 @@ server as:
 - MySQL, Redis and S3-compatible object storage supplied by managed services or
   separately operated infrastructure.
 
+Use this guide together with
+[`SAAS_HARDENING_RUNBOOK.md`](SAAS_HARDENING_RUNBOOK.md) before a production
+pilot.
+
 The recommended production shape is same-origin:
 
 ```text
@@ -24,16 +28,20 @@ port directly to the public internet.
 
 ## Current product limitations
 
-This repository is currently at the M3 Web Expression Coach milestone. It can be
-deployed for controlled production-like access, but the following are still not
-complete product-hardening items:
+This repository is currently at the SaaS Foundation hardening milestone. It can
+be deployed for controlled production-like access after the security checklist
+below is reviewed for the target environment, but the following are still not
+complete product areas:
 
-- Android voice/listening UI features start in M4.
-- Backend AI provider integration uses OpenAI-backed real providers.
-- Long-term review, IELTS Speaking and release-hardening are later milestones.
+- Billing, subscriptions, organizations and workspace features are intentionally
+  out of this foundation release.
+- Multi-provider automatic failover is not implemented; the runtime provider
+  switch currently supports the configured OpenAI-backed provider.
+- Android voice/listening UI and full Push-to-Talk flows remain later product
+  milestones.
 - The first production deployment should be treated as a limited-access pilot
-  until authentication, abuse controls, monitoring and data retention policies
-  are reviewed for the target audience.
+  until monitoring, abuse controls and data retention policies are reviewed for
+  the target audience.
 
 ## Server prerequisites
 
@@ -78,6 +86,8 @@ Important rules:
 
 - Keep all database, Redis, object-storage and AI provider secrets in
   environment variables.
+- All learner and admin API requests use authenticated bearer sessions. Do not
+  deploy any compatibility path that accepts client-supplied user identity.
 - Keep `FLYWAY_ENABLED=true` for forward-only schema migration.
 - Use UTC-compatible database/session settings; user-facing timezone conversion
   belongs at the edge/UI layer.
@@ -153,6 +163,17 @@ curl -fsS https://example.com/
 
 ## Rollback
 
+Before each production deployment:
+
+```bash
+mysqldump --single-transaction --routines --triggers \
+  -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p "$DB_NAME" \
+  | gzip > "/opt/english-tutor-agent/backups/${DB_NAME}-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+```
+
+Store backups outside the release directory and verify at least one restore in a
+non-production database before public access.
+
 List releases:
 
 ```bash
@@ -171,6 +192,15 @@ sudo systemctl reload nginx
 Database migrations are forward-only. A code rollback does not automatically
 rollback schema changes; review Flyway migrations before deploying changes that
 alter persisted data.
+
+When a rollback follows a forward migration, choose one of these explicit paths:
+
+- deploy a forward fix migration that restores compatibility with the older
+  service code;
+- keep the newer schema and roll back only application binaries if the older
+  code is verified against that schema;
+- restore a pre-deployment database backup only when data loss impact has been
+  accepted and the service is taken offline.
 
 ## Operations checks
 
@@ -198,16 +228,30 @@ curl -fsS https://example.com/
 curl -fsS https://example.com/actuator/health
 ```
 
+Authenticated smoke:
+
+```bash
+curl -fsS -X POST https://example.com/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"pilot@example.com","password":"<password>"}'
+curl -fsS https://example.com/api/v1/me/quota \
+  -H "Authorization: Bearer <access-token>"
+```
+
 ## Security checklist before public access
 
 - Domain uses HTTPS.
 - Only ports 80 and 443 are public.
 - Backend port 8080 is bound to localhost or blocked by firewall.
 - `production.env` is readable only by root/service operators.
+- No environment template or deployment override includes a legacy user-key
+  authentication switch.
 - MySQL and Redis require passwords and are not publicly exposed.
 - Object storage bucket is private unless a specific public-read path is
   intentionally required.
 - Logs do not contain authorization headers, API keys or unnecessary user text.
 - Database backups and restore drills are configured.
+- Secret scan has been run against source files, excluding build outputs and
+  dependency caches; any example secrets are documented placeholders only.
 - Access to the pilot environment is restricted until release-hardening tasks
   are complete.

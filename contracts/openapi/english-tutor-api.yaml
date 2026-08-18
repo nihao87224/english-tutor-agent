@@ -526,7 +526,6 @@ paths:
       summary: Create or replace the user's only primary learning goal
       operationId: putPrimaryGoal
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -552,7 +551,6 @@ paths:
       summary: Save learning and correction preferences
       operationId: putPreferences
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -575,8 +573,6 @@ paths:
       tags: [Profile]
       summary: Get resumable onboarding progress
       operationId: getOnboardingProgress
-      parameters:
-        - $ref: '#/components/parameters/UserKey'
       responses:
         '200':
           description: Progress
@@ -591,7 +587,6 @@ paths:
       summary: Submit skill self-assessment
       operationId: submitSelfAssessment
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -613,7 +608,6 @@ paths:
       summary: Start a lightweight adaptive assessment
       operationId: startAssessment
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: false
@@ -758,7 +752,6 @@ paths:
       summary: Start a training session from a plan
       operationId: startTrainingSession
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -782,7 +775,6 @@ paths:
       summary: Get a training session
       operationId: getTrainingSession
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
       responses:
         '200':
@@ -800,7 +792,6 @@ paths:
       summary: Pause an active training session
       operationId: pauseTrainingSession
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
       responses:
         '200':
@@ -818,7 +809,6 @@ paths:
       summary: Resume a paused training session
       operationId: resumeTrainingSession
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
       responses:
         '200':
@@ -836,7 +826,6 @@ paths:
       summary: Complete a training session
       operationId: completeTrainingSession
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
       responses:
         '200':
@@ -854,7 +843,6 @@ paths:
       summary: Get the current task for a training session
       operationId: getCurrentTrainingTask
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
       responses:
         '200':
@@ -872,7 +860,6 @@ paths:
       summary: Submit a text task attempt
       operationId: submitTaskAttempt
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
         - name: taskId
           in: path
@@ -902,7 +889,6 @@ paths:
       summary: Send a text message and receive server-sent events
       operationId: streamConversationMessage
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/SessionId'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -1032,8 +1018,6 @@ paths:
       tags: [Privacy]
       summary: Get privacy settings
       operationId: getPrivacySettings
-      parameters:
-        - $ref: '#/components/parameters/UserKey'
       responses:
         '200':
           description: Settings
@@ -1046,7 +1030,6 @@ paths:
       summary: Update privacy settings
       operationId: putPrivacySettings
       parameters:
-        - $ref: '#/components/parameters/UserKey'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -1094,14 +1077,6 @@ components:
         type: string
         minLength: 8
         maxLength: 128
-    UserKey:
-      name: X-User-Key
-      in: header
-      required: false
-      description: Local development user key until full authentication is introduced.
-      schema:
-        type: string
-        pattern: '^[A-Za-z0-9._-]{1,64}$'
     UserKeyPath:
       name: userKey
       in: path

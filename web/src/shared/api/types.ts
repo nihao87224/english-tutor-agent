@@ -68,6 +68,146 @@ export interface QuotaStatus {
   resetAt: string;
 }
 
+export interface AdminDashboardSummary {
+  totalUsers: number;
+  activeUsersToday: number;
+  newUsersToday: number;
+  aiRequestsToday: number;
+  usersReachedQuotaLimit: number;
+  activeDefaultProvider: string;
+}
+
+export interface AdminUserPage {
+  items: AdminUserSummary[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface AdminUserSummary {
+  userId: number;
+  userKey: string;
+  email: string;
+  status: "ACTIVE" | "DISABLED" | string;
+  roles: string[];
+  createdAt: string;
+  lastLoginAt?: string | null;
+}
+
+export interface AdminUserDetail extends AdminUserSummary {
+  locale: string;
+  timezone: string;
+  authVersion: number;
+  authorities: string[];
+  updatedAt: string;
+  disabledAt?: string | null;
+}
+
+export interface AdminUserSearchRequest {
+  q?: string;
+  status?: "ACTIVE" | "DISABLED" | "";
+  role?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface AdminUserStatusRequest {
+  status: "ACTIVE" | "DISABLED";
+}
+
+export interface AdminUserRolesRequest {
+  roles: string[];
+}
+
+export interface AdminQuotaPolicyRequest {
+  dailyLimitOverride?: number | null;
+  unlimited: boolean;
+}
+
+export interface AdminQuotaBonusRequest {
+  bonus: number;
+}
+
+export interface AdminQuotaState {
+  userKey: string;
+  dailyLimitOverride?: number | null;
+  unlimited: boolean;
+  quotaDate: string;
+  dailyLimit: number;
+  used: number;
+  reserved: number;
+  bonus: number;
+  remaining: number;
+}
+
+export interface AdminSystemSetting {
+  key: string;
+  value: string;
+  valueType: "STRING" | "INTEGER" | "BOOLEAN" | "JSON";
+  description: string;
+  updatedAt: string;
+}
+
+export interface AdminSystemSettingRequest {
+  value: string;
+  valueType: "STRING" | "INTEGER" | "BOOLEAN" | "JSON";
+  description?: string;
+}
+
+export interface AdminAuditPage {
+  items: AdminAuditEntry[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface AdminAuditEntry {
+  id: number;
+  actorUserId?: number | null;
+  actorEmail?: string | null;
+  actionCode: string;
+  targetType: string;
+  targetKey: string;
+  createdAt: string;
+}
+
+export interface AiProvider {
+  providerCode: string;
+  providerType: "OPENAI" | string;
+  displayName: string;
+  enabled: boolean;
+  defaultLlm: boolean;
+  defaultAsr: boolean;
+  defaultTts: boolean;
+  baseUrl: string;
+  llmModel: string;
+  asrModel: string;
+  ttsModel: string;
+  ttsVoice: string;
+  timeoutSeconds: number;
+  apiKeyConfigured: boolean;
+  apiKeyMaskedHint?: string | null;
+}
+
+export interface AiProviderUpdateRequest {
+  providerType: "OPENAI";
+  displayName: string;
+  enabled: boolean;
+  defaultLlm: boolean;
+  defaultAsr: boolean;
+  defaultTts: boolean;
+  baseUrl: string;
+  llmModel: string;
+  asrModel: string;
+  ttsModel: string;
+  ttsVoice: string;
+  timeoutSeconds?: number;
+}
+
+export interface AiProviderSecretRequest {
+  apiKey: string;
+}
+
 export interface LearningPlan {
   planId: string;
   date: string;

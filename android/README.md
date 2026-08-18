@@ -42,6 +42,17 @@ Debug APK output:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## API base URL
+
+Debug builds default to the Android emulator host loopback:
+
+```text
+http://10.0.2.2:8080
+```
+
+The value is exposed as `BuildConfig.TUTOR_API_BASE_URL` and should be overridden
+through Gradle build configuration when targeting a different backend.
+
 ## Local SDK
 
 If `ANDROID_HOME` or `ANDROID_SDK_ROOT` is not set, create a local-only `local.properties` file:

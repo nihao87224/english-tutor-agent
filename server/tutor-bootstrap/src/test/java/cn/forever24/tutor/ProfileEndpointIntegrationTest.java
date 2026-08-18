@@ -17,12 +17,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -42,6 +46,8 @@ class ProfileEndpointIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    private final Map<String, String> accessTokensByScenarioUser = new ConcurrentHashMap<>();
 
     @TestConfiguration
     static class AiStubConfiguration {
@@ -85,7 +91,7 @@ class ProfileEndpointIntegrationTest {
     @Test
     void restoresGoalProgressForUserWithoutProfile() throws Exception {
         mockMvc.perform(get("/api/v1/onboarding/progress")
-                        .header("X-User-Key", "new-integration-user"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer("new-integration-user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("GOAL"))
                 .andExpect(jsonPath("$.completed").value(false));
@@ -94,12 +100,14 @@ class ProfileEndpointIntegrationTest {
     @Test
     void savesPrimaryGoalAndRestoresOnboardingProgress() throws Exception {
         mockMvc.perform(put("/api/v1/profile/primary-goal")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("progress-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"WORKPLACE\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.primaryGoal").value("WORKPLACE"));
 
-        mockMvc.perform(get("/api/v1/onboarding/progress"))
+        mockMvc.perform(get("/api/v1/onboarding/progress")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("progress-user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("PREFERENCES"));
     }
@@ -107,13 +115,13 @@ class ProfileEndpointIntegrationTest {
     @Test
     void savesPreferencesAndRestoresSelfAssessmentProgress() throws Exception {
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", "integration-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("integration-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"WORKPLACE\"}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(put("/api/v1/profile/preferences")
-                        .header("X-User-Key", "integration-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("integration-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -129,7 +137,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(jsonPath("$.correctionStyle").value("LIGHT"));
 
         mockMvc.perform(get("/api/v1/onboarding/progress")
-                        .header("X-User-Key", "integration-user"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer("integration-user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("SELF_ASSESSMENT"));
     }
@@ -137,19 +145,19 @@ class ProfileEndpointIntegrationTest {
     @Test
     void readsAndUpdatesPrivacySettings() throws Exception {
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", "privacy-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("privacy-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"GENERAL\"}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/settings/privacy")
-                        .header("X-User-Key", "privacy-user"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer("privacy-user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.saveRawText").value(true))
                 .andExpect(jsonPath("$.saveRawAudio").value(true));
 
         mockMvc.perform(put("/api/v1/settings/privacy")
-                        .header("X-User-Key", "privacy-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("privacy-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -167,12 +175,12 @@ class ProfileEndpointIntegrationTest {
     @Test
     void submitsSelfAssessmentAndRestoresAssessmentProgress() throws Exception {
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", "self-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("self-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"IELTS\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(put("/api/v1/profile/preferences")
-                        .header("X-User-Key", "self-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("self-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -186,7 +194,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/assessments/self")
-                        .header("X-User-Key", "self-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("self-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -201,7 +209,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(jsonPath("$.estimatedBand").value("INTERMEDIATE"));
 
         mockMvc.perform(get("/api/v1/onboarding/progress")
-                        .header("X-User-Key", "self-user"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer("self-user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("ASSESSMENT"));
     }
@@ -211,12 +219,12 @@ class ProfileEndpointIntegrationTest {
         String userKey = "assessment-user";
 
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"WORKPLACE\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(put("/api/v1/profile/preferences")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -229,7 +237,7 @@ class ProfileEndpointIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/assessments/self")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -242,7 +250,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/assessments")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetMinutes\":10}"))
                 .andExpect(status().isCreated())
@@ -252,7 +260,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(jsonPath("$.estimatedRemainingMinutes").value(10));
 
         mockMvc.perform(post("/api/v1/assessments")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetMinutes\":15}"))
                 .andExpect(status().isCreated())
@@ -264,12 +272,12 @@ class ProfileEndpointIntegrationTest {
         String userKey = "answer-user";
 
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"IELTS\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(put("/api/v1/profile/preferences")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -282,7 +290,7 @@ class ProfileEndpointIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/assessments/self")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -295,13 +303,13 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/assessments")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetMinutes\":9}"))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/assessments/assessment-1/answers")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -321,12 +329,12 @@ class ProfileEndpointIntegrationTest {
         String userKey = "result-user";
 
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"WORKPLACE\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(put("/api/v1/profile/preferences")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -339,7 +347,7 @@ class ProfileEndpointIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/assessments/self")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -351,7 +359,7 @@ class ProfileEndpointIntegrationTest {
                                 """))
                 .andExpect(status().isCreated());
         MvcResult started = mockMvc.perform(post("/api/v1/assessments")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetMinutes\":9}"))
                 .andExpect(status().isCreated())
@@ -359,7 +367,7 @@ class ProfileEndpointIntegrationTest {
         String assessmentId = JsonPath.read(started.getResponse().getContentAsString(), "$.assessmentId");
 
         mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/answers")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -372,24 +380,24 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/complete")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.assessmentId").value(assessmentId))
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
         mockMvc.perform(get("/api/v1/assessments/" + assessmentId + "/result")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assessmentId").value(assessmentId))
                 .andExpect(jsonPath("$.skills.reading.score").value(100.0000))
                 .andExpect(jsonPath("$.skills.listening.evidence").isArray())
                 .andExpect(jsonPath("$.priorities").isArray());
         mockMvc.perform(get("/api/v1/onboarding/progress")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("RESULT"));
 
         MvcResult firstPlan = mockMvc.perform(get("/api/v1/plans/today")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.planId").exists())
                 .andExpect(jsonPath("$.totalMinutes").value(20))
@@ -402,12 +410,12 @@ class ProfileEndpointIntegrationTest {
         String firstPlanFocus = JsonPath.read(firstPlan.getResponse().getContentAsString(), "$.tasks[0].skillFocus[0]");
 
         mockMvc.perform(get("/api/v1/plans/today")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.planId").value(planId));
 
         MvcResult startedTraining = mockMvc.perform(post("/api/v1/training-sessions")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .header("Idempotency-Key", "training-start-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"planId\":\"" + planId + "\",\"mode\":\"TEXT\"}"))
@@ -420,7 +428,7 @@ class ProfileEndpointIntegrationTest {
         String trainingSessionId = JsonPath.read(startedTraining.getResponse().getContentAsString(), "$.sessionId");
 
         mockMvc.perform(post("/api/v1/training-sessions")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .header("Idempotency-Key", "training-start-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"planId\":\"" + planId + "\",\"mode\":\"MIXED\"}"))
@@ -429,7 +437,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(jsonPath("$.mode").value("TEXT"));
 
         MvcResult currentTrainingTask = mockMvc.perform(get("/api/v1/training-sessions/" + trainingSessionId + "/current-task")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.taskId").exists())
                 .andExpect(jsonPath("$.status").value("STARTED"))
@@ -438,7 +446,7 @@ class ProfileEndpointIntegrationTest {
 
         MvcResult submittedAttempt = mockMvc.perform(post("/api/v1/training-sessions/"
                                 + trainingSessionId + "/tasks/" + trainingTaskId + "/attempts")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .header("Idempotency-Key", "attempt-submit-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -459,7 +467,7 @@ class ProfileEndpointIntegrationTest {
 
         mockMvc.perform(post("/api/v1/training-sessions/"
                                 + trainingSessionId + "/tasks/" + trainingTaskId + "/attempts")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .header("Idempotency-Key", "attempt-submit-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -476,7 +484,7 @@ class ProfileEndpointIntegrationTest {
 
         mockMvc.perform(post("/api/v1/training-sessions/"
                                 + trainingSessionId + "/tasks/" + trainingTaskId + "/attempts")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .header("Idempotency-Key", "attempt-submit-2")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -488,7 +496,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(status().isBadRequest());
 
         MvcResult nextTrainingTask = mockMvc.perform(get("/api/v1/training-sessions/" + trainingSessionId + "/current-task")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.taskId").exists())
                 .andReturn();
@@ -496,7 +504,7 @@ class ProfileEndpointIntegrationTest {
 
         MvcResult streamedConversation = mockMvc.perform(post("/api/v1/conversations/"
                                 + trainingSessionId + "/messages/stream")
-                        .header("X-User-Key", userKey)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
                         .header("Idempotency-Key", "conversation-stream-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.TEXT_EVENT_STREAM)
@@ -521,18 +529,18 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(content().string(containsString("event:done")));
 
         mockMvc.perform(post("/api/v1/training-sessions/" + trainingSessionId + "/pause")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PAUSED"));
         mockMvc.perform(post("/api/v1/training-sessions/" + trainingSessionId + "/resume")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
         mockMvc.perform(get("/api/v1/training-sessions/" + trainingSessionId)
-                        .header("X-User-Key", "other-user"))
+                        .header(HttpHeaders.AUTHORIZATION, bearer("other-user")))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post("/api/v1/training-sessions/" + trainingSessionId + "/complete")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.session.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.dailySummary.sessionId").value(trainingSessionId))
@@ -540,12 +548,12 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(jsonPath("$.dailySummary.practicedSkills[0]").value("speaking"));
 
         mockMvc.perform(post("/api/v1/training-sessions/" + trainingSessionId + "/complete")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.session.status").value("COMPLETED"));
 
         MvcResult adjustedPlan = mockMvc.perform(get("/api/v1/plans/today")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tasks[0].skillFocus[0]").value("listening"))
                 .andReturn();
@@ -555,7 +563,7 @@ class ProfileEndpointIntegrationTest {
         assertNotEquals(firstPlanFocus, adjustedPlanFocus);
 
         mockMvc.perform(get("/api/v1/plans/today")
-                        .header("X-User-Key", userKey))
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.planId").value(adjustedPlanId));
     }
@@ -563,7 +571,7 @@ class ProfileEndpointIntegrationTest {
     @Test
     void rejectsAudioAssessmentAnswerUntilAsrExists() throws Exception {
         mockMvc.perform(post("/api/v1/assessments/assessment-1/answers")
-                        .header("X-User-Key", "answer-type-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("answer-type-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -578,7 +586,7 @@ class ProfileEndpointIntegrationTest {
     @Test
     void rejectsAssessmentStartBeforeSelfAssessment() throws Exception {
         mockMvc.perform(post("/api/v1/assessments")
-                        .header("X-User-Key", "assessment-not-ready-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("assessment-not-ready-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetMinutes\":9}"))
                 .andExpect(status().isBadRequest());
@@ -587,12 +595,12 @@ class ProfileEndpointIntegrationTest {
     @Test
     void rejectsAssessmentTargetOutsideBounds() throws Exception {
         mockMvc.perform(put("/api/v1/profile/primary-goal")
-                        .header("X-User-Key", "assessment-bounds-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("assessment-bounds-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"GENERAL\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(put("/api/v1/profile/preferences")
-                        .header("X-User-Key", "assessment-bounds-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("assessment-bounds-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -605,7 +613,7 @@ class ProfileEndpointIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/assessments/self")
-                        .header("X-User-Key", "assessment-bounds-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("assessment-bounds-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -618,7 +626,7 @@ class ProfileEndpointIntegrationTest {
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/api/v1/assessments")
-                        .header("X-User-Key", "assessment-bounds-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("assessment-bounds-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetMinutes\":4}"))
                 .andExpect(status().isBadRequest());
@@ -627,7 +635,7 @@ class ProfileEndpointIntegrationTest {
     @Test
     void rejectsSelfAssessmentBeforePreferences() throws Exception {
         mockMvc.perform(post("/api/v1/assessments/self")
-                        .header("X-User-Key", "not-ready-user")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("not-ready-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -643,8 +651,41 @@ class ProfileEndpointIntegrationTest {
     @Test
     void rejectsUnsupportedPrimaryGoal() throws Exception {
         mockMvc.perform(put("/api/v1/profile/primary-goal")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("invalid-goal-user"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"goal\":\"TRAVEL\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    private String bearer(String scenarioUserKey) throws Exception {
+        try {
+            return "Bearer " + accessTokensByScenarioUser.computeIfAbsent(scenarioUserKey, this::registerScenarioUser);
+        } catch (IllegalStateException exception) {
+            if (exception.getCause() instanceof Exception cause) {
+                throw cause;
+            }
+            throw exception;
+        }
+    }
+
+    private String registerScenarioUser(String scenarioUserKey) {
+        try {
+            String slug = scenarioUserKey.toLowerCase(Locale.ROOT)
+                    .replaceAll("[^a-z0-9]+", ".")
+                    .replaceAll("^\\.+|\\.+$", "");
+            if (slug.isBlank()) {
+                slug = "user";
+            }
+            String response = mockMvc.perform(post("/api/v1/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"m9-" + slug + "@integration.test\",\"password\":\"learner-password\"}"))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            return JsonPath.read(response, "$.accessToken");
+        } catch (Exception exception) {
+            throw new IllegalStateException(exception);
+        }
     }
 }

@@ -87,9 +87,9 @@ M5 长期复习与动态掌握、M6 IELTS Speaking、M7 发布准备在对应里
 | SaaS-M4 | Runtime AI Provider + Secret | DONE | SaaS-M3, ADR-0013 | 默认 provider 可运行时切换，secret 加密且不回显 |
 | SaaS-M5 | Admin Backend | DONE | SaaS-M4 | USER 访问 admin API = 403，敏感操作写 audit |
 | SaaS-M6 | Web Learner SaaS UX + i18n | DONE | SaaS-M2, SaaS-M3 | register/login/practice/quota/history/logout 闭环 |
-| SaaS-M7 | Web Admin Console | TODO | SaaS-M5 | Admin UI 与真实 API 联通，不使用生产 mock 数据 |
-| SaaS-M8 | Android Learner Auth + Quota + i18n | TODO | SaaS-M6 | Web/Android 同邮箱看到同一用户、quota 和学习数据 |
-| SaaS-M9 | Hardening + Legacy Cleanup | TODO | SaaS-M1..M8 | 无 legacy identity、无明文 secret、无跨用户访问 |
+| SaaS-M7 | Web Admin Console | DONE | SaaS-M5 | Admin UI 与真实 API 联通，不使用生产 mock 数据 |
+| SaaS-M8 | Android Learner Auth + Quota + i18n | DONE | SaaS-M6 | Web/Android 同邮箱看到同一用户、quota 和学习数据 |
+| SaaS-M9 | Hardening + Legacy Cleanup | DONE | SaaS-M1..M8 | 无 legacy identity、无明文 secret、无跨用户访问 |
 
 ## Task card template
 

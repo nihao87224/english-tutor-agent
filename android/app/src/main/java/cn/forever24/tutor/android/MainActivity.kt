@@ -24,6 +24,13 @@ class MainActivity : ComponentActivity() {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 AppRoot(
                     uiState = uiState,
+                    onAuthModeChanged = viewModel::switchAuthMode,
+                    onEmailChanged = viewModel::updateEmailInput,
+                    onPasswordChanged = viewModel::updatePasswordInput,
+                    onAuthSubmitted = viewModel::submitAuth,
+                    onLocaleChanged = viewModel::setLocale,
+                    onLogout = viewModel::logout,
+                    onRefreshQuota = viewModel::refreshQuota,
                     onGoalSelected = viewModel::selectGoal,
                     onDailyMinutesSelected = viewModel::selectDailyMinutes,
                     onCorrectionStyleSelected = viewModel::selectCorrectionStyle,

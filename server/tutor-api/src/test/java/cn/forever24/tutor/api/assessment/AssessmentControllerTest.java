@@ -35,8 +35,12 @@ import cn.forever24.tutor.profile.PrimaryGoal;
 import cn.forever24.tutor.profile.PrivacySettings;
 import cn.forever24.tutor.profile.ProfileSummary;
 import cn.forever24.tutor.profile.UserKey;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -63,12 +67,21 @@ class AssessmentControllerTest {
                             Clock.systemUTC(),
                             50,
                             ZoneId.of("Asia/Shanghai"))),
-            CurrentUserKeyResolver.legacyOnly());
+            new CurrentUserKeyResolver(ignored -> "user-1"));
+
+    @BeforeEach
+    void authenticate() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("1", null, "ROLE_USER"));
+    }
+
+    @AfterEach
+    void clearAuthentication() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void submitsSelfAssessment() {
         SelfAssessmentResponse response = controller.submitSelfAssessment(
-                "user-1",
                 new SelfAssessmentRequest("INTERMEDIATE", "BASIC", "INTERMEDIATE", "UPPER_INTERMEDIATE"));
 
         assertEquals("self-1", response.selfAssessmentId());
@@ -84,7 +97,7 @@ class AssessmentControllerTest {
 
     @Test
     void startsAssessmentWithDefaultTarget() {
-        AssessmentSessionResponse response = controller.startAssessment("user-1", null);
+        AssessmentSessionResponse response = controller.startAssessment(null);
 
         assertEquals("assessment-1", response.assessmentId());
         assertEquals("IN_PROGRESS", response.status());
@@ -94,7 +107,7 @@ class AssessmentControllerTest {
 
     @Test
     void startsAssessmentWithRequestedTarget() {
-        AssessmentSessionResponse response = controller.startAssessment("user-1", new StartAssessmentRequest(12));
+        AssessmentSessionResponse response = controller.startAssessment(new StartAssessmentRequest(12));
 
         assertEquals(12, response.targetMinutes());
         assertEquals(12, response.estimatedRemainingMinutes());
@@ -103,7 +116,6 @@ class AssessmentControllerTest {
     @Test
     void submitsAssessmentAnswer() {
         AnswerReceiptResponse response = controller.submitAssessmentAnswer(
-                "user-1",
                 "assessment-1",
                 new AssessmentAnswerRequest("initial-reading-1", "OPTION", "B", null, null, 900));
 
@@ -114,7 +126,6 @@ class AssessmentControllerTest {
     @Test
     void submitsOpenAssessmentAnswer() {
         AnswerReceiptResponse response = controller.submitAssessmentAnswer(
-                "user-1",
                 "assessment-1",
                 new AssessmentAnswerRequest(
                         "initial-speaking-open-1",
@@ -130,7 +141,7 @@ class AssessmentControllerTest {
 
     @Test
     void completesAssessment() {
-        AssessmentCompletionResponse response = controller.completeAssessment("user-1", "assessment-1");
+        AssessmentCompletionResponse response = controller.completeAssessment("assessment-1");
 
         assertEquals("assessment-1", response.assessmentId());
         assertEquals("COMPLETED", response.status());
@@ -138,7 +149,7 @@ class AssessmentControllerTest {
 
     @Test
     void returnsAssessmentResult() {
-        AssessmentResultResponse response = controller.getAssessmentResult("user-1", "assessment-1");
+        AssessmentResultResponse response = controller.getAssessmentResult("assessment-1");
 
         assertEquals("assessment-1", response.assessmentId());
         assertEquals(8, response.skills().size());

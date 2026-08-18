@@ -7,7 +7,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,10 +26,8 @@ public class LearningPlanController {
     }
 
     @GetMapping("/plans/today")
-    public LearningPlanResponse getTodayPlan(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey
-    ) {
-        return LearningPlanResponse.from(learningPlanApplicationService.getTodayPlan(currentUserKeyResolver.resolve(userKey)));
+    public LearningPlanResponse getTodayPlan() {
+        return LearningPlanResponse.from(learningPlanApplicationService.getTodayPlan(currentUserKeyResolver.resolve()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -20,6 +20,7 @@ English Tutor Agent 帮助学习者走出“一次性语法纠错”的局限。
 
 - 演示地址：`https://your-production-demo-url.example.com`
 - 部署指南：[docs/deploy/PRODUCTION_DEPLOYMENT.md](docs/deploy/PRODUCTION_DEPLOYMENT.md)
+- SaaS 加固 Runbook：[docs/deploy/SAAS_HARDENING_RUNBOOK.md](docs/deploy/SAAS_HARDENING_RUNBOOK.md)
 - 产品需求：[docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md](docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md)
 - 架构文档：[docs/design/00_README.md](docs/design/00_README.md)
 - API 契约：[contracts/openapi/english-tutor-api.yaml](contracts/openapi/english-tutor-api.yaml)
@@ -70,6 +71,8 @@ English Tutor Agent 帮助学习者走出“一次性语法纠错”的局限。
 - 练的是“主动调用”，不是“看懂答案”：目标是把 passive vocabulary 和 passive grammar 变成 active vocabulary、language chunks 和真实句子组织能力。
 - 每天少做选择：打开后直接看到今天最值得练什么，以及为什么练这个，不需要在一堆课程、难度和题型里自己挑。
 - 面向真实场景：职场汇报、解释问题、表达观点、日常交流、IELTS 口语，都围绕“你真的要说什么”来训练。
+- SaaS 身份基线：Web 和 Android 使用邮箱/密码会话、Bearer Token、每日额度和受角色保护的管理 API。
+- 生产契约不再接受客户端传入的用户身份 Header。
 
 ## 工作方式
 

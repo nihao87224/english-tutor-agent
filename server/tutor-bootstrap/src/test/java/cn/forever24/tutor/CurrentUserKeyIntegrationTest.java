@@ -9,7 +9,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,7 +20,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestPropertySource(properties = "tutor.auth.legacy-user-key-enabled=false")
 class CurrentUserKeyIntegrationTest {
 
     @Autowired
@@ -31,7 +29,7 @@ class CurrentUserKeyIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void learnerEndpointsRequireBearerTokenWhenLegacyUserKeyIsDisabled() throws Exception {
+    void learnerEndpointsRejectLegacyUserKeyWithoutBearerToken() throws Exception {
         mockMvc.perform(get("/api/v1/onboarding/progress")
                         .header("X-User-Key", "legacy-user"))
                 .andExpect(status().isUnauthorized())

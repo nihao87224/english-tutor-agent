@@ -3,6 +3,21 @@ import type {
   AuthRequest,
   AuthResponse,
   AuthUser,
+  AdminAuditPage,
+  AdminDashboardSummary,
+  AdminQuotaBonusRequest,
+  AdminQuotaPolicyRequest,
+  AdminQuotaState,
+  AdminSystemSetting,
+  AdminSystemSettingRequest,
+  AdminUserDetail,
+  AdminUserPage,
+  AdminUserRolesRequest,
+  AdminUserSearchRequest,
+  AdminUserStatusRequest,
+  AiProvider,
+  AiProviderSecretRequest,
+  AiProviderUpdateRequest,
   ConversationMessageRequest,
   CurrentTrainingTask,
   LearningPlan,
@@ -27,7 +42,6 @@ export interface ApiClientOptions {
   baseUrl?: string;
   accessToken?: string;
   accessTokenProvider?: () => string | undefined;
-  userKey?: string;
   fetchFn?: typeof fetch;
   idempotencyKeyFactory?: () => string;
   onUnauthorized?: () => Promise<boolean>;
@@ -41,6 +55,21 @@ export interface ApiClient {
   logout(): Promise<void>;
   me(options?: RequestOptions): Promise<AuthUser>;
   getCurrentQuota(options?: RequestOptions): Promise<QuotaStatus>;
+  getAdminDashboard(options?: RequestOptions): Promise<AdminDashboardSummary>;
+  searchAdminUsers(request?: AdminUserSearchRequest, options?: RequestOptions): Promise<AdminUserPage>;
+  getAdminUser(userKey: string, options?: RequestOptions): Promise<AdminUserDetail>;
+  updateAdminUserStatus(userKey: string, request: AdminUserStatusRequest, options?: RequestOptions): Promise<AdminUserDetail>;
+  replaceAdminUserRoles(userKey: string, request: AdminUserRolesRequest, options?: RequestOptions): Promise<AdminUserDetail>;
+  updateAdminQuotaPolicy(userKey: string, request: AdminQuotaPolicyRequest, options?: RequestOptions): Promise<AdminQuotaState>;
+  resetAdminUserQuotaToday(userKey: string, options?: RequestOptions): Promise<AdminQuotaState>;
+  addAdminUserQuotaBonus(userKey: string, request: AdminQuotaBonusRequest, options?: RequestOptions): Promise<AdminQuotaState>;
+  listAdminSystemSettings(options?: RequestOptions): Promise<AdminSystemSetting[]>;
+  updateAdminSystemSetting(key: string, request: AdminSystemSettingRequest, options?: RequestOptions): Promise<AdminSystemSetting>;
+  listAdminAudit(request?: { page?: number; size?: number }, options?: RequestOptions): Promise<AdminAuditPage>;
+  listAiProviders(options?: RequestOptions): Promise<AiProvider[]>;
+  getAiProvider(providerCode: string, options?: RequestOptions): Promise<AiProvider>;
+  putAiProvider(providerCode: string, request: AiProviderUpdateRequest, options?: RequestOptions): Promise<AiProvider>;
+  replaceAiProviderSecret(providerCode: string, request: AiProviderSecretRequest, options?: RequestOptions): Promise<AiProvider>;
   putPrimaryGoal(goal: PrimaryGoal, options?: RequestOptions): Promise<ProfileSummary>;
   putPreferences(request: PreferenceRequest, options?: RequestOptions): Promise<ProfileSummary>;
   getOnboardingProgress(options?: RequestOptions): Promise<OnboardingProgress>;
@@ -69,13 +98,12 @@ export interface ApiClient {
 }
 
 interface RequestOptions {
-  userKey?: string;
   idempotencyKey?: string;
   signal?: AbortSignal;
 }
 
 interface JsonRequestOptions extends RequestOptions {
-  method?: "GET" | "POST" | "PUT";
+  method?: "GET" | "POST" | "PUT" | "PATCH";
   body?: unknown;
   retryOnUnauthorized?: boolean;
 }
@@ -169,6 +197,82 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
     getCurrentQuota(requestOptions) {
       return requestJson<QuotaStatus>("/api/v1/me/quota", requestOptions);
+    },
+    getAdminDashboard(requestOptions) {
+      return requestJson<AdminDashboardSummary>("/api/v1/admin/dashboard", requestOptions);
+    },
+    searchAdminUsers(request = {}, requestOptions) {
+      return requestJson<AdminUserPage>(`/api/v1/admin/users${toQueryString(request)}`, requestOptions);
+    },
+    getAdminUser(userKey, requestOptions) {
+      return requestJson<AdminUserDetail>(`/api/v1/admin/users/${encodeURIComponent(userKey)}`, requestOptions);
+    },
+    updateAdminUserStatus(userKey, request, requestOptions) {
+      return requestJson<AdminUserDetail>(`/api/v1/admin/users/${encodeURIComponent(userKey)}/status`, {
+        ...mutationOptions(requestOptions),
+        method: "PATCH",
+        body: request,
+      });
+    },
+    replaceAdminUserRoles(userKey, request, requestOptions) {
+      return requestJson<AdminUserDetail>(`/api/v1/admin/users/${encodeURIComponent(userKey)}/roles`, {
+        ...mutationOptions(requestOptions),
+        method: "PUT",
+        body: request,
+      });
+    },
+    updateAdminQuotaPolicy(userKey, request, requestOptions) {
+      return requestJson<AdminQuotaState>(`/api/v1/admin/users/${encodeURIComponent(userKey)}/quota-policy`, {
+        ...mutationOptions(requestOptions),
+        method: "PUT",
+        body: request,
+      });
+    },
+    resetAdminUserQuotaToday(userKey, requestOptions) {
+      return requestJson<AdminQuotaState>(`/api/v1/admin/users/${encodeURIComponent(userKey)}/quota/reset-today`, {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+      });
+    },
+    addAdminUserQuotaBonus(userKey, request, requestOptions) {
+      return requestJson<AdminQuotaState>(`/api/v1/admin/users/${encodeURIComponent(userKey)}/quota/bonus`, {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+        body: request,
+      });
+    },
+    listAdminSystemSettings(requestOptions) {
+      return requestJson<AdminSystemSetting[]>("/api/v1/admin/settings", requestOptions);
+    },
+    updateAdminSystemSetting(key, request, requestOptions) {
+      return requestJson<AdminSystemSetting>(`/api/v1/admin/settings/${encodeURIComponent(key)}`, {
+        ...mutationOptions(requestOptions),
+        method: "PUT",
+        body: request,
+      });
+    },
+    listAdminAudit(request = {}, requestOptions) {
+      return requestJson<AdminAuditPage>(`/api/v1/admin/audit${toQueryString(request)}`, requestOptions);
+    },
+    listAiProviders(requestOptions) {
+      return requestJson<AiProvider[]>("/api/v1/admin/ai-providers", requestOptions);
+    },
+    getAiProvider(providerCode, requestOptions) {
+      return requestJson<AiProvider>(`/api/v1/admin/ai-providers/${encodeURIComponent(providerCode)}`, requestOptions);
+    },
+    putAiProvider(providerCode, request, requestOptions) {
+      return requestJson<AiProvider>(`/api/v1/admin/ai-providers/${encodeURIComponent(providerCode)}`, {
+        ...mutationOptions(requestOptions),
+        method: "PUT",
+        body: request,
+      });
+    },
+    replaceAiProviderSecret(providerCode, request, requestOptions) {
+      return requestJson<AiProvider>(`/api/v1/admin/ai-providers/${encodeURIComponent(providerCode)}/secret`, {
+        ...mutationOptions(requestOptions),
+        method: "PUT",
+        body: request,
+      });
     },
     putPrimaryGoal(goal, requestOptions) {
       return requestJson<ProfileSummary>("/api/v1/profile/primary-goal", {
@@ -295,6 +399,17 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, "");
 }
 
+function toQueryString(params: object): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if ((typeof value === "string" && value !== "") || typeof value === "number") {
+      query.set(key, String(value));
+    }
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
 function buildHeaders(
   clientOptions: ApiClientOptions,
   options: RequestOptions,
@@ -305,10 +420,6 @@ function buildHeaders(
   const accessToken = clientOptions.accessTokenProvider?.() ?? clientOptions.accessToken;
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
-  }
-  const userKey = options.userKey ?? clientOptions.userKey;
-  if (!accessToken && userKey) {
-    headers.set("X-User-Key", userKey);
   }
   if (method !== "GET" && options.idempotencyKey) {
     headers.set("Idempotency-Key", options.idempotencyKey);

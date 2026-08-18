@@ -15,8 +15,12 @@ import cn.forever24.tutor.profile.PrimaryGoal;
 import cn.forever24.tutor.profile.PrivacySettings;
 import cn.forever24.tutor.profile.ProfileSummary;
 import cn.forever24.tutor.profile.UserKey;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -34,11 +38,21 @@ class LearningPlanControllerTest {
                     new ReadyProfileRepository(),
                     new FakeLearningPlanRepository(),
                     Clock.fixed(Instant.parse("2026-08-06T08:00:00Z"), ZoneOffset.UTC)),
-            CurrentUserKeyResolver.legacyOnly());
+            new CurrentUserKeyResolver(ignored -> "user-1"));
+
+    @BeforeEach
+    void authenticate() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("1", null, "ROLE_USER"));
+    }
+
+    @AfterEach
+    void clearAuthentication() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void returnsTodayPlan() {
-        LearningPlanResponse response = controller.getTodayPlan("user-1");
+        LearningPlanResponse response = controller.getTodayPlan();
 
         assertEquals("plan-1", response.planId());
         assertEquals(LocalDate.parse("2026-08-06"), response.date());

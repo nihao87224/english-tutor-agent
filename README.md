@@ -20,6 +20,7 @@ English Tutor Agent helps learners move beyond one-off grammar correction. It tu
 
 - Demo: `https://your-production-demo-url.example.com`
 - Deployment guide: [docs/deploy/PRODUCTION_DEPLOYMENT.md](docs/deploy/PRODUCTION_DEPLOYMENT.md)
+- SaaS hardening runbook: [docs/deploy/SAAS_HARDENING_RUNBOOK.md](docs/deploy/SAAS_HARDENING_RUNBOOK.md)
 - Product requirements: [docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md](docs/prd/ENGLISH_TUTOR_AGENT_PRD_v1.0.0.md)
 - Architecture docs: [docs/design/00_README.md](docs/design/00_README.md)
 - SaaS Foundation v1.1.0: [docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md](docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md)
@@ -60,6 +61,10 @@ English Tutor Agent is designed around a learning loop rather than a chat window
 - Adaptive daily plans: task focus can change from learning evidence instead of static lessons.
 - Structured AI boundary: provider output is parsed, schema-validated, and business-validated.
 - OpenAI-backed providers: production runtime uses real LLM, ASR, and TTS integrations configured by environment variables.
+- SaaS identity baseline: Web and Android clients use email/password sessions,
+  bearer tokens, daily quota and role-protected admin APIs.
+- Legacy client-supplied user identity headers are not part of the production
+  contract.
 - Contract-first backend: OpenAPI, JSON Schema, Flyway migrations, and validation scripts keep implementation aligned.
 - Production-oriented baseline: Nginx, systemd, environment template, and deployment scripts are included.
 

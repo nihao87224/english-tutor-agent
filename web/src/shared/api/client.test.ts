@@ -79,18 +79,18 @@ describe("createApiClient", () => {
     expect(events).toEqual([{ event: "text_delta", data: { delta: "Hi" } }]);
   });
 
-  it("keeps X-User-Key fallback only when no access token is configured", async () => {
+  it("does not send legacy identity headers when no access token is configured", async () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({ planId: "p1", date: "2026-08-10", totalMinutes: 10, tasks: [], reasons: [] }),
     );
-    const client = createApiClient({ baseUrl: "http://api.test", userKey: "legacy-user", fetchFn });
+    const client = createApiClient({ baseUrl: "http://api.test", fetchFn });
 
     await client.getTodayPlan();
 
     const [, init] = lastFetchCall(fetchFn);
     const headers = init.headers as Headers;
     expect(headers.get("Authorization")).toBeNull();
-    expect(headers.get("X-User-Key")).toBe("legacy-user");
+    expect(headers.get("X-User-Key")).toBeNull();
   });
 
   it("refreshes once and retries after an unauthorized response", async () => {
@@ -114,6 +114,82 @@ describe("createApiClient", () => {
     expect(fetchFn).toHaveBeenCalledTimes(2);
     const [, retryInit] = lastFetchCall(fetchFn);
     expect((retryInit.headers as Headers).get("Authorization")).toBe("Bearer fresh");
+  });
+
+  it("calls admin search users with filters and bearer auth", async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ items: [], page: 0, size: 20, total: 0 }),
+    );
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "admin-token", fetchFn });
+
+    await client.searchAdminUsers({ q: "learner@example.com", status: "ACTIVE", role: "USER", page: 1, size: 10 });
+
+    const [url, init] = lastFetchCall(fetchFn);
+    const headers = init.headers as Headers;
+    expect(String(url)).toBe("http://api.test/api/v1/admin/users?q=learner%40example.com&status=ACTIVE&role=USER&page=1&size=10");
+    expect(init.method).toBe("GET");
+    expect(headers.get("Authorization")).toBe("Bearer admin-token");
+    expect(headers.get("Idempotency-Key")).toBeNull();
+  });
+
+  it("sends idempotency keys for admin mutations", async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({
+        userKey: "learner-user",
+        unlimited: false,
+        quotaDate: "2026-08-10",
+        dailyLimit: 30,
+        used: 0,
+        reserved: 0,
+        bonus: 0,
+        remaining: 30,
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      accessToken: "admin-token",
+      fetchFn,
+      idempotencyKeyFactory: () => "admin-key",
+    });
+
+    await client.updateAdminQuotaPolicy("learner/user", { dailyLimitOverride: 30, unlimited: false });
+
+    const [url, init] = lastFetchCall(fetchFn);
+    const headers = init.headers as Headers;
+    expect(String(url)).toBe("http://api.test/api/v1/admin/users/learner%2Fuser/quota-policy");
+    expect(init.method).toBe("PUT");
+    expect(headers.get("Idempotency-Key")).toBe("admin-key");
+    expect(JSON.parse(init.body as string)).toEqual({ dailyLimitOverride: 30, unlimited: false });
+  });
+
+  it("replaces provider secrets without exposing them in the URL", async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({
+        providerCode: "openai",
+        providerType: "OPENAI",
+        displayName: "OpenAI",
+        enabled: true,
+        defaultLlm: true,
+        defaultAsr: true,
+        defaultTts: true,
+        baseUrl: "https://api.openai.com/v1",
+        llmModel: "gpt-4.1-mini",
+        asrModel: "gpt-4o-mini-transcribe",
+        ttsModel: "gpt-4o-mini-tts",
+        ttsVoice: "alloy",
+        timeoutSeconds: 30,
+        apiKeyConfigured: true,
+        apiKeyMaskedHint: "sk-...abcd",
+      }),
+    );
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "admin-token", fetchFn });
+
+    await client.replaceAiProviderSecret("openai", { apiKey: "sk-secret" });
+
+    const [url, init] = lastFetchCall(fetchFn);
+    expect(String(url)).toBe("http://api.test/api/v1/admin/ai-providers/openai/secret");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body as string)).toEqual({ apiKey: "sk-secret" });
   });
 
   it("accepts empty logout responses", async () => {

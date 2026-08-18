@@ -23,8 +23,12 @@ import cn.forever24.tutor.training.TaskAttemptReceipt;
 import cn.forever24.tutor.training.TaskAttemptSubmission;
 import cn.forever24.tutor.training.TrainingSession;
 import cn.forever24.tutor.training.TrainingSessionMode;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -44,22 +48,30 @@ class TrainingSessionControllerTest {
                     new FakeLearningPlanRepository(),
                     new FakeTrainingSessionRepository(),
                     Clock.fixed(Instant.parse("2026-08-10T08:00:00Z"), ZoneOffset.UTC)),
-            CurrentUserKeyResolver.legacyOnly());
+            new CurrentUserKeyResolver(ignored -> "user-1"));
+
+    @BeforeEach
+    void authenticate() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("1", null, "ROLE_USER"));
+    }
+
+    @AfterEach
+    void clearAuthentication() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void startsAndMovesTrainingSessionThroughLifecycle() {
         ResponseEntity<TrainingSessionResponse> started = controller.startTrainingSession(
-                "user-1",
                 "idem-1",
                 new StartTrainingSessionRequest("plan-1", "TEXT"));
 
         String sessionId = started.getBody().sessionId();
-        TrainingSessionResponse current = controller.getTrainingSession("user-1", sessionId);
-        CurrentTrainingTaskResponse currentTask = controller.getCurrentTask("user-1", sessionId);
-        TrainingSessionResponse paused = controller.pauseTrainingSession("user-1", sessionId);
-        TrainingSessionResponse resumed = controller.resumeTrainingSession("user-1", sessionId);
+        TrainingSessionResponse current = controller.getTrainingSession(sessionId);
+        CurrentTrainingTaskResponse currentTask = controller.getCurrentTask(sessionId);
+        TrainingSessionResponse paused = controller.pauseTrainingSession(sessionId);
+        TrainingSessionResponse resumed = controller.resumeTrainingSession(sessionId);
         controller.submitTaskAttempt(
-                "user-1",
                 "attempt-idem-complete",
                 sessionId,
                 "task-1",
@@ -72,7 +84,7 @@ class TrainingSessionControllerTest {
                         1200,
                         null,
                         null));
-        TrainingSessionCompletionResponse completed = controller.completeTrainingSession("user-1", sessionId);
+        TrainingSessionCompletionResponse completed = controller.completeTrainingSession(sessionId);
 
         assertEquals(201, started.getStatusCode().value());
         assertEquals("IN_PROGRESS", current.status());
@@ -87,12 +99,10 @@ class TrainingSessionControllerTest {
     @Test
     void submitsTextTaskAttempt() {
         ResponseEntity<TrainingSessionResponse> started = controller.startTrainingSession(
-                "user-1",
                 "idem-1",
                 new StartTrainingSessionRequest("plan-1", "TEXT"));
 
         ResponseEntity<TaskAttemptReceiptResponse> receipt = controller.submitTaskAttempt(
-                "user-1",
                 "attempt-idem-1",
                 started.getBody().sessionId(),
                 "task-1",

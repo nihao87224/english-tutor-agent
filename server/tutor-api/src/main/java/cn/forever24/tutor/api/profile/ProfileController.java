@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,27 +29,25 @@ public class ProfileController {
 
     @PutMapping("/profile/primary-goal")
     public ProfileSummaryResponse putPrimaryGoal(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @RequestBody PrimaryGoalRequest request
     ) {
         if (request == null) {
             throw new IllegalArgumentException("request body is required");
         }
         return ProfileSummaryResponse.from(onboardingApplicationService.savePrimaryGoal(
-                currentUserKeyResolver.resolve(userKey),
+                currentUserKeyResolver.resolve(),
                 request.goal()));
     }
 
     @PutMapping("/profile/preferences")
     public ProfileSummaryResponse putPreferences(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @RequestBody PreferenceRequest request
     ) {
         if (request == null) {
             throw new IllegalArgumentException("request body is required");
         }
         return ProfileSummaryResponse.from(onboardingApplicationService.savePreferences(
-                currentUserKeyResolver.resolve(userKey),
+                currentUserKeyResolver.resolve(),
                 request.dailyMinutes(),
                 request.correctionStyle(),
                 request.reminderEnabled(),
@@ -59,29 +56,24 @@ public class ProfileController {
     }
 
     @GetMapping("/onboarding/progress")
-    public OnboardingProgressResponse getOnboardingProgress(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey
-    ) {
-        return OnboardingProgressResponse.from(onboardingApplicationService.getProgress(currentUserKeyResolver.resolve(userKey)));
+    public OnboardingProgressResponse getOnboardingProgress() {
+        return OnboardingProgressResponse.from(onboardingApplicationService.getProgress(currentUserKeyResolver.resolve()));
     }
 
     @GetMapping("/settings/privacy")
-    public PrivacySettingsResponse getPrivacySettings(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey
-    ) {
-        return PrivacySettingsResponse.from(onboardingApplicationService.getPrivacySettings(currentUserKeyResolver.resolve(userKey)));
+    public PrivacySettingsResponse getPrivacySettings() {
+        return PrivacySettingsResponse.from(onboardingApplicationService.getPrivacySettings(currentUserKeyResolver.resolve()));
     }
 
     @PutMapping("/settings/privacy")
     public PrivacySettingsResponse putPrivacySettings(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @RequestBody PrivacySettingsRequest request
     ) {
         if (request == null) {
             throw new IllegalArgumentException("request body is required");
         }
         return PrivacySettingsResponse.from(onboardingApplicationService.savePrivacySettings(
-                currentUserKeyResolver.resolve(userKey),
+                currentUserKeyResolver.resolve(),
                 request.saveRawText(),
                 request.saveRawAudio(),
                 request.rawAudioRetentionDays()));

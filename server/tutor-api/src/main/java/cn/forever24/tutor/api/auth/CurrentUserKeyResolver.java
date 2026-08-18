@@ -3,52 +3,33 @@ package cn.forever24.tutor.api.auth;
 import cn.forever24.tutor.application.auth.AuthApplicationService;
 import cn.forever24.tutor.application.auth.AuthException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+import java.util.function.LongFunction;
+
 @Component
 public class CurrentUserKeyResolver {
 
-    private static final String LEGACY_DEFAULT_USER_KEY = "local-dev-user";
-
-    private final AuthApplicationService authApplicationService;
-    private final boolean legacyUserKeyEnabled;
+    private final LongFunction<String> userKeyLookup;
 
     @Autowired
-    public CurrentUserKeyResolver(
-            AuthApplicationService authApplicationService,
-            @Value("${tutor.auth.legacy-user-key-enabled:false}") boolean legacyUserKeyEnabled
-    ) {
-        this.authApplicationService = authApplicationService;
-        this.legacyUserKeyEnabled = legacyUserKeyEnabled;
+    public CurrentUserKeyResolver(AuthApplicationService authApplicationService) {
+        this(userId -> authApplicationService.currentUser(userId).userKey());
     }
 
-    private CurrentUserKeyResolver(boolean legacyUserKeyEnabled) {
-        this.authApplicationService = null;
-        this.legacyUserKeyEnabled = legacyUserKeyEnabled;
+    public CurrentUserKeyResolver(LongFunction<String> userKeyLookup) {
+        this.userKeyLookup = Objects.requireNonNull(userKeyLookup, "userKeyLookup must not be null");
     }
 
-    public static CurrentUserKeyResolver legacyOnly() {
-        return new CurrentUserKeyResolver(true);
-    }
-
-    public String resolve(String legacyUserKey) {
+    public String resolve() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (isAuthenticated(authentication)) {
-            if (authApplicationService == null) {
-                throw AuthException.unauthorized("AUTHENTICATION_REQUIRED", "Authentication is required");
-            }
             long userId = parseUserId(authentication.getName());
-            return authApplicationService.currentUser(userId).userKey();
-        }
-        if (legacyUserKeyEnabled) {
-            if (legacyUserKey == null || legacyUserKey.isBlank()) {
-                return LEGACY_DEFAULT_USER_KEY;
-            }
-            return legacyUserKey.trim();
+            return userKeyLookup.apply(userId);
         }
         throw AuthException.unauthorized("AUTHENTICATION_REQUIRED", "Authentication is required");
     }

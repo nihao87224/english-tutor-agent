@@ -42,14 +42,13 @@ public class ConversationController {
             value = "/conversations/{sessionId}/messages/stream",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     SseEmitter streamMessage(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             @PathVariable("sessionId") String sessionId,
             @RequestBody ConversationMessageRequest request
     ) {
         List<ConversationStreamEvent> events = conversationApplicationService.streamMessage(
                 new ConversationStreamRequest(
-                        currentUserKeyResolver.resolve(userKey),
+                        currentUserKeyResolver.resolve(),
                         sessionId,
                         parseMessageType(request == null ? null : request.messageType()),
                         request == null ? null : request.text(),

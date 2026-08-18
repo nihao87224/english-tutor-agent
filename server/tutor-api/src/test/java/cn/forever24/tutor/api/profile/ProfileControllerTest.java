@@ -12,8 +12,12 @@ import cn.forever24.tutor.profile.PrivacySettings;
 import cn.forever24.tutor.profile.ProfileSummary;
 import cn.forever24.tutor.profile.RawContentRetention;
 import cn.forever24.tutor.profile.UserKey;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,15 +29,24 @@ class ProfileControllerTest {
 
     private final ProfileController controller = new ProfileController(
             new OnboardingApplicationService(new FakeUserProfileRepository()),
-            CurrentUserKeyResolver.legacyOnly());
+            new CurrentUserKeyResolver(ignored -> "user-1"));
+
+    @BeforeEach
+    void authenticate() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("1", null, "ROLE_USER"));
+    }
+
+    @AfterEach
+    void clearAuthentication() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void savesPrimaryGoalAndRestoresProgress() {
         ProfileSummaryResponse summary = controller.putPrimaryGoal(
-                "user-1",
                 new PrimaryGoalRequest("WORKPLACE"));
 
-        OnboardingProgressResponse progress = controller.getOnboardingProgress("user-1");
+        OnboardingProgressResponse progress = controller.getOnboardingProgress();
 
         assertEquals("WORKPLACE", summary.primaryGoal());
         assertEquals(20, summary.dailyMinutes());
@@ -50,12 +63,11 @@ class ProfileControllerTest {
 
     @Test
     void savesPreferencesAndReturnsProfileSummary() {
-        controller.putPrimaryGoal("user-1", new PrimaryGoalRequest("WORKPLACE"));
+        controller.putPrimaryGoal(new PrimaryGoalRequest("WORKPLACE"));
 
         ProfileSummaryResponse summary = controller.putPreferences(
-                "user-1",
                 new PreferenceRequest(30, "LIGHT", true, false, true));
-        OnboardingProgressResponse progress = controller.getOnboardingProgress("user-1");
+        OnboardingProgressResponse progress = controller.getOnboardingProgress();
 
         assertEquals(30, summary.dailyMinutes());
         assertEquals("LIGHT", summary.correctionStyle());
@@ -64,11 +76,10 @@ class ProfileControllerTest {
 
     @Test
     void readsAndUpdatesPrivacySettings() {
-        controller.putPrimaryGoal("user-1", new PrimaryGoalRequest("GENERAL"));
+        controller.putPrimaryGoal(new PrimaryGoalRequest("GENERAL"));
 
-        PrivacySettingsResponse defaults = controller.getPrivacySettings("user-1");
+        PrivacySettingsResponse defaults = controller.getPrivacySettings();
         PrivacySettingsResponse updated = controller.putPrivacySettings(
-                "user-1",
                 new PrivacySettingsRequest(false, false, 7));
 
         assertEquals(true, defaults.saveRawText());

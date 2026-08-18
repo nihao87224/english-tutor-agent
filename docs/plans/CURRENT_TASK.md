@@ -1,10 +1,11 @@
 # Current Task
 
-> Start a new task by replacing this file. Only one development task may be active at a time.
+> Start a new task by replacing this file. Only one development task may be
+> active at a time.
 
 ## Task
 
-`SaaS-M6 Web Learner SaaS UX + i18n`
+`SaaS-M9 Hardening + Legacy Cleanup`
 
 ## Status
 
@@ -12,54 +13,56 @@
 
 ## Goal
 
-Move the Web learner experience from local development identity to authenticated
-SaaS account UX with quota visibility, route guarding and bilingual UI support.
+Make the SaaS Foundation production-pilot ready by removing legacy identity,
+documenting claim/rollback operations, and verifying security, quota and
+provider-failure guardrails.
 
 ## Related documents
 
 - `docs/design/ENGLISH_TUTOR_AGENT_SAAS_FOUNDATION_DESIGN_v1.1.0.md`
-- `docs/ui/ENGLISH_TUTOR_AGENT_SAAS_UI_PROTOTYPE_v1.1.0.html`
 - `docs/plans/SAAS_FOUNDATION_IMPLEMENTATION_PLAN_v1.1.0.md`
 - `docs/decisions/ADR-0014-saas-foundation.md`
+- `docs/process/DEFINITION_OF_DONE.md`
+- `docs/deploy/PRODUCTION_DEPLOYMENT.md`
+- `docs/deploy/SAAS_HARDENING_RUNBOOK.md`
 - `contracts/openapi/english-tutor-api.yaml`
-- `web/README.md`
 
 ## In Scope
 
-- Auth store and learner route guard.
-- Login, register, logout and refresh-token flow.
-- Bearer authenticated Web API client.
-- Removal of Web local user key generation from the learner app path.
-- Today and account quota display using `/api/v1/me/quota`.
-- Quota-exceeded UX for conversation requests.
-- Account page and zh-CN/en i18n foundation.
-- Email-scoped recent practice history for completed summaries.
-- Learner Playwright coverage for the SaaS flow.
+- Remove backend `X-User-Key` resolver and controller compatibility paths.
+- Remove Web API client `X-User-Key` fallback.
+- Remove production/test/deploy legacy identity switches.
+- Update OpenAPI so learner APIs require authenticated bearer sessions only.
+- Migrate integration tests to register users and call learner APIs with bearer
+  tokens.
+- Keep negative tests proving legacy user headers are rejected without bearer
+  auth and ignored when bearer auth is present.
+- Document existing-user claim strategy, backup/rollback and secret scan steps.
+- Update README, deployment docs and SaaS planning docs.
 
 ## Out of Scope
 
-- Web admin console.
-- Android auth/quota/i18n migration.
-- Billing, subscription, organization or workspace features.
-- Removing the backend temporary legacy `X-User-Key` compatibility path.
-- Changing backend deployment or Web Jenkins deployment logic.
+- Billing, subscriptions, organizations and workspaces.
+- Automatic multi-provider failover routing beyond the current provider failure
+  refund guardrail.
+- Database schema changes; no new Flyway migration is needed.
 
 ## Acceptance Criteria
 
-1. Register -> onboarding -> practice -> quota consumed -> summary works in Web.
-2. Logout/login with the same email returns to the same learner account flow.
-3. Web learner API calls use Authorization Bearer tokens in the normal app path.
-4. Daily quota is visible on Today and Account screens.
-5. Quota exceeded errors show a learner-friendly UX.
-6. zh-CN/en language switching is available.
-7. Recent practice history remains visible after logout/login on the same email.
+1. No production code path trusts `X-User-Key`.
+2. OpenAPI no longer exposes `X-User-Key` as a learner API parameter.
+3. Web client does not send `X-User-Key` fallback headers.
+4. Existing integration tests use bearer tokens for learner identity.
+5. Anonymous or legacy-header-only learner requests return 401.
+6. Cross-user access tests still pass.
+7. Quota concurrency and provider-failure refund tests pass.
+8. Secret scan and deployment hardening documentation are updated.
 
 ## Verification Record
 
-- `pnpm test` from `web/` - PASS.
-- `pnpm run build` from `web/` - PASS.
-- `pnpm run e2e` from `web/` - PASS.
+- `.\mvnw.cmd -pl tutor-bootstrap -am test` from `server/` - PASS.
 
 ## Review Status
 
-Completed for SaaS-M6. The next milestone is `SaaS-M7 Web Admin Console`.
+Completed for SaaS-M9. SaaS Foundation v1.1.0 is ready for a limited production
+pilot review.

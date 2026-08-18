@@ -23,6 +23,6 @@ public class QuotaController {
 
     @GetMapping
     public QuotaResponse quota() {
-        return QuotaResponse.from(dailyQuotaApplicationService.currentQuota(currentUserKeyResolver.resolve(null)));
+        return QuotaResponse.from(dailyQuotaApplicationService.currentQuota(currentUserKeyResolver.resolve()));
     }
 }

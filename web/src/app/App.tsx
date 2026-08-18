@@ -4,6 +4,7 @@ import { CoachWorkspace } from "../features/coach/CoachWorkspace";
 import { TodayCoachHome, type CoachSelection } from "../features/coach/TodayCoachHome";
 import { SummaryView } from "../features/summary/SummaryView";
 import { OnboardingPanel } from "../features/onboarding/OnboardingPanel";
+import { AdminConsole, AdminForbidden, hasAdminRole } from "../features/admin/AdminConsole";
 import { DEFAULT_ONBOARDING_STATE, type LocalOnboardingState } from "../shared/session/localSession";
 import {
   clearStoredAuthSession,
@@ -12,6 +13,7 @@ import {
   toStoredAuthSession,
   type StoredAuthSession,
 } from "../shared/auth/authStore";
+import { createRefreshCoordinator } from "../shared/auth/refreshCoordinator";
 import { I18nProvider, normalizeLocale, useI18n, type Locale } from "../shared/i18n";
 import { loadPracticeHistory, savePracticeCompletion, type PracticeHistoryItem } from "../shared/history/practiceHistory";
 
@@ -45,6 +47,8 @@ function LearnerApp({
   const [completion, setCompletion] = useState<TrainingSessionCompletion | null>(null);
   const [quotaState, setQuotaState] = useState<QuotaLoadState>({ status: "idle", quota: null });
   const [practiceHistory, setPracticeHistory] = useState<PracticeHistoryItem[]>([]);
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+  const isAdminRoute = currentPath.startsWith("/admin");
 
   const acceptAuthResponse = useCallback(
     (response: AuthResponse) => {
@@ -81,13 +85,18 @@ function LearnerApp({
     }
   }, [acceptAuthResponse, clearAuth]);
 
+  const coordinatedRefreshAccessToken = useMemo(
+    () => createRefreshCoordinator(refreshAccessToken),
+    [refreshAccessToken],
+  );
+
   const apiClient = useMemo(
     () =>
       createApiClient({
         accessTokenProvider: () => accessTokenRef.current,
-        onUnauthorized: refreshAccessToken,
+        onUnauthorized: coordinatedRefreshAccessToken,
       }),
-    [refreshAccessToken],
+    [coordinatedRefreshAccessToken],
   );
 
   const loadQuota = useCallback(async () => {
@@ -108,6 +117,14 @@ function LearnerApp({
   }, [authSession?.accessToken]);
 
   useEffect(() => {
+    function onPopState() {
+      setCurrentPath(window.location.pathname);
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     async function boot() {
       if (authSession) {
@@ -115,7 +132,7 @@ function LearnerApp({
         return;
       }
       setBootState("refreshing");
-      const refreshed = await refreshAccessToken();
+      const refreshed = await coordinatedRefreshAccessToken();
       if (!cancelled) {
         setBootState(refreshed ? "ready" : "ready");
       }
@@ -124,7 +141,7 @@ function LearnerApp({
     return () => {
       cancelled = true;
     };
-  }, [authSession, refreshAccessToken]);
+  }, [authSession, coordinatedRefreshAccessToken]);
 
   useEffect(() => {
     if (!authSession) {
@@ -162,6 +179,11 @@ function LearnerApp({
     }
   }
 
+  function openLearner() {
+    window.history.pushState(null, "", "/");
+    setCurrentPath("/");
+  }
+
   if (bootState === "refreshing") {
     return (
       <main className="app-shell">
@@ -175,6 +197,13 @@ function LearnerApp({
 
   if (!authSession) {
     return <AuthScreen onAuthenticated={acceptAuthResponse} />;
+  }
+
+  if (isAdminRoute) {
+    if (!hasAdminRole(authSession.user)) {
+      return <AdminForbidden onOpenLearner={openLearner} />;
+    }
+    return <AdminConsole apiClient={apiClient} user={authSession.user} onLogout={handleLogout} onOpenLearner={openLearner} />;
   }
 
   if (!onboardingState.completed) {

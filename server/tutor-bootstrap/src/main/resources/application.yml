@@ -36,7 +36,6 @@ tutor:
   auth:
     jwt-signing-secret: ${TUTOR_JWT_SIGNING_SECRET}
     access-token-ttl: ${TUTOR_ACCESS_TOKEN_TTL:15m}
-    legacy-user-key-enabled: ${TUTOR_AUTH_LEGACY_USER_KEY_ENABLED:false}
     bootstrap-admin:
       enabled: ${TUTOR_BOOTSTRAP_ADMIN_ENABLED:false}
       email: ${TUTOR_BOOTSTRAP_ADMIN_EMAIL:}

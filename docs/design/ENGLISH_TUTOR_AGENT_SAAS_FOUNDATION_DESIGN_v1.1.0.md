@@ -3273,62 +3273,62 @@ Provider Cost
 
 ### Identity
 
-- [ ] Email 注册/登录；
-- [ ] Email 唯一；
-- [ ] USER / ADMIN；
-- [ ] Password hash；
-- [ ] Refresh rotation；
-- [ ] Logout / disable invalidation。
+- [x] Email 注册/登录；
+- [x] Email 唯一；
+- [x] USER / ADMIN；
+- [x] Password hash；
+- [x] Refresh rotation；
+- [x] Logout / disable invalidation。
 
 ### Isolation
 
-- [ ] 所有用户资源从 CurrentActor 获取 user_id；
-- [ ] 无客户端可信 userId；
-- [ ] Cross-user 自动化测试通过。
+- [x] 所有用户资源从 CurrentActor 获取 user_id；
+- [x] 无客户端可信 userId；
+- [x] Cross-user 自动化测试通过。
 
 ### Quota
 
-- [ ] 每日额度；
-- [ ] 系统默认；
-- [ ] 用户 override；
-- [ ] Reset；
-- [ ] Bonus；
-- [ ] Unlimited；
-- [ ] 并发原子；
-- [ ] Retry 不重复扣；
-- [ ] Provider fail before output 可 refund。
+- [x] 每日额度；
+- [x] 系统默认；
+- [x] 用户 override；
+- [x] Reset；
+- [x] Bonus；
+- [x] Unlimited；
+- [x] 并发原子；
+- [x] Retry 不重复扣；
+- [x] Provider fail before output 可 refund。
 
 ### Admin
 
-- [ ] User Management；
-- [ ] Quota；
-- [ ] Provider；
-- [ ] System Settings；
-- [ ] Audit；
-- [ ] USER 无 Admin 权限。
+- [x] User Management；
+- [x] Quota；
+- [x] Provider；
+- [x] System Settings；
+- [x] Audit；
+- [x] USER 无 Admin 权限。
 
 ### Secret
 
-- [ ] DB 无明文 API Key；
-- [ ] API 不回显；
-- [ ] Log 不泄露；
-- [ ] Encryption key 不进 Git。
+- [x] DB 无明文 API Key；
+- [x] API 不回显；
+- [x] Log 不泄露；
+- [x] Encryption key 不进 Git。
 
 ### UI
 
-- [ ] Web Learner；
-- [ ] Web Admin；
-- [ ] Android Learner；
-- [ ] zh-CN / en；
-- [ ] responsive；
-- [ ] quota UX。
+- [x] Web Learner；
+- [x] Web Admin；
+- [x] Android Learner；
+- [x] zh-CN / en；
+- [x] responsive；
+- [x] quota UX。
 
 ### Migration
 
-- [ ] Flyway V11+；
-- [ ] existing data retained；
-- [ ] existing real user claim strategy；
-- [ ] Legacy X-User-Key 最终关闭。
+- [x] Flyway V11+；
+- [x] existing data retained；
+- [x] existing real user claim strategy；
+- [x] Legacy X-User-Key 最终关闭。
 
 ---
 

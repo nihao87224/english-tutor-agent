@@ -33,13 +33,12 @@ public class TrainingSessionController {
 
     @PostMapping("/training-sessions")
     ResponseEntity<TrainingSessionResponse> startTrainingSession(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody StartTrainingSessionRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(TrainingSessionResponse.from(
                 trainingSessionApplicationService.startDailySession(
-                        currentUserKeyResolver.resolve(userKey),
+                        currentUserKeyResolver.resolve(),
                         request == null ? null : request.planId(),
                         parseMode(request == null ? null : request.mode()),
                         idempotencyKey)));
@@ -47,52 +46,46 @@ public class TrainingSessionController {
 
     @GetMapping("/training-sessions/{sessionId}")
     TrainingSessionResponse getTrainingSession(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionResponse.from(
-                trainingSessionApplicationService.getSession(currentUserKeyResolver.resolve(userKey), sessionId));
+                trainingSessionApplicationService.getSession(currentUserKeyResolver.resolve(), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/pause")
     TrainingSessionResponse pauseTrainingSession(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionResponse.from(
-                trainingSessionApplicationService.pause(currentUserKeyResolver.resolve(userKey), sessionId));
+                trainingSessionApplicationService.pause(currentUserKeyResolver.resolve(), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/resume")
     TrainingSessionResponse resumeTrainingSession(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionResponse.from(
-                trainingSessionApplicationService.resume(currentUserKeyResolver.resolve(userKey), sessionId));
+                trainingSessionApplicationService.resume(currentUserKeyResolver.resolve(), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/complete")
     TrainingSessionCompletionResponse completeTrainingSession(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @PathVariable("sessionId") String sessionId
     ) {
         return TrainingSessionCompletionResponse.from(
-                trainingSessionApplicationService.complete(currentUserKeyResolver.resolve(userKey), sessionId));
+                trainingSessionApplicationService.complete(currentUserKeyResolver.resolve(), sessionId));
     }
 
     @GetMapping("/training-sessions/{sessionId}/current-task")
     CurrentTrainingTaskResponse getCurrentTask(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @PathVariable("sessionId") String sessionId
     ) {
         return CurrentTrainingTaskResponse.from(
-                trainingSessionApplicationService.getCurrentTask(currentUserKeyResolver.resolve(userKey), sessionId));
+                trainingSessionApplicationService.getCurrentTask(currentUserKeyResolver.resolve(), sessionId));
     }
 
     @PostMapping("/training-sessions/{sessionId}/tasks/{taskId}/attempts")
     ResponseEntity<TaskAttemptReceiptResponse> submitTaskAttempt(
-            @RequestHeader(name = "X-User-Key", required = false) String userKey,
             @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
             @PathVariable("sessionId") String sessionId,
             @PathVariable("taskId") String taskId,
@@ -100,7 +93,7 @@ public class TrainingSessionController {
     ) {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(TaskAttemptReceiptResponse.from(
                 trainingSessionApplicationService.submitTaskAttempt(
-                        currentUserKeyResolver.resolve(userKey),
+                        currentUserKeyResolver.resolve(),
                         sessionId,
                         taskId,
                         parseInputType(request == null ? null : request.inputType()),

@@ -1,6 +1,6 @@
 # SaaS Foundation Implementation Plan v1.1.0
 
-Status: Ready for milestone implementation
+Status: SaaS Foundation v1.1.0 milestones implemented
 
 Source documents:
 
@@ -233,7 +233,7 @@ Gate:
 
 ## Current Implementation Progress
 
-SaaS-M1 through SaaS-M6 have been implemented:
+SaaS-M1 through SaaS-M9 have been implemented:
 
 - `SaaS-M1: Identity Schema + Auth Backend`
 - `SaaS-M2: CurrentActor + Multi-User Isolation`
@@ -241,5 +241,13 @@ SaaS-M1 through SaaS-M6 have been implemented:
 - `SaaS-M4: Runtime AI Provider + Secret`
 - `SaaS-M5: Admin Backend`
 - `SaaS-M6: Web Learner SaaS UX + i18n`
+- `SaaS-M7: Web Admin Console`
+- `SaaS-M8: Android Learner Auth + Quota + i18n`
+- `SaaS-M9: Hardening + Legacy Cleanup`
 
-The next milestone is `SaaS-M7: Web Admin Console`.
+SaaS-M9 removed the production legacy `X-User-Key` identity path, updated the
+OpenAPI learner contract, migrated integration tests to bearer identity, and
+added deployment hardening runbooks for existing-user claim, backup/rollback and
+secret scanning.
+
+The next milestone should be opened as a new task card after product review.
