@@ -19,4 +19,5 @@
 | ADR-0012 | Android 使用 Hilt 依赖注入 | Accepted |
 | ADR-0013 | Production AI uses OpenAI-backed real providers | Superseded for default LLM by ADR-0015 |
 | ADR-0014 | SaaS Foundation is the next product platform increment | Accepted for implementation planning |
-| ADR-0015 | Multi-provider LLM protocols with DeepSeek as the default | Accepted |
+| ADR-0015 | Multi-provider LLM protocols with DeepSeek as the default | Superseded in configuration source by ADR-0016 |
+| ADR-0016 | Database is the single runtime source for AI provider configuration | Accepted |

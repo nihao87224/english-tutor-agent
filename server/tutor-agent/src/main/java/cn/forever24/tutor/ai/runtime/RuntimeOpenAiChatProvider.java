@@ -41,20 +41,23 @@ public class RuntimeOpenAiChatProvider implements ChatProvider {
     }
 
     private ChatProvider delegate() {
-        ActiveAiProviderConfiguration configuration = configurationService.defaultLlmProvider();
+        return forConfiguration(configurationService.defaultLlmProvider(), objectMapper);
+    }
+
+    static ChatProvider forConfiguration(ActiveAiProviderConfiguration configuration, ObjectMapper objectMapper) {
         return switch (configuration.providerType()) {
-            case OPENAI -> openAi(configuration);
-            case OPENAI_COMPATIBLE -> openAiCompatible(configuration);
+            case OPENAI -> openAi(configuration, objectMapper);
+            case OPENAI_COMPATIBLE -> openAiCompatible(configuration, objectMapper);
             case GEMINI -> new GeminiChatProvider(objectMapper, configuration);
         };
     }
 
-    private OpenAiChatProvider openAi(ActiveAiProviderConfiguration configuration) {
+    private static OpenAiChatProvider openAi(ActiveAiProviderConfiguration configuration, ObjectMapper objectMapper) {
         OpenAiProviderProperties properties = OpenAiProviderProperties.fromActiveConfiguration(configuration);
         return new OpenAiChatProvider(new OpenAiHttpClient(objectMapper, properties), properties);
     }
 
-    private OpenAiCompatibleChatProvider openAiCompatible(ActiveAiProviderConfiguration configuration) {
+    private static OpenAiCompatibleChatProvider openAiCompatible(ActiveAiProviderConfiguration configuration, ObjectMapper objectMapper) {
         OpenAiProviderProperties properties = OpenAiProviderProperties.fromActiveConfiguration(configuration);
         return new OpenAiCompatibleChatProvider(new OpenAiHttpClient(objectMapper, properties), properties, configuration.providerCode());
     }

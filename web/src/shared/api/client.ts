@@ -3,6 +3,9 @@ import type {
   AuthRequest,
   AuthResponse,
   AuthUser,
+  AssessmentAnswerRequest,
+  AssessmentItem,
+  AssessmentSession,
   AdminAuditPage,
   AdminDashboardSummary,
   AdminQuotaBonusRequest,
@@ -16,12 +19,15 @@ import type {
   AdminUserSearchRequest,
   AdminUserStatusRequest,
   AiProvider,
+  AiProviderConnectionTestResult,
   AiProviderSecretRequest,
   AiProviderUpdateRequest,
   ConversationMessageRequest,
   CurrentTrainingTask,
   LearningPlan,
   OnboardingProgress,
+  SelfAssessmentRequest,
+  UserLearningProgress,
   PlanAdjustmentRequest,
   PreferenceRequest,
   PrimaryGoal,
@@ -70,9 +76,17 @@ export interface ApiClient {
   getAiProvider(providerCode: string, options?: RequestOptions): Promise<AiProvider>;
   putAiProvider(providerCode: string, request: AiProviderUpdateRequest, options?: RequestOptions): Promise<AiProvider>;
   replaceAiProviderSecret(providerCode: string, request: AiProviderSecretRequest, options?: RequestOptions): Promise<AiProvider>;
+  testAiProviderConnection(providerCode: string, options?: RequestOptions): Promise<AiProviderConnectionTestResult>;
   putPrimaryGoal(goal: PrimaryGoal, options?: RequestOptions): Promise<ProfileSummary>;
   putPreferences(request: PreferenceRequest, options?: RequestOptions): Promise<ProfileSummary>;
   getOnboardingProgress(options?: RequestOptions): Promise<OnboardingProgress>;
+  getUserLearningProgress(options?: RequestOptions): Promise<UserLearningProgress>;
+  submitSelfAssessment(request: SelfAssessmentRequest, options?: RequestOptions): Promise<unknown>;
+  getCurrentAssessment(options?: RequestOptions): Promise<AssessmentSession | undefined>;
+  startAssessment(options?: RequestOptions): Promise<AssessmentSession>;
+  getNextAssessmentItem(assessmentId: string, options?: RequestOptions): Promise<AssessmentItem | undefined>;
+  submitAssessmentAnswer(assessmentId: string, request: AssessmentAnswerRequest, options?: RequestOptions): Promise<unknown>;
+  completeAssessment(assessmentId: string, options?: RequestOptions): Promise<unknown>;
   getTodayPlan(options?: RequestOptions): Promise<LearningPlan>;
   adjustTodayPlan(request: PlanAdjustmentRequest, options?: RequestOptions): Promise<LearningPlan>;
   startTrainingSession(request: StartTrainingSessionRequest, options?: RequestOptions): Promise<TrainingSession>;
@@ -274,6 +288,12 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         body: request,
       });
     },
+    testAiProviderConnection(providerCode, requestOptions) {
+      return requestJson<AiProviderConnectionTestResult>(`/api/v1/admin/ai-providers/${encodeURIComponent(providerCode)}/test`, {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+      });
+    },
     putPrimaryGoal(goal, requestOptions) {
       return requestJson<ProfileSummary>("/api/v1/profile/primary-goal", {
         ...mutationOptions(requestOptions),
@@ -290,6 +310,31 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
     getOnboardingProgress(requestOptions) {
       return requestJson<OnboardingProgress>("/api/v1/onboarding/progress", requestOptions);
+    },
+    getUserLearningProgress(requestOptions) {
+      return requestJson<UserLearningProgress>("/api/v1/users/me/progress", requestOptions);
+    },
+    submitSelfAssessment(request, requestOptions) {
+      return requestJson("/api/v1/assessments/self", { ...mutationOptions(requestOptions), method: "POST", body: request });
+    },
+    getCurrentAssessment(requestOptions) {
+      return requestJson<AssessmentSession>("/api/v1/assessments/current", requestOptions);
+    },
+    startAssessment(requestOptions) {
+      return requestJson<AssessmentSession>("/api/v1/assessments", { ...mutationOptions(requestOptions), method: "POST", body: {} });
+    },
+    getNextAssessmentItem(assessmentId, requestOptions) {
+      return requestJson<AssessmentItem>(`/api/v1/assessments/${encodeURIComponent(assessmentId)}/next`, requestOptions);
+    },
+    submitAssessmentAnswer(assessmentId, request, requestOptions) {
+      return requestJson(`/api/v1/assessments/${encodeURIComponent(assessmentId)}/answers`, {
+        ...mutationOptions(requestOptions), method: "POST", body: request,
+      });
+    },
+    completeAssessment(assessmentId, requestOptions) {
+      return requestJson(`/api/v1/assessments/${encodeURIComponent(assessmentId)}/complete`, {
+        ...mutationOptions(requestOptions), method: "POST",
+      });
     },
     getTodayPlan(requestOptions) {
       return requestJson<LearningPlan>("/api/v1/plans/today", requestOptions);

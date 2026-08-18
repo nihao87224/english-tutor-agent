@@ -6,6 +6,7 @@ import cn.forever24.tutor.profile.PrimaryGoal;
 import cn.forever24.tutor.profile.PrivacySettings;
 import cn.forever24.tutor.profile.ProfileSummary;
 import cn.forever24.tutor.profile.UserKey;
+import cn.forever24.tutor.profile.UserLearningProgress;
 
 public class OnboardingApplicationService {
 
@@ -58,5 +59,9 @@ public class OnboardingApplicationService {
 
     public OnboardingProgress getProgress(String userKeyValue) {
         return userProfileRepository.getOnboardingProgress(new UserKey(userKeyValue));
+    }
+
+    public UserLearningProgress getLearningProgress(String userKeyValue) {
+        return UserLearningProgress.from(getProgress(userKeyValue));
     }
 }

@@ -96,8 +96,8 @@ only on the deployment machine or your secrets manager.
 
 Important rules:
 
-- Keep all database, Redis, object-storage and AI provider secrets in
-  environment variables.
+- Keep database, Redis, object-storage and system encryption secrets in
+  environment variables. Provider API keys belong in encrypted database storage.
 - All learner and admin API requests use authenticated bearer sessions. Do not
   deploy any compatibility path that accepts client-supplied user identity.
 - Keep `FLYWAY_ENABLED=true` for forward-only schema migration.
@@ -105,9 +105,9 @@ Important rules:
   belongs at the edge/UI layer.
 - For the current M3 build, set `VITE_API_BASE_URL=` to an empty value when
   building the Web bundle for same-origin Nginx reverse proxying.
-- The default LLM is DeepSeek. Configure `DEEPSEEK_API_KEY` and
-  `DEEPSEEK_LLM_MODEL` in the VPS environment file. Add OpenAI or Gemini
-  through the admin provider API, which encrypts their API keys at rest.
+- The application may start without an AI provider. Sign in as an administrator
+  and configure an enabled default LLM, model, endpoint and API key in the
+  provider console; the API key is encrypted at rest.
 - Set `TUTOR_SECRET_ENCRYPTION_KEY` to a 32-byte value or Base64-encoded
   32-byte value before enabling runtime provider secret storage.
 - If a secret contains shell-sensitive characters such as spaces, `#`, `$`, `"`

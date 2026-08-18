@@ -505,6 +505,28 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/admin/ai-providers/{providerCode}/test:
+    post:
+      tags: [Admin AI Providers]
+      summary: Test a saved AI provider connection
+      description: Performs an administrator-triggered minimal LLM request using the encrypted database secret. No secret value is returned.
+      operationId: testAiProviderConnection
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProviderCode'
+      responses:
+        '200':
+          description: Connection result. Provider authentication and network failures are represented in the response body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiProviderConnectionTestResult'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+
   /api/v1/me/quota:
     get:
       tags: [Quota]
@@ -581,6 +603,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/OnboardingProgress'
 
+  /api/v1/users/me/progress:
+    get:
+      tags: [Profile]
+      summary: Get the authenticated learner's next required action
+      operationId: getUserLearningProgress
+      responses:
+        '200':
+          description: Learner progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserLearningProgress'
+
   /api/v1/assessments/self:
     post:
       tags: [Assessment]
@@ -630,6 +665,21 @@ paths:
                 $ref: '#/components/schemas/AssessmentSession'
         '400':
           description: Invalid target duration or onboarding state
+
+  /api/v1/assessments/current:
+    get:
+      tags: [Assessment]
+      summary: Get the active initial assessment, if any
+      operationId: getCurrentAssessment
+      responses:
+        '200':
+          description: Active assessment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentSession'
+        '204':
+          description: No active assessment
 
   /api/v1/assessments/{assessmentId}/next:
     get:
@@ -1245,6 +1295,17 @@ components:
           type: boolean
         assessmentId:
           type: [string, 'null']
+
+    UserLearningProgress:
+      type: object
+      required: [nextStep, onboardingStep]
+      properties:
+        nextStep:
+          type: string
+          enum: [ONBOARDING_REQUIRED, ASSESSMENT_REQUIRED, READY_FOR_PLAN]
+        onboardingStep:
+          type: string
+          enum: [GOAL, PREFERENCES, SELF_ASSESSMENT, ASSESSMENT, RESULT, COMPLETE]
 
     SelfAssessmentRequest:
       type: object
@@ -2098,6 +2159,21 @@ components:
         apiKey:
           type: string
           minLength: 1
+
+    AiProviderConnectionTestResult:
+      type: object
+      additionalProperties: false
+      required: [success, latencyMs]
+      properties:
+        success:
+          type: boolean
+        latencyMs:
+          type: integer
+          format: int64
+          minimum: 0
+        error:
+          type: [string, 'null']
+          enum: [INVALID_API_KEY, TIMEOUT, PROVIDER_UNAVAILABLE, INVALID_CONFIGURATION, CONNECTION_FAILED, NOT_CONFIGURED, CONNECTION_TEST_UNAVAILABLE, null]
 
     Problem:
       type: object

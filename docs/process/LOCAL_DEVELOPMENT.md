@@ -208,20 +208,11 @@ http://10.0.2.2:8080
 
 ## 7. AI provider mode
 
-本地默认：
-
-```dotenv
-DEEPSEEK_API_KEY=<local-secret>
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_LLM_MODEL=deepseek-v4-flash
-DEEPSEEK_TIMEOUT=30s
-
-```
-
-真实 provider 由后端 `tutor-agent` 模块装配。DeepSeek uses the OpenAI
-Chat Completions-compatible protocol; Gemini uses its native `generateContent`
-protocol. OpenAI or Gemini providers are added through the admin API, including
-their encrypted API keys. 单元测试使用本地 stub 或 mocked transport，不得调用真实付费模型。
+真实 provider 由后端 `tutor-agent` 模块装配。应用可以在未配置 provider 时启动；
+以管理员身份在 `Admin -> AI Provider Management` 中配置 endpoint、model、默认用途和
+API Key。API Key 使用 `TUTOR_SECRET_ENCRYPTION_KEY` 加密存储在数据库中。DeepSeek uses
+the OpenAI Chat Completions-compatible protocol; Gemini uses its native
+`generateContent` protocol. 单元测试使用本地 stub 或 mocked transport，不得调用真实付费模型。
 
 ## 8. Common failures
 

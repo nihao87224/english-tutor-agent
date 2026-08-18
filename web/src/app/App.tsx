@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { createApiClient, type AuthResponse, type QuotaStatus, type TrainingSessionCompletion } from "../shared/api";
+import { createApiClient, type AuthResponse, type QuotaStatus, type TrainingSessionCompletion, type UserLearningProgress } from "../shared/api";
 import { CoachWorkspace } from "../features/coach/CoachWorkspace";
 import { TodayCoachHome, type CoachSelection } from "../features/coach/TodayCoachHome";
 import { SummaryView } from "../features/summary/SummaryView";
 import { OnboardingPanel } from "../features/onboarding/OnboardingPanel";
+import { InitialAssessmentPanel } from "../features/onboarding/InitialAssessmentPanel";
 import { AdminConsole, AdminForbidden, hasAdminRole } from "../features/admin/AdminConsole";
 import { DEFAULT_ONBOARDING_STATE, type LocalOnboardingState } from "../shared/session/localSession";
 import {
@@ -16,9 +17,11 @@ import {
 import { createRefreshCoordinator } from "../shared/auth/refreshCoordinator";
 import { I18nProvider, normalizeLocale, useI18n, type Locale } from "../shared/i18n";
 import { loadPracticeHistory, savePracticeCompletion, type PracticeHistoryItem } from "../shared/history/practiceHistory";
+import { resolveLearnerScreen } from "./userFlow";
 
 type AppView = "today" | "history" | "account";
 type QuotaLoadState = { status: "idle" | "loading" | "error"; quota: QuotaStatus | null };
+type ProgressLoadState = { status: "loading" | "ready" | "error"; progress: UserLearningProgress | null };
 
 export function App() {
   const [authSession, setAuthSession] = useState<StoredAuthSession | null>(() => loadStoredAuthSession());
@@ -41,7 +44,8 @@ function LearnerApp({
   const { t, locale, setLocale } = useI18n();
   const accessTokenRef = useRef(authSession?.accessToken);
   const [bootState, setBootState] = useState(authSession ? "ready" : "refreshing");
-  const [onboardingState, setOnboardingState] = useState<LocalOnboardingState>(DEFAULT_ONBOARDING_STATE);
+  const [onboardingState] = useState<LocalOnboardingState>(DEFAULT_ONBOARDING_STATE);
+  const [progressState, setProgressState] = useState<ProgressLoadState>({ status: "loading", progress: null });
   const [view, setView] = useState<AppView>("today");
   const [coachSelection, setCoachSelection] = useState<CoachSelection | null>(null);
   const [completion, setCompletion] = useState<TrainingSessionCompletion | null>(null);
@@ -66,7 +70,7 @@ function LearnerApp({
     accessTokenRef.current = undefined;
     clearStoredAuthSession();
     setAuthSession(null);
-    setOnboardingState(DEFAULT_ONBOARDING_STATE);
+    setProgressState({ status: "loading", progress: null });
     setCoachSelection(null);
     setCompletion(null);
     setView("today");
@@ -112,6 +116,16 @@ function LearnerApp({
     }
   }, [apiClient]);
 
+  const loadLearningProgress = useCallback(async () => {
+    if (!accessTokenRef.current) return;
+    setProgressState({ status: "loading", progress: null });
+    try {
+      setProgressState({ status: "ready", progress: await apiClient.getUserLearningProgress() });
+    } catch {
+      setProgressState({ status: "error", progress: null });
+    }
+  }, [apiClient]);
+
   useEffect(() => {
     accessTokenRef.current = authSession?.accessToken;
   }, [authSession?.accessToken]);
@@ -151,23 +165,13 @@ function LearnerApp({
     let cancelled = false;
     async function loadAccountState() {
       setPracticeHistory(loadPracticeHistory(userEmail));
-      try {
-        const progress = await apiClient.getOnboardingProgress();
-        if (!cancelled) {
-          setOnboardingState({ ...DEFAULT_ONBOARDING_STATE, completed: progress.completed });
-        }
-      } catch {
-        if (!cancelled) {
-          setOnboardingState(DEFAULT_ONBOARDING_STATE);
-        }
-      }
-      await loadQuota();
+      await Promise.all([loadLearningProgress(), loadQuota()]);
     }
     void loadAccountState();
     return () => {
       cancelled = true;
     };
-  }, [apiClient, authSession, loadQuota]);
+  }, [authSession, loadLearningProgress, loadQuota]);
 
   async function handleLogout() {
     try {
@@ -206,18 +210,33 @@ function LearnerApp({
     return <AdminConsole apiClient={apiClient} user={authSession.user} onLogout={handleLogout} onOpenLearner={openLearner} />;
   }
 
-  if (!onboardingState.completed) {
+  if (progressState.status === "loading") {
+    return (
+      <main className="app-shell"><section className="hero"><p className="eyebrow">English Tutor</p><h1>{t("app.loading")}</h1></section></main>
+    );
+  }
+
+  if (progressState.status === "error" || !progressState.progress) {
+    return (
+      <main className="app-shell"><section className="hero"><p className="eyebrow">English Tutor</p><h1>Unable to load your learning progress</h1><button className="secondary-action" type="button" onClick={() => void loadLearningProgress()}>Retry</button></section></main>
+    );
+  }
+
+  const learnerScreen = resolveLearnerScreen(progressState.progress);
+
+  if (learnerScreen === "onboarding") {
     return (
       <OnboardingPanel
         apiClient={apiClient}
         initialState={onboardingState}
-        onStateChange={setOnboardingState}
-        onComplete={(completed) => {
-          setOnboardingState(completed);
-          void loadQuota();
-        }}
+        step={progressState.progress.onboardingStep === "SELF_ASSESSMENT" ? "SELF_ASSESSMENT" : "GOAL"}
+        onProgressChanged={() => void loadLearningProgress()}
       />
     );
+  }
+
+  if (learnerScreen === "assessment") {
+    return <InitialAssessmentPanel apiClient={apiClient} onCompleted={() => void loadLearningProgress()} />;
   }
 
   if (completion) {

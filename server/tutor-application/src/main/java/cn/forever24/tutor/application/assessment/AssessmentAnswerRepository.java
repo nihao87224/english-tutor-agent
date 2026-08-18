@@ -5,6 +5,8 @@ import cn.forever24.tutor.assessment.ScoredObjectiveAnswer;
 import cn.forever24.tutor.assessment.ScoredOpenAnswer;
 import cn.forever24.tutor.profile.UserKey;
 
+import java.util.Set;
+
 public interface AssessmentAnswerRepository {
 
     AssessmentAnswerReceipt saveObjectiveAnswer(
@@ -16,4 +18,6 @@ public interface AssessmentAnswerRepository {
             UserKey userKey,
             String assessmentId,
             ScoredOpenAnswer answer);
+
+    Set<String> answeredItemIds(UserKey userKey, String assessmentId);
 }

@@ -24,16 +24,12 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
 
     private final JdbcTemplate jdbcTemplate;
     private final AesGcmSecretCipher secretCipher;
-    private final AiProviderEnvironmentDefaults defaults;
-
     public JdbcAiProviderConfigurationRepository(
             JdbcTemplate jdbcTemplate,
-            AesGcmSecretCipher secretCipher,
-            AiProviderEnvironmentDefaults defaults
+            AesGcmSecretCipher secretCipher
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.secretCipher = secretCipher;
-        this.defaults = defaults;
     }
 
     @Override
@@ -57,10 +53,10 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
                         rs.getBoolean("default_asr"),
                         rs.getBoolean("default_tts"),
                         URI.create(rs.getString("base_url")),
-                        firstNonBlank(rs.getString("llm_model"), defaults.llmModel()),
-                        firstNonBlank(rs.getString("asr_model"), defaults.asrModel()),
-                        firstNonBlank(rs.getString("tts_model"), defaults.ttsModel()),
-                        firstNonBlank(rs.getString("tts_voice"), defaults.ttsVoice()),
+                        rs.getString("llm_model"),
+                        rs.getString("asr_model"),
+                        rs.getString("tts_model"),
+                        rs.getString("tts_voice"),
                         Duration.ofMillis(rs.getLong("timeout_ms")),
                         rs.getString("masked_hint"))));
     }
@@ -87,10 +83,10 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
                             rs.getBoolean("default_asr"),
                             rs.getBoolean("default_tts"),
                             URI.create(rs.getString("base_url")),
-                            firstNonBlank(rs.getString("llm_model"), defaults.llmModel()),
-                            firstNonBlank(rs.getString("asr_model"), defaults.asrModel()),
-                            firstNonBlank(rs.getString("tts_model"), defaults.ttsModel()),
-                            firstNonBlank(rs.getString("tts_voice"), defaults.ttsVoice()),
+                            rs.getString("llm_model"),
+                            rs.getString("asr_model"),
+                            rs.getString("tts_model"),
+                            rs.getString("tts_voice"),
                             Duration.ofMillis(rs.getLong("timeout_ms")),
                             rs.getString("masked_hint"))),
                     providerCode));
@@ -108,6 +104,25 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
                 provider.providerType(),
                 provider.baseUrl(),
                 apiKey,
+                provider.llmModel(),
+                provider.asrModel(),
+                provider.ttsModel(),
+                provider.ttsVoice(),
+                provider.timeout());
+    }
+
+    @Override
+    public ActiveAiProviderConfiguration requireActive(String providerCode) {
+        AiProviderConfiguration provider = findByCode(providerCode)
+                .orElseThrow(() -> AiProviderConfigurationException.notFound(providerCode));
+        if (!provider.enabled()) {
+            throw AiProviderConfigurationException.unavailable("AI provider is disabled: " + providerCode);
+        }
+        return new ActiveAiProviderConfiguration(
+                provider.providerCode(),
+                provider.providerType(),
+                provider.baseUrl(),
+                decryptApiKey(provider.providerCode()),
                 provider.llmModel(),
                 provider.asrModel(),
                 provider.ttsModel(),
@@ -227,10 +242,10 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
                             rs.getBoolean("default_asr"),
                             rs.getBoolean("default_tts"),
                             URI.create(rs.getString("base_url")),
-                            firstNonBlank(rs.getString("llm_model"), defaults.llmModel()),
-                            firstNonBlank(rs.getString("asr_model"), defaults.asrModel()),
-                            firstNonBlank(rs.getString("tts_model"), defaults.ttsModel()),
-                            firstNonBlank(rs.getString("tts_voice"), defaults.ttsVoice()),
+                            rs.getString("llm_model"),
+                            rs.getString("asr_model"),
+                            rs.getString("tts_model"),
+                            rs.getString("tts_voice"),
                             Duration.ofMillis(rs.getLong("timeout_ms")),
                             null));
         } catch (EmptyResultDataAccessException exception) {
@@ -253,9 +268,6 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
                     SECRET_TYPE_API_KEY);
             return secretCipher.decrypt(secret);
         } catch (EmptyResultDataAccessException exception) {
-            if (defaults.providerCode().equals(providerCode) && defaults.apiKey() != null && !defaults.apiKey().isBlank()) {
-                return defaults.apiKey();
-            }
             throw AiProviderConfigurationException.unavailable("API key is not configured for provider " + providerCode);
         }
     }
@@ -291,12 +303,8 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
     }
 
     private AiProviderConfiguration toConfiguration(ProviderRow row) {
-        boolean secretConfigured = row.maskedHint() != null || defaults.providerCode().equals(row.providerCode())
-                && defaults.apiKey() != null && !defaults.apiKey().isBlank();
+        boolean secretConfigured = row.maskedHint() != null;
         String maskedHint = row.maskedHint();
-        if (maskedHint == null && secretConfigured) {
-            maskedHint = ProviderSecretMask.mask(defaults.apiKey());
-        }
         return new AiProviderConfiguration(
                 row.providerCode(),
                 row.providerType(),
@@ -313,13 +321,6 @@ public class JdbcAiProviderConfigurationRepository implements AiProviderConfigur
                 row.timeout(),
                 secretConfigured,
                 maskedHint);
-    }
-
-    private static String firstNonBlank(String value, String fallback) {
-        if (value != null && !value.isBlank()) {
-            return value.trim();
-        }
-        return fallback;
     }
 
     private record ProviderRow(

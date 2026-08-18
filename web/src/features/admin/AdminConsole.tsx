@@ -447,6 +447,9 @@ function ProvidersPage({ apiClient }: { apiClient: ApiClient }) {
   return (
     <section className="admin-page">
       <AdminHero eyebrow={t("admin.providers.eyebrow")} title={t("admin.providers.title")} body={t("admin.providers.body")} />
+      {state.data?.every((provider) => !provider.apiKeyConfigured) ? (
+        <StatusPanel text={t("admin.providers.initializationRequired")} />
+      ) : null}
       <NewProviderForm apiClient={apiClient} onSaved={load} />
       {state.status === "loading" ? <StatusPanel text={t("admin.loading")} /> : null}
       {state.status === "error" ? <StatusPanel text={t("admin.error")} actionLabel={t("home.retry")} onAction={load} /> : null}
@@ -542,6 +545,20 @@ function ProviderEditor({ apiClient, provider, onSaved }: { apiClient: ApiClient
     }
   }
 
+  async function testConnection() {
+    setError("");
+    try {
+      const result = await apiClient.testAiProviderConnection(provider.providerCode);
+      if (result.success) {
+        setFeedback(t("admin.providers.testSuccess", { latency: result.latencyMs }));
+      } else {
+        setError(t("admin.providers.testFailure", { error: result.error ?? "CONNECTION_FAILED" }));
+      }
+    } catch {
+      setError(t("admin.error"));
+    }
+  }
+
   return (
     <article className="provider-panel">
       <div className="provider-head">
@@ -611,6 +628,7 @@ function ProviderEditor({ apiClient, provider, onSaved }: { apiClient: ApiClient
         </label>
         <button type="submit">{t("admin.providers.replaceSecret")}</button>
       </form>
+      <button type="button" onClick={() => void testConnection()}>{t("admin.providers.testConnection")}</button>
       <p className="panel-feedback">{provider.apiKeyConfigured ? t("admin.providers.secretConfigured") : t("admin.providers.secretMissing")}</p>
       {feedback ? <p className="form-success">{feedback}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}

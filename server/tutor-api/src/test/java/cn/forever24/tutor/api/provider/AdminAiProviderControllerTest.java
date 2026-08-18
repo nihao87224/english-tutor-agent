@@ -9,6 +9,7 @@ import cn.forever24.tutor.application.provider.AiProviderType;
 import cn.forever24.tutor.application.provider.ActiveAiProviderConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.time.Clock;
@@ -40,6 +41,29 @@ class AdminAiProviderControllerTest {
         assertEquals("****cret", response.apiKeyMaskedHint());
     }
 
+    @Test
+    void returnsConnectionTestFailureAsASecretSafeResponse() {
+        AdminAiProviderController controller = new AdminAiProviderController(new AiProviderConfigurationApplicationService(
+                new CapturingProviderRepository(),
+                Clock.fixed(Instant.parse("2026-08-14T00:00:00Z"), ZoneOffset.UTC),
+                configuration -> cn.forever24.tutor.application.provider.AiProviderConnectionTestResult.failure(15, "INVALID_API_KEY")));
+
+        AiProviderConnectionTestResponse response = controller.testConnection("openai");
+
+        assertEquals(false, response.success());
+        assertEquals(15, response.latencyMs());
+        assertEquals("INVALID_API_KEY", response.error());
+    }
+
+    @Test
+    void protectsConnectionTestingWithProviderManagementPermission() throws NoSuchMethodException {
+        PreAuthorize authorization = AdminAiProviderController.class
+                .getMethod("testConnection", String.class)
+                .getAnnotation(PreAuthorize.class);
+
+        assertEquals("hasAuthority('AI_PROVIDER_MANAGE')", authorization.value());
+    }
+
     private static final class CapturingProviderRepository implements AiProviderConfigurationRepository {
 
         private String capturedRawApiKey;
@@ -57,6 +81,20 @@ class AdminAiProviderControllerTest {
         @Override
         public ActiveAiProviderConfiguration requireDefault(AiProviderPurpose purpose) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ActiveAiProviderConfiguration requireActive(String providerCode) {
+            return new ActiveAiProviderConfiguration(
+                    "openai",
+                    AiProviderType.OPENAI,
+                    URI.create("https://api.openai.com/v1"),
+                    "test-key",
+                    "test-model",
+                    null,
+                    null,
+                    null,
+                    Duration.ofSeconds(30));
         }
 
         @Override

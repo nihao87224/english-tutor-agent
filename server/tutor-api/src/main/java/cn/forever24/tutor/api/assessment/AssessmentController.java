@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/v1")
 public class AssessmentController {
@@ -38,6 +40,23 @@ public class AssessmentController {
         return AssessmentSessionResponse.from(assessmentApplicationService.startInitialAssessment(
                 currentUserKeyResolver.resolve(),
                 targetMinutes));
+    }
+
+    @GetMapping("/assessments/current")
+    public ResponseEntity<AssessmentSessionResponse> getCurrentAssessment() {
+        return assessmentApplicationService.getCurrentInitialAssessment(currentUserKeyResolver.resolve())
+                .map(session -> ResponseEntity.ok(AssessmentSessionResponse.from(session)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/assessments/{assessmentId}/next")
+    public ResponseEntity<AssessmentItemResponse> getNextAssessmentItem(
+            @PathVariable("assessmentId") String assessmentId
+    ) {
+        return Optional.ofNullable(assessmentApplicationService.getNextAssessmentItem(
+                        currentUserKeyResolver.resolve(), assessmentId))
+                .map(item -> ResponseEntity.ok(AssessmentItemResponse.from(item)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/assessments/{assessmentId}/answers")

@@ -52,6 +52,45 @@ export interface OnboardingProgress {
   assessmentId?: string | null;
 }
 
+export interface UserLearningProgress {
+  nextStep: "ONBOARDING_REQUIRED" | "ASSESSMENT_REQUIRED" | "READY_FOR_PLAN";
+  onboardingStep: OnboardingProgress["step"];
+}
+
+export type SelfRating = "BEGINNER" | "BASIC" | "INTERMEDIATE" | "UPPER_INTERMEDIATE" | "ADVANCED";
+
+export interface SelfAssessmentRequest {
+  listening: SelfRating;
+  speaking: SelfRating;
+  reading: SelfRating;
+  writing: SelfRating;
+}
+
+export interface AssessmentSession {
+  assessmentId: string;
+  status: "IN_PROGRESS" | "PAUSED" | "PROCESSING" | "COMPLETED";
+  targetMinutes: number;
+  estimatedRemainingMinutes?: number | null;
+}
+
+export interface AssessmentItem {
+  itemId: string;
+  skill: string;
+  type: "MULTIPLE_CHOICE" | "SHORT_TEXT" | "AUDIO_RESPONSE" | "REPEAT" | "RETELL";
+  prompt: string;
+  options: string[];
+  timeLimitSeconds?: number | null;
+}
+
+export interface AssessmentAnswerRequest {
+  itemId: string;
+  answerType: "OPTION" | "TEXT" | "AUDIO";
+  option?: string | null;
+  text?: string | null;
+  audioAssetId?: string | null;
+  clientDurationMs?: number | null;
+}
+
 export interface PrivacySettings {
   saveRawText: boolean;
   saveRawAudio: boolean;
@@ -206,6 +245,12 @@ export interface AiProviderUpdateRequest {
 
 export interface AiProviderSecretRequest {
   apiKey: string;
+}
+
+export interface AiProviderConnectionTestResult {
+  success: boolean;
+  latencyMs: number;
+  error?: string | null;
 }
 
 export interface LearningPlan {

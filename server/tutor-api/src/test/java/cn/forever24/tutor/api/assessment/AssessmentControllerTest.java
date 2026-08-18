@@ -49,6 +49,8 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -174,6 +176,11 @@ class AssessmentControllerTest {
                     targetMinutes,
                     targetMinutes);
         }
+
+        @Override
+        public Optional<AssessmentSession> findActiveInitialAssessment(UserKey userKey) {
+            return Optional.of(new AssessmentSession("assessment-1", AssessmentSessionStatus.IN_PROGRESS, 9, 9));
+        }
     }
 
     private static final class FakeAssessmentAnswerRepository implements AssessmentAnswerRepository {
@@ -194,6 +201,11 @@ class AssessmentControllerTest {
                 ScoredOpenAnswer answer
         ) {
             return new AssessmentAnswerReceipt("answer-1", true);
+        }
+
+        @Override
+        public Set<String> answeredItemIds(UserKey userKey, String assessmentId) {
+            return Set.of("initial-reading-1", "initial-listening-1", "initial-grammar-1", "initial-speaking-open-1", "initial-writing-open-1");
         }
     }
 

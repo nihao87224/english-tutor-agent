@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.util.Optional;
 
 public class JdbcAssessmentSessionRepository implements AssessmentSessionRepository {
 
@@ -53,6 +54,12 @@ public class JdbcAssessmentSessionRepository implements AssessmentSessionReposit
                 CONTENT_VERSION,
                 now);
         return findActiveInitialSession(userId);
+    }
+
+    @Override
+    public Optional<AssessmentSession> findActiveInitialAssessment(UserKey userKey) {
+        Long userId = findUserId(userKey);
+        return userId == null ? Optional.empty() : Optional.ofNullable(findActiveInitialSession(userId));
     }
 
     private Long findUserId(UserKey userKey) {

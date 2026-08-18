@@ -13,6 +13,7 @@ import cn.forever24.tutor.profile.UserKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -57,6 +58,16 @@ public class InMemoryAssessmentAnswerRepository implements AssessmentAnswerRepos
                     answer.evaluation().evaluatorConfidence()));
             return new AssessmentAnswerReceipt("answer-" + sequence.incrementAndGet(), true);
         });
+    }
+
+    @Override
+    public Set<String> answeredItemIds(UserKey userKey, String assessmentId) {
+        validateAssessmentId(assessmentId);
+        String prefix = userKey.value() + ":" + assessmentId + ":";
+        return receipts.keySet().stream()
+                .filter(key -> key.startsWith(prefix))
+                .map(key -> key.substring(prefix.length()))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
     @Override
