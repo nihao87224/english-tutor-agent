@@ -70,6 +70,7 @@ class InMemoryAiProviderConfigurationRepositoryTest {
                 "test-tts",
                 "test-voice",
                 Duration.ofSeconds(30));
+        service.replaceApiKey("openai", "sk-initial-provider-key", 1001L);
         return service;
     }
 }
