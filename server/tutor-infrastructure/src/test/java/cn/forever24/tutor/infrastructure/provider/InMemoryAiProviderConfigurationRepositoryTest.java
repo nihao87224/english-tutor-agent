@@ -2,6 +2,7 @@ package cn.forever24.tutor.infrastructure.provider;
 
 import cn.forever24.tutor.application.provider.AiProviderConfiguration;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
+import cn.forever24.tutor.application.provider.AiProviderType;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
