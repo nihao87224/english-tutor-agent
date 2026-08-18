@@ -17,6 +17,14 @@ import cn.forever24.tutor.application.conversation.CorrectionAnalyzer;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.net.URI;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class AgentConfigurationTest {
@@ -89,10 +97,3 @@ class AgentConfigurationTest {
         }, Clock.fixed(Instant.parse("2026-08-18T00:00:00Z"), ZoneOffset.UTC));
     }
 }
-import java.net.URI;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Optional;
