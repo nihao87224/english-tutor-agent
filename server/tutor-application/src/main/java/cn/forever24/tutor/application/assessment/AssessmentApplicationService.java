@@ -6,9 +6,12 @@ import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.QuotaRequestType;
 import cn.forever24.tutor.application.quota.QuotaReservation;
+import cn.forever24.tutor.application.provider.AiProviderConfigurationException;
 import cn.forever24.tutor.assessment.AssessmentResult;
 import cn.forever24.tutor.assessment.AssessmentSession;
 import cn.forever24.tutor.assessment.FourSkillSelfAssessment;
+import cn.forever24.tutor.assessment.AssessmentItem;
+import cn.forever24.tutor.assessment.InitialAssessmentItemBank;
 import cn.forever24.tutor.assessment.ObjectiveAssessmentItem;
 import cn.forever24.tutor.assessment.ObjectiveAssessmentItemBank;
 import cn.forever24.tutor.assessment.OpenAnswerEvaluation;
@@ -20,6 +23,8 @@ import cn.forever24.tutor.assessment.ScoredOpenAnswer;
 import cn.forever24.tutor.profile.OnboardingProgress;
 import cn.forever24.tutor.profile.OnboardingStep;
 import cn.forever24.tutor.profile.UserKey;
+
+import java.util.Optional;
 
 public class AssessmentApplicationService {
 
@@ -81,6 +86,18 @@ public class AssessmentApplicationService {
         return assessmentSessionRepository.startOrResumeInitialAssessment(userKey, targetMinutes);
     }
 
+    public Optional<AssessmentSession> getCurrentInitialAssessment(String userKeyValue) {
+        UserKey userKey = new UserKey(userKeyValue);
+        requireAssessmentStep(userKey);
+        return assessmentSessionRepository.findActiveInitialAssessment(userKey);
+    }
+
+    public AssessmentItem getNextAssessmentItem(String userKeyValue, String assessmentId) {
+        UserKey userKey = new UserKey(userKeyValue);
+        requireAssessmentStep(userKey);
+        return InitialAssessmentItemBank.nextUnanswered(assessmentAnswerRepository.answeredItemIds(userKey, assessmentId));
+    }
+
     public AssessmentAnswerReceipt submitAssessmentAnswer(
             String userKeyValue,
             String assessmentId,
@@ -103,9 +120,13 @@ public class AssessmentApplicationService {
 
     public AssessmentCompletion completeAssessment(String userKeyValue, String assessmentId) {
         UserKey userKey = new UserKey(userKeyValue);
-        OnboardingProgress progress = userProfileRepository.getOnboardingProgress(userKey);
-        if (progress.step().ordinal() < OnboardingStep.ASSESSMENT.ordinal()) {
-            throw new IllegalArgumentException("assessment must be started before completion");
+        OnboardingProgress progress = requireAssessmentStep(userKey);
+        if (progress.step().ordinal() >= OnboardingStep.RESULT.ordinal()) {
+            AssessmentResult existingResult = assessmentResultRepository.getAssessmentResult(userKey, assessmentId);
+            return new AssessmentCompletion(existingResult.assessmentId(), "COMPLETED");
+        }
+        if (!InitialAssessmentItemBank.allAnswered(assessmentAnswerRepository.answeredItemIds(userKey, assessmentId))) {
+            throw new IllegalArgumentException("all initial assessment items must be answered before completion");
         }
         AssessmentResult result = assessmentResultRepository.completeInitialAssessment(userKey, assessmentId);
         userProfileRepository.advanceOnboardingToResult(userKey);
@@ -132,6 +153,14 @@ public class AssessmentApplicationService {
                 item.score(option),
                 clientDurationMs);
         return assessmentAnswerRepository.saveObjectiveAnswer(userKey, assessmentId, scoredAnswer);
+    }
+
+    private OnboardingProgress requireAssessmentStep(UserKey userKey) {
+        OnboardingProgress progress = userProfileRepository.getOnboardingProgress(userKey);
+        if (progress.step().ordinal() < OnboardingStep.ASSESSMENT.ordinal()) {
+            throw new IllegalArgumentException("self assessment must be submitted before starting assessment");
+        }
+        return progress;
     }
 
     private AssessmentAnswerReceipt submitOpenTextAnswer(
@@ -163,6 +192,11 @@ public class AssessmentApplicationService {
             dailyQuotaApplicationService.commit(reservation);
             return evaluation;
         } catch (IllegalArgumentException exception) {
+            dailyQuotaApplicationService.commit(reservation);
+            return OpenAnswerEvaluation.safeUnscored(
+                    openAnswerEvaluator.promptVersion(),
+                    openAnswerEvaluator.schemaVersion());
+        } catch (AiProviderConfigurationException exception) {
             dailyQuotaApplicationService.commit(reservation);
             return OpenAnswerEvaluation.safeUnscored(
                     openAnswerEvaluator.promptVersion(),

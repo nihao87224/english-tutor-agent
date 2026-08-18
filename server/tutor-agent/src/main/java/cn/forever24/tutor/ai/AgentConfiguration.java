@@ -3,8 +3,8 @@ package cn.forever24.tutor.ai;
 import cn.forever24.tutor.ai.conversation.ProviderConversationReplyStreamer;
 import cn.forever24.tutor.ai.conversation.ProviderLayeredCorrectionAnalyzer;
 import cn.forever24.tutor.ai.openai.OpenAiOpenAnswerEvaluator;
-import cn.forever24.tutor.ai.runtime.EnvironmentAiProviderConfigurationRepository;
 import cn.forever24.tutor.ai.runtime.RuntimeOpenAiChatProvider;
+import cn.forever24.tutor.ai.runtime.RuntimeAiProviderConnectionTester;
 import cn.forever24.tutor.ai.runtime.RuntimeOpenAiSpeechToTextProvider;
 import cn.forever24.tutor.ai.runtime.RuntimeOpenAiTextToSpeechProvider;
 import cn.forever24.tutor.application.assessment.OpenAnswerEvaluator;
@@ -14,14 +14,12 @@ import cn.forever24.tutor.ai.provider.ChatProvider;
 import cn.forever24.tutor.ai.provider.SpeechToTextProvider;
 import cn.forever24.tutor.ai.provider.TextToSpeechProvider;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
-import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
+import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 
-import java.time.Clock;
 
 @Configuration
 public class AgentConfiguration {
@@ -33,24 +31,9 @@ public class AgentConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(AiProviderConfigurationRepository.class)
-    AiProviderConfigurationRepository environmentAiProviderConfigurationRepository(Environment environment) {
-        return new EnvironmentAiProviderConfigurationRepository(environment);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    AiProviderConfigurationApplicationService aiProviderConfigurationApplicationService(
-            AiProviderConfigurationRepository repository,
-            Clock clock
-    ) {
-        return new AiProviderConfigurationApplicationService(repository, clock);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    Clock clock() {
-        return Clock.systemUTC();
+    @ConditionalOnMissingBean(AiProviderConnectionTester.class)
+    AiProviderConnectionTester aiProviderConnectionTester(ObjectMapper objectMapper) {
+        return new RuntimeAiProviderConnectionTester(objectMapper);
     }
 
     @Bean

@@ -9,10 +9,20 @@ public class AiProviderConfigurationApplicationService {
 
     private final AiProviderConfigurationRepository repository;
     private final Clock clock;
+    private final AiProviderConnectionTester connectionTester;
 
     public AiProviderConfigurationApplicationService(AiProviderConfigurationRepository repository, Clock clock) {
+        this(repository, clock, configuration -> AiProviderConnectionTestResult.failure(0, "CONNECTION_TEST_UNAVAILABLE"));
+    }
+
+    public AiProviderConfigurationApplicationService(
+            AiProviderConfigurationRepository repository,
+            Clock clock,
+            AiProviderConnectionTester connectionTester
+    ) {
         this.repository = repository;
         this.clock = clock;
+        this.connectionTester = connectionTester;
     }
 
     public List<AiProviderConfiguration> listProviders() {
@@ -34,6 +44,19 @@ public class AiProviderConfigurationApplicationService {
 
     public ActiveAiProviderConfiguration defaultTtsProvider() {
         return repository.requireDefault(AiProviderPurpose.TTS);
+    }
+
+    public boolean hasConfiguredDefaultLlmProvider() {
+        return repository.list().stream()
+                .anyMatch(provider -> provider.enabled() && provider.defaultLlm() && provider.apiKeyConfigured());
+    }
+
+    public AiProviderConnectionTestResult testProviderConnection(String providerCode) {
+        try {
+            return connectionTester.test(repository.requireActive(normalizeCode(providerCode)));
+        } catch (AiProviderConfigurationException exception) {
+            return AiProviderConnectionTestResult.failure(0, "NOT_CONFIGURED");
+        }
     }
 
     public AiProviderConfiguration saveProvider(

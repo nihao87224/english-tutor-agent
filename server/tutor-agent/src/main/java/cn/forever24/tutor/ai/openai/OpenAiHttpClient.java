@@ -112,7 +112,9 @@ public final class OpenAiHttpClient {
     }
 
     private AiProviderException providerException(int statusCode, String responseBody) {
-        AiProviderErrorType type = statusCode == 408 || statusCode == 429 || statusCode >= 500
+        AiProviderErrorType type = statusCode == 401 || statusCode == 403
+                ? AiProviderErrorType.AUTHENTICATION_FAILED
+                : statusCode == 408 || statusCode == 429 || statusCode >= 500
                 ? AiProviderErrorType.PROVIDER_UNAVAILABLE
                 : AiProviderErrorType.INVALID_OUTPUT;
         return new AiProviderException(type, "OpenAI returned HTTP " + statusCode + ": " + sanitize(responseBody));

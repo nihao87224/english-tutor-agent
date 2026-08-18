@@ -12,6 +12,10 @@ public interface AiProviderConfigurationRepository {
 
     ActiveAiProviderConfiguration requireDefault(AiProviderPurpose purpose);
 
+    default ActiveAiProviderConfiguration requireActive(String providerCode) {
+        throw AiProviderConfigurationException.unavailable("Provider activation is not configured");
+    }
+
     AiProviderConfiguration save(AiProviderConfigurationDraft draft, Instant now);
 
     AiProviderConfiguration replaceApiKey(String providerCode, String rawApiKey, long actorUserId, Instant now);

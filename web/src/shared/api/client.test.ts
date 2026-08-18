@@ -192,6 +192,30 @@ describe("createApiClient", () => {
     expect(JSON.parse(init.body as string)).toEqual({ apiKey: "sk-secret" });
   });
 
+  it("tests a saved provider connection with an administrator request", async () => {
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse({ success: false, latencyMs: 12, error: "INVALID_API_KEY" }),
+    );
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      accessToken: "admin-token",
+      fetchFn,
+      idempotencyKeyFactory: () => "connection-test-key",
+    });
+
+    await expect(client.testAiProviderConnection("openai")).resolves.toEqual({
+      success: false,
+      latencyMs: 12,
+      error: "INVALID_API_KEY",
+    });
+
+    const [url, init] = lastFetchCall(fetchFn);
+    const headers = init.headers as Headers;
+    expect(String(url)).toBe("http://api.test/api/v1/admin/ai-providers/openai/test");
+    expect(init.method).toBe("POST");
+    expect(headers.get("Idempotency-Key")).toBe("connection-test-key");
+  });
+
   it("accepts empty logout responses", async () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response("", { status: 200 }));
     const client = createApiClient({ baseUrl: "http://api.test", fetchFn });

@@ -24,14 +24,8 @@ public class InMemoryAiProviderConfigurationRepository implements AiProviderConf
     private final Map<String, EncryptedSecret> apiKeySecrets = new LinkedHashMap<>();
     private final Map<String, String> maskedHints = new LinkedHashMap<>();
 
-    public InMemoryAiProviderConfigurationRepository(AesGcmSecretCipher secretCipher, AiProviderEnvironmentDefaults defaults) {
+    public InMemoryAiProviderConfigurationRepository(AesGcmSecretCipher secretCipher) {
         this.secretCipher = secretCipher;
-        StoredProvider configuredProvider = StoredProvider.fromDefaults(defaults);
-        providers.put(configuredProvider.providerCode, configuredProvider);
-        if (defaults.apiKey() != null && !defaults.apiKey().isBlank()) {
-            apiKeySecrets.put(configuredProvider.providerCode, secretCipher.encrypt(defaults.apiKey()));
-            maskedHints.put(configuredProvider.providerCode, ProviderSecretMask.mask(defaults.apiKey()));
-        }
     }
 
     @Override
@@ -57,6 +51,22 @@ public class InMemoryAiProviderConfigurationRepository implements AiProviderConf
         EncryptedSecret secret = apiKeySecrets.get(provider.providerCode);
         if (secret == null) {
             throw AiProviderConfigurationException.unavailable("API key is not configured for provider " + provider.providerCode);
+        }
+        return provider.toActive(secretCipher.decrypt(secret));
+    }
+
+    @Override
+    public synchronized ActiveAiProviderConfiguration requireActive(String providerCode) {
+        StoredProvider provider = providers.get(providerCode);
+        if (provider == null) {
+            throw AiProviderConfigurationException.notFound(providerCode);
+        }
+        if (!provider.enabled) {
+            throw AiProviderConfigurationException.unavailable("AI provider is disabled: " + providerCode);
+        }
+        EncryptedSecret secret = apiKeySecrets.get(providerCode);
+        if (secret == null) {
+            throw AiProviderConfigurationException.unavailable("API key is not configured for provider " + providerCode);
         }
         return provider.toActive(secretCipher.decrypt(secret));
     }
@@ -135,23 +145,6 @@ public class InMemoryAiProviderConfigurationRepository implements AiProviderConf
             String ttsVoice,
             Duration timeout
     ) {
-
-        static StoredProvider fromDefaults(AiProviderEnvironmentDefaults defaults) {
-            return new StoredProvider(
-                    defaults.providerCode(),
-                    defaults.providerType(),
-                    defaults.displayName(),
-                    defaults.defaultLlm(),
-                    defaults.defaultAsr(),
-                    defaults.defaultTts(),
-                    true,
-                    defaults.baseUrl(),
-                    defaults.llmModel(),
-                    defaults.asrModel(),
-                    defaults.ttsModel(),
-                    defaults.ttsVoice(),
-                    defaults.timeout());
-        }
 
         static StoredProvider fromDraft(AiProviderConfigurationDraft draft) {
             return new StoredProvider(

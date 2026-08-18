@@ -1,7 +1,6 @@
 package cn.forever24.tutor.ai.openai;
 
 import cn.forever24.tutor.application.provider.ActiveAiProviderConfiguration;
-import org.springframework.core.env.Environment;
 
 import java.net.URI;
 import java.time.Duration;
@@ -28,24 +27,12 @@ public final class OpenAiProviderProperties {
             Duration timeout
     ) {
         this.baseUrl = baseUrl;
-        this.apiKey = requireNonBlank(apiKey, "OPENAI_API_KEY");
+        this.apiKey = requireNonBlank(apiKey, "apiKey");
         this.llmModel = normalizeOptional(llmModel);
         this.asrModel = normalizeOptional(asrModel);
         this.ttsModel = normalizeOptional(ttsModel);
         this.ttsVoice = normalizeOptional(ttsVoice);
         this.timeout = timeout == null || timeout.isZero() || timeout.isNegative() ? Duration.ofSeconds(30) : timeout;
-    }
-
-    public static OpenAiProviderProperties fromEnvironment(Environment environment) {
-        String baseUrl = firstNonBlank(environment, "OPENAI_BASE_URL", "LLM_BASE_URL");
-        return new OpenAiProviderProperties(
-                URI.create(stripTrailingSlash(baseUrl == null ? "https://api.openai.com/v1" : baseUrl)),
-                firstNonBlank(environment, "OPENAI_API_KEY", "LLM_API_KEY"),
-                firstNonBlank(environment, "OPENAI_LLM_MODEL", "LLM_MODEL"),
-                firstNonBlank(environment, "OPENAI_ASR_MODEL", "ASR_MODEL"),
-                firstNonBlank(environment, "OPENAI_TTS_MODEL", "TTS_MODEL"),
-                firstNonBlank(environment, "OPENAI_TTS_VOICE", "TTS_VOICE"),
-                environment.getProperty("OPENAI_TIMEOUT", Duration.class, Duration.ofSeconds(30)));
     }
 
     public static OpenAiProviderProperties fromActiveConfiguration(ActiveAiProviderConfiguration configuration) {
@@ -68,36 +55,23 @@ public final class OpenAiProviderProperties {
     }
 
     public String llmModel() {
-        return requireNonBlank(llmModel, "OPENAI_LLM_MODEL");
+        return requireNonBlank(llmModel, "llmModel");
     }
 
     public String asrModel() {
-        return requireNonBlank(asrModel, "OPENAI_ASR_MODEL");
+        return requireNonBlank(asrModel, "asrModel");
     }
 
     public String ttsModel() {
-        return requireNonBlank(ttsModel, "OPENAI_TTS_MODEL");
+        return requireNonBlank(ttsModel, "ttsModel");
     }
 
     public String ttsVoice() {
-        return requireNonBlank(ttsVoice, "OPENAI_TTS_VOICE");
+        return requireNonBlank(ttsVoice, "ttsVoice");
     }
 
     public Duration timeout() {
         return timeout;
-    }
-
-    private static String firstNonBlank(Environment environment, String... keysOrFallback) {
-        for (String key : keysOrFallback) {
-            if (!key.contains("_")) {
-                return key;
-            }
-            String value = environment.getProperty(key);
-            if (value != null && !value.isBlank()) {
-                return value.trim();
-            }
-        }
-        return null;
     }
 
     private static String requireNonBlank(String value, String envName) {
@@ -111,11 +85,4 @@ public final class OpenAiProviderProperties {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private static String stripTrailingSlash(String value) {
-        String normalized = value.trim();
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
-    }
 }

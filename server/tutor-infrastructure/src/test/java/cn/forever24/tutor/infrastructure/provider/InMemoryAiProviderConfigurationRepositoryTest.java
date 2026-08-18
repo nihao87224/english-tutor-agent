@@ -2,10 +2,8 @@ package cn.forever24.tutor.infrastructure.provider;
 
 import cn.forever24.tutor.application.provider.AiProviderConfiguration;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
-import cn.forever24.tutor.application.provider.AiProviderType;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,22 +52,23 @@ class InMemoryAiProviderConfigurationRepositoryTest {
 
     private static AiProviderConfigurationApplicationService service(String llmModel) {
         AesGcmSecretCipher cipher = new AesGcmSecretCipher("0123456789abcdef0123456789abcdef", "test");
-        AiProviderEnvironmentDefaults defaults = new AiProviderEnvironmentDefaults(
+        AiProviderConfigurationApplicationService service = new AiProviderConfigurationApplicationService(
+                new InMemoryAiProviderConfigurationRepository(cipher),
+                CLOCK);
+        service.saveProvider(
                 "openai",
-                AiProviderType.OPENAI,
+                "OPENAI",
                 "OpenAI",
-                URI.create("https://api.openai.com/v1"),
-                "sk-bootstrap-key",
+                true,
+                true,
+                true,
+                true,
+                "https://api.openai.com/v1",
                 llmModel,
                 "test-asr",
                 "test-tts",
                 "test-voice",
-                Duration.ofSeconds(30),
-                true,
-                true,
-                true);
-        return new AiProviderConfigurationApplicationService(
-                new InMemoryAiProviderConfigurationRepository(cipher, defaults),
-                CLOCK);
+                Duration.ofSeconds(30));
+        return service;
     }
 }

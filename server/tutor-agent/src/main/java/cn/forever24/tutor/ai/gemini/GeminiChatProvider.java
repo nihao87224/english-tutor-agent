@@ -141,7 +141,9 @@ public final class GeminiChatProvider implements ChatProvider {
     }
 
     private AiProviderException providerException(int statusCode, String responseBody) {
-        AiProviderErrorType type = statusCode == 408 || statusCode == 429 || statusCode >= 500
+        AiProviderErrorType type = statusCode == 401 || statusCode == 403
+                ? AiProviderErrorType.AUTHENTICATION_FAILED
+                : statusCode == 408 || statusCode == 429 || statusCode >= 500
                 ? AiProviderErrorType.PROVIDER_UNAVAILABLE
                 : AiProviderErrorType.INVALID_OUTPUT;
         String body = responseBody == null || responseBody.isBlank() ? "empty response body" : responseBody.substring(0, Math.min(500, responseBody.length()));

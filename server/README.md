@@ -93,14 +93,13 @@ machines without Docker.
 
 ## AI providers
 
-Runtime defaults to DeepSeek for LLM requests. OpenAI remains available for
-LLM, ASR and TTS; Gemini can be configured as an LLM provider in the admin API.
-Non-default provider keys are saved through that API and encrypted at rest:
+The application starts without a configured AI provider. Use the admin API or
+console to create an enabled default LLM provider, choose its endpoint and
+model, then save its API key. OpenAI remains available for LLM, ASR and TTS;
+Gemini can be configured as an LLM provider. Provider keys are encrypted at
+rest; only the encryption key remains in the environment:
 
 ```dotenv
-DEEPSEEK_API_KEY=<local-or-production-secret>
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_LLM_MODEL=deepseek-v4-flash
 TUTOR_SECRET_ENCRYPTION_KEY=<32-byte-or-base64-encoded-32-byte-secret>
 TUTOR_SECRET_ENCRYPTION_KEY_VERSION=v1
 ```

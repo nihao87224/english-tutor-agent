@@ -28,6 +28,8 @@ import java.time.Clock;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -395,6 +397,11 @@ class AssessmentApplicationServiceTest {
                         targetMinutes);
             });
         }
+
+        @Override
+        public Optional<AssessmentSession> findActiveInitialAssessment(UserKey userKey) {
+            return Optional.of(new AssessmentSession("assessment-1", AssessmentSessionStatus.IN_PROGRESS, 9, 9));
+        }
     }
 
     private static final class FakeAssessmentAnswerRepository implements AssessmentAnswerRepository {
@@ -436,6 +443,11 @@ class AssessmentApplicationServiceTest {
                 savedCount++;
                 return new AssessmentAnswerReceipt("answer-" + savedCount, true);
             });
+        }
+
+        @Override
+        public Set<String> answeredItemIds(UserKey userKey, String assessmentId) {
+            return Set.of("initial-reading-1", "initial-listening-1", "initial-grammar-1", "initial-speaking-open-1", "initial-writing-open-1");
         }
     }
 

@@ -6,6 +6,7 @@ import cn.forever24.tutor.assessment.AssessmentSessionStatus;
 import cn.forever24.tutor.profile.UserKey;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,5 +22,10 @@ public class InMemoryAssessmentSessionRepository implements AssessmentSessionRep
                 AssessmentSessionStatus.IN_PROGRESS,
                 targetMinutes,
                 targetMinutes));
+    }
+
+    @Override
+    public Optional<AssessmentSession> findActiveInitialAssessment(UserKey userKey) {
+        return Optional.ofNullable(activeInitialSessions.get(userKey));
     }
 }

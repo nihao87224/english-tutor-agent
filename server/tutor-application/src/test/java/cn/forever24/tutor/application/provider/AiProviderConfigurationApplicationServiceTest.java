@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AiProviderConfigurationApplicationServiceTest {
 
@@ -39,6 +40,21 @@ class AiProviderConfigurationApplicationServiceTest {
         assertEquals("INVALID_AI_PROVIDER_CONFIGURATION", exception.code());
     }
 
+    @Test
+    void testsAResolvedDatabaseProviderThroughTheOutboundPort() {
+        CapturingRepository repository = new CapturingRepository();
+        AiProviderConfigurationApplicationService service = new AiProviderConfigurationApplicationService(
+                repository,
+                Clock.fixed(Instant.parse("2026-08-18T00:00:00Z"), ZoneOffset.UTC),
+                configuration -> AiProviderConnectionTestResult.success(37));
+
+        AiProviderConnectionTestResult result = service.testProviderConnection("openai");
+
+        assertTrue(result.success());
+        assertEquals(37, result.latencyMs());
+        assertEquals("openai", repository.requiredActiveProviderCode);
+    }
+
     private static AiProviderConfigurationApplicationService service(CapturingRepository repository) {
         return new AiProviderConfigurationApplicationService(
                 repository,
@@ -48,6 +64,7 @@ class AiProviderConfigurationApplicationServiceTest {
     private static final class CapturingRepository implements AiProviderConfigurationRepository {
 
         private AiProviderConfigurationDraft draft;
+        private String requiredActiveProviderCode;
 
         @Override
         public List<AiProviderConfiguration> list() {
@@ -62,6 +79,21 @@ class AiProviderConfigurationApplicationServiceTest {
         @Override
         public ActiveAiProviderConfiguration requireDefault(AiProviderPurpose purpose) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ActiveAiProviderConfiguration requireActive(String providerCode) {
+            requiredActiveProviderCode = providerCode;
+            return new ActiveAiProviderConfiguration(
+                    "openai",
+                    AiProviderType.OPENAI,
+                    java.net.URI.create("https://api.openai.com/v1"),
+                    "test-key",
+                    "test-model",
+                    null,
+                    null,
+                    null,
+                    Duration.ofSeconds(30));
         }
 
         @Override

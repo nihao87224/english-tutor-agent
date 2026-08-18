@@ -60,7 +60,7 @@ English Tutor Agent is designed around a learning loop rather than a chat window
 - Try Again loop: feedback leads back to rewritten or retold output.
 - Adaptive daily plans: task focus can change from learning evidence instead of static lessons.
 - Structured AI boundary: provider output is parsed, schema-validated, and business-validated.
-- OpenAI-backed providers: production runtime uses real LLM, ASR, and TTS integrations configured by environment variables.
+- Runtime AI providers: endpoints, models, defaults and encrypted API keys are configured in the admin console and resolved from MySQL without restart.
 - SaaS identity baseline: Web and Android clients use email/password sessions,
   bearer tokens, daily quota and role-protected admin APIs.
 - Legacy client-supplied user identity headers are not part of the production
@@ -203,7 +203,7 @@ The repository includes a single-server production deployment baseline:
 - Nginx serves the Web static bundle.
 - Nginx reverse-proxies `/api/` and `/actuator/` to Spring Boot.
 - systemd manages the backend process.
-- MySQL, Redis, object storage, and provider secrets are supplied through environment variables.
+- MySQL, Redis and object-storage infrastructure secrets are supplied through environment variables. Provider API keys are stored encrypted in MySQL through the admin console; `TUTOR_SECRET_ENCRYPTION_KEY` remains an environment secret.
 
 Start here:
 

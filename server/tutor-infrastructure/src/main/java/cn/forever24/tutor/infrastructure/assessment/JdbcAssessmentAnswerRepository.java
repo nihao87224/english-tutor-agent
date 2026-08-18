@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.util.Set;
 
 public class JdbcAssessmentAnswerRepository implements AssessmentAnswerRepository {
 
@@ -99,6 +100,15 @@ public class JdbcAssessmentAnswerRepository implements AssessmentAnswerRepositor
                 answer.clientDurationMs(),
                 now);
         return findExistingReceipt(session.id(), answer.itemId());
+    }
+
+    @Override
+    public Set<String> answeredItemIds(UserKey userKey, String assessmentId) {
+        AssessmentSessionRow session = findActiveSession(userKey, assessmentId);
+        return Set.copyOf(jdbcTemplate.query(
+                "SELECT question_key FROM assessment_attempt WHERE assessment_id = ?",
+                (resultSet, rowNum) -> resultSet.getString("question_key"),
+                session.id()));
     }
 
     private AssessmentSessionRow findActiveSession(UserKey userKey, String assessmentId) {

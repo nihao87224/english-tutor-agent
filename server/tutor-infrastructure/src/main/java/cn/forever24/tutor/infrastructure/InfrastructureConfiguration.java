@@ -21,6 +21,8 @@ import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.planning.LearningPlanApplicationService;
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
+import cn.forever24.tutor.application.provider.AiProviderConnectionTestResult;
+import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
 import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
@@ -47,7 +49,7 @@ import cn.forever24.tutor.infrastructure.profile.JdbcUserProfileRepository;
 import cn.forever24.tutor.infrastructure.planning.InMemoryLearningPlanRepository;
 import cn.forever24.tutor.infrastructure.planning.JdbcLearningPlanRepository;
 import cn.forever24.tutor.infrastructure.provider.AesGcmSecretCipher;
-import cn.forever24.tutor.infrastructure.provider.AiProviderEnvironmentDefaults;
+import cn.forever24.tutor.infrastructure.provider.AiProviderStartupCheck;
 import cn.forever24.tutor.infrastructure.provider.InMemoryAiProviderConfigurationRepository;
 import cn.forever24.tutor.infrastructure.provider.JdbcAiProviderConfigurationRepository;
 import cn.forever24.tutor.infrastructure.quota.InMemoryDailyQuotaRepository;
@@ -57,6 +59,7 @@ import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -264,32 +267,34 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
-    public AiProviderEnvironmentDefaults aiProviderEnvironmentDefaults(Environment environment) {
-        return AiProviderEnvironmentDefaults.deepSeek(environment);
-    }
-
-    @Bean
     @ConditionalOnMissingBean(AiProviderConfigurationRepository.class)
     public AiProviderConfigurationRepository aiProviderConfigurationRepository(
             ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
-            AesGcmSecretCipher secretCipher,
-            AiProviderEnvironmentDefaults defaults
+            AesGcmSecretCipher secretCipher
     ) {
         JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
         if (jdbcTemplate == null) {
-            return new InMemoryAiProviderConfigurationRepository(secretCipher, defaults);
+            return new InMemoryAiProviderConfigurationRepository(secretCipher);
         }
-        return new JdbcAiProviderConfigurationRepository(jdbcTemplate, secretCipher, defaults);
+        return new JdbcAiProviderConfigurationRepository(jdbcTemplate, secretCipher);
     }
 
     @Bean
     @ConditionalOnMissingBean
     public AiProviderConfigurationApplicationService aiProviderConfigurationApplicationService(
             AiProviderConfigurationRepository repository,
-            Clock clock
+            Clock clock,
+            ObjectProvider<AiProviderConnectionTester> connectionTesterProvider
     ) {
-        return new AiProviderConfigurationApplicationService(repository, clock);
+        AiProviderConnectionTester connectionTester = connectionTesterProvider.getIfAvailable(
+                () -> configuration -> AiProviderConnectionTestResult.failure(0, "CONNECTION_TEST_UNAVAILABLE"));
+        return new AiProviderConfigurationApplicationService(repository, clock, connectionTester);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "aiProviderStartupCheck")
+    public ApplicationRunner aiProviderStartupCheck(AiProviderConfigurationApplicationService configurationService) {
+        return new AiProviderStartupCheck(configurationService);
     }
 
     @Bean
