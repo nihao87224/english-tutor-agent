@@ -2,6 +2,12 @@
 
 本文件适用于 Cursor Agent、Codex、Claude Code 及其他参与本仓库开发的 AI 编码工具。
 
+## Repository and delivery preference
+
+- GitHub 主仓库（`origin`）：`https://github.com/nihao87224/english-tutor-agent.git`。
+- 除非用户在当前任务明确要求不同方式，完成代码或文档修改并通过与改动相称的验证后，直接创建清晰、聚焦的 Git 提交并推送至远端 `main` 分支。
+- 推送前先同步并检查远端 `main`；禁止使用强推或改写远端历史。若无法安全快进或存在冲突，应说明原因并请求处理方向。
+
 ## 1. Source of truth
 
 资料优先级：
