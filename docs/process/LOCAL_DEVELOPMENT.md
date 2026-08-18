@@ -206,24 +206,22 @@ http://10.0.2.2:8080
 
 真机调试需要使用局域网地址或 `adb reverse`。
 
-## 7. OpenAI provider mode
+## 7. AI provider mode
 
 本地默认：
 
 ```dotenv
-LLM_PROVIDER=openai
-ASR_PROVIDER=openai
-TTS_PROVIDER=openai
-OPENAI_API_KEY=<local-secret>
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_LLM_MODEL=<responses-model>
-OPENAI_ASR_MODEL=<transcription-model>
-OPENAI_TTS_MODEL=<speech-model>
-OPENAI_TTS_VOICE=<speech-voice>
+DEEPSEEK_API_KEY=<local-secret>
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_LLM_MODEL=deepseek-v4-flash
+DEEPSEEK_TIMEOUT=30s
+
 ```
 
-真实 provider 由后端 `tutor-agent` 模块装配。单元测试使用本地 stub 或 mocked transport，
-不得调用真实付费模型。
+真实 provider 由后端 `tutor-agent` 模块装配。DeepSeek uses the OpenAI
+Chat Completions-compatible protocol; Gemini uses its native `generateContent`
+protocol. OpenAI or Gemini providers are added through the admin API, including
+their encrypted API keys. 单元测试使用本地 stub 或 mocked transport，不得调用真实付费模型。
 
 ## 8. Common failures
 

@@ -14,6 +14,17 @@ Use this guide together with
 [`SAAS_HARDENING_RUNBOOK.md`](SAAS_HARDENING_RUNBOOK.md) before a production
 pilot.
 
+## Source repository
+
+Jenkins must check out `origin` from
+`https://github.com/nihao87224/english-tutor-agent.git` on `main`. The `gitee`
+remote is mirror-only and must not be used as a Jenkins SCM or deployment
+trigger source. Before a release, verify with:
+
+```bash
+git remote get-url origin
+```
+
 The recommended production shape is same-origin:
 
 ```text
@@ -36,7 +47,8 @@ complete product areas:
 - Billing, subscriptions, organizations and workspace features are intentionally
   out of this foundation release.
 - Multi-provider automatic failover is not implemented; the runtime provider
-  switch currently supports the configured OpenAI-backed provider.
+  switch supports OpenAI Responses, OpenAI Chat Completions-compatible providers
+  (including DeepSeek), and Gemini's native generateContent protocol.
 - Android voice/listening UI and full Push-to-Talk flows remain later product
   milestones.
 - The first production deployment should be treated as a limited-access pilot
@@ -93,8 +105,9 @@ Important rules:
   belongs at the edge/UI layer.
 - For the current M3 build, set `VITE_API_BASE_URL=` to an empty value when
   building the Web bundle for same-origin Nginx reverse proxying.
-- Use `LLM_PROVIDER=openai`, `ASR_PROVIDER=openai` and `TTS_PROVIDER=openai`.
-  Configure `OPENAI_API_KEY` and model variables in the VPS environment file.
+- The default LLM is DeepSeek. Configure `DEEPSEEK_API_KEY` and
+  `DEEPSEEK_LLM_MODEL` in the VPS environment file. Add OpenAI or Gemini
+  through the admin provider API, which encrypts their API keys at rest.
 - Set `TUTOR_SECRET_ENCRYPTION_KEY` to a 32-byte value or Base64-encoded
   32-byte value before enabling runtime provider secret storage.
 - If a secret contains shell-sensitive characters such as spaces, `#`, `$`, `"`

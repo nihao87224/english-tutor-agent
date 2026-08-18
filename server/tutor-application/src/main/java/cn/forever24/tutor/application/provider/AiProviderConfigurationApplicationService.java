@@ -52,9 +52,7 @@ public class AiProviderConfigurationApplicationService {
             Duration timeout
     ) {
         AiProviderType type = parseProviderType(providerType);
-        if (type != AiProviderType.OPENAI) {
-            throw AiProviderConfigurationException.invalid("Only OPENAI provider type is supported");
-        }
+        validateCapabilities(type, defaultLlm, defaultAsr, defaultTts, llmModel, asrModel, ttsModel, ttsVoice);
         return repository.save(new AiProviderConfigurationDraft(
                 normalizeCode(providerCode),
                 type,
@@ -64,10 +62,10 @@ public class AiProviderConfigurationApplicationService {
                 defaultAsr,
                 defaultTts,
                 URI.create(stripTrailingSlash(requireNonBlank(baseUrl, "baseUrl"))),
-                requireNonBlank(llmModel, "llmModel"),
-                requireNonBlank(asrModel, "asrModel"),
-                requireNonBlank(ttsModel, "ttsModel"),
-                requireNonBlank(ttsVoice, "ttsVoice"),
+                normalizeOptional(llmModel),
+                normalizeOptional(asrModel),
+                normalizeOptional(ttsModel),
+                normalizeOptional(ttsVoice),
                 timeout == null ? Duration.ofSeconds(30) : timeout),
                 clock.instant());
     }
@@ -97,6 +95,38 @@ public class AiProviderConfigurationApplicationService {
             throw AiProviderConfigurationException.invalid("providerCode must be 1-64 lowercase letters, digits, dot, underscore or dash");
         }
         return normalized;
+    }
+
+    private static void validateCapabilities(
+            AiProviderType type,
+            boolean defaultLlm,
+            boolean defaultAsr,
+            boolean defaultTts,
+            String llmModel,
+            String asrModel,
+            String ttsModel,
+            String ttsVoice
+    ) {
+        if (defaultLlm) {
+            requireNonBlank(llmModel, "llmModel");
+        }
+        if (defaultAsr) {
+            if (type != AiProviderType.OPENAI) {
+                throw AiProviderConfigurationException.invalid("Only OPENAI providers support ASR");
+            }
+            requireNonBlank(asrModel, "asrModel");
+        }
+        if (defaultTts) {
+            if (type != AiProviderType.OPENAI) {
+                throw AiProviderConfigurationException.invalid("Only OPENAI providers support TTS");
+            }
+            requireNonBlank(ttsModel, "ttsModel");
+            requireNonBlank(ttsVoice, "ttsVoice");
+        }
+    }
+
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String requireNonBlank(String value, String fieldName) {

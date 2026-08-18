@@ -5,6 +5,10 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Added OpenAI-compatible and Gemini native LLM protocol adapters, with
+  DeepSeek configured as the default LLM provider.
+- Removed legacy AI provider-selection settings so stale values cannot prevent
+  the OpenAI-backed runtime providers from starting.
 - Replaced the legacy deterministic AI provider baseline with OpenAI-backed real LLM, ASR and TTS provider implementations configured by environment variables.
 - Reworked backend production deployment around Jenkins-built Docker images and Docker Compose releases on the VPS.
 - Rewrote the Chinese README user-facing motivation and highlights around original user pain points and product differences instead of technical implementation details.

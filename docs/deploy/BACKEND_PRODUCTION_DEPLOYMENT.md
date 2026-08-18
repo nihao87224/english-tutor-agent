@@ -30,7 +30,7 @@ docs/deploy/BACKEND_PRODUCTION_DEPLOYMENT.md
 推荐拓扑：
 
 ```text
-Gitee/Git 仓库
+GitHub 源码仓库（`origin`）
    |
    | Jenkins 拉代码并执行 Jenkinsfile
    v
@@ -47,6 +47,9 @@ Docker Compose backend service
    v
 Spring Boot 后端容器 127.0.0.1:8080
 ```
+
+> 权威远端为 `origin`：`https://github.com/nihao87224/english-tutor-agent.git`。
+> `gitee` 仅为镜像远端，不能作为 Jenkins 的 SCM 来源或生产构建触发来源。
 
 > 安全原则：镜像是可复现交付物，但生产密钥不进镜像、不进 Git。Jenkins 不应获得全量免密 sudo；它只允许执行固定路径的受控发布/回滚脚本。
 
@@ -214,7 +217,8 @@ sudo -u jenkins sudo -n /opt/english-tutor-agent/bin/rollback_backend_container.
 3. 类型选择 `Pipeline`。
 4. `Definition` 选择 `Pipeline script from SCM`。
 5. SCM 选择 Git。
-6. Repository URL 填仓库地址，例如 `git@gitee.com:flyPanda/english-tutor-agent.git`。
+6. Repository URL 填 GitHub 源码仓库：
+   `https://github.com/nihao87224/english-tutor-agent.git`。
 7. Credentials 选择你的 Git 凭据。
 8. Branch Specifier 填 `*/main`。
 9. Script Path 填 `Jenkinsfile`。
@@ -275,7 +279,9 @@ push/merge 到 main
 → 健康检查通过
 ```
 
-建议先手工点击发布。确认流程稳定后，再配置 Gitee WebHook 自动触发。即使启用 WebHook，也建议只允许 `main` 或受保护 tag 触发生产发布。
+建议先手工点击发布。确认流程稳定后，再配置 GitHub Webhook 自动触发。
+即使启用 Webhook，也建议只允许 `main` 或受保护 tag 触发生产发布。推送前用
+`git remote get-url origin` 核对 GitHub 源码远端；不要把 Gitee 镜像推送当作发布输入。
 
 ## 9. 回滚
 
@@ -402,7 +408,7 @@ docker image rm english-tutor-agent-backend:<OLD_TAG>
 常见原因：
 
 - Jenkins 使用的 Java 不是 21。
-- Jenkins 无法访问 Gitee/Git 仓库。
+- Jenkins 无法访问 GitHub 源码仓库。
 - Maven 下载依赖失败。
 - 后端测试失败。
 - Jenkins 用户不能访问 Docker daemon。

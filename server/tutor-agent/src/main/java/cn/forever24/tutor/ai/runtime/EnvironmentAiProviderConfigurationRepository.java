@@ -30,11 +30,14 @@ public class EnvironmentAiProviderConfigurationRepository implements AiProviderC
 
     @Override
     public Optional<AiProviderConfiguration> findByCode(String providerCode) {
-        return "openai".equals(providerCode) ? Optional.of(configuration()) : Optional.empty();
+        return "deepseek".equals(providerCode) ? Optional.of(configuration()) : Optional.empty();
     }
 
     @Override
     public ActiveAiProviderConfiguration requireDefault(AiProviderPurpose purpose) {
+        if (purpose != AiProviderPurpose.LLM) {
+            throw AiProviderConfigurationException.unavailable("No environment default AI provider for " + purpose.name());
+        }
         return activeConfiguration();
     }
 
@@ -53,11 +56,11 @@ public class EnvironmentAiProviderConfigurationRepository implements AiProviderC
         return new AiProviderConfiguration(
                 active.providerCode(),
                 active.providerType(),
-                "OpenAI",
+                "DeepSeek",
                 true,
                 true,
-                true,
-                true,
+                false,
+                false,
                 active.baseUrl(),
                 active.llmModel(),
                 active.asrModel(),
@@ -69,17 +72,17 @@ public class EnvironmentAiProviderConfigurationRepository implements AiProviderC
     }
 
     private ActiveAiProviderConfiguration activeConfiguration() {
-        String baseUrl = firstNonBlank("OPENAI_BASE_URL", "LLM_BASE_URL");
+        String baseUrl = firstNonBlank("DEEPSEEK_BASE_URL");
         return new ActiveAiProviderConfiguration(
-                "openai",
-                AiProviderType.OPENAI,
-                URI.create(stripTrailingSlash(baseUrl == null ? "https://api.openai.com/v1" : baseUrl)),
-                requireNonBlank(firstNonBlank("OPENAI_API_KEY", "LLM_API_KEY"), "OPENAI_API_KEY"),
-                requireNonBlank(firstNonBlank("OPENAI_LLM_MODEL", "LLM_MODEL"), "OPENAI_LLM_MODEL"),
-                requireNonBlank(firstNonBlank("OPENAI_ASR_MODEL", "ASR_MODEL"), "OPENAI_ASR_MODEL"),
-                requireNonBlank(firstNonBlank("OPENAI_TTS_MODEL", "TTS_MODEL"), "OPENAI_TTS_MODEL"),
-                requireNonBlank(firstNonBlank("OPENAI_TTS_VOICE", "TTS_VOICE"), "OPENAI_TTS_VOICE"),
-                environment.getProperty("OPENAI_TIMEOUT", Duration.class, Duration.ofSeconds(30)));
+                "deepseek",
+                AiProviderType.OPENAI_COMPATIBLE,
+                URI.create(stripTrailingSlash(baseUrl == null ? "https://api.deepseek.com" : baseUrl)),
+                requireNonBlank(firstNonBlank("DEEPSEEK_API_KEY"), "DEEPSEEK_API_KEY"),
+                requireNonBlank(firstNonBlank("DEEPSEEK_LLM_MODEL"), "DEEPSEEK_LLM_MODEL"),
+                null,
+                null,
+                null,
+                environment.getProperty("DEEPSEEK_TIMEOUT", Duration.class, Duration.ofSeconds(30)));
     }
 
     private String firstNonBlank(String... keys) {
@@ -94,7 +97,7 @@ public class EnvironmentAiProviderConfigurationRepository implements AiProviderC
 
     private static String requireNonBlank(String value, String envName) {
         if (value == null || value.isBlank()) {
-            throw AiProviderConfigurationException.unavailable(envName + " must be configured for the OpenAI provider");
+            throw AiProviderConfigurationException.unavailable(envName + " must be configured for the DeepSeek provider");
         }
         return value.trim();
     }

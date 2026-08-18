@@ -24,10 +24,10 @@ public record ActiveAiProviderConfiguration(
             throw new IllegalArgumentException("baseUrl is required");
         }
         apiKey = requireNonBlank(apiKey, "apiKey");
-        llmModel = requireNonBlank(llmModel, "llmModel");
-        asrModel = requireNonBlank(asrModel, "asrModel");
-        ttsModel = requireNonBlank(ttsModel, "ttsModel");
-        ttsVoice = requireNonBlank(ttsVoice, "ttsVoice");
+        llmModel = normalizeOptional(llmModel);
+        asrModel = normalizeOptional(asrModel);
+        ttsModel = normalizeOptional(ttsModel);
+        ttsVoice = normalizeOptional(ttsVoice);
         timeout = timeout == null || timeout.isZero() || timeout.isNegative() ? Duration.ofSeconds(30) : timeout;
     }
 
@@ -36,5 +36,9 @@ public record ActiveAiProviderConfiguration(
             throw new IllegalArgumentException(fieldName + " is required");
         }
         return value.trim();
+    }
+
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

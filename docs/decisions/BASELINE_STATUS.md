@@ -11,7 +11,7 @@
 | Java package | `cn.forever24.tutor` | Accepted |
 | Architecture | Modular monolith | Accepted |
 | Voice | Half-duplex Push-to-Talk | Accepted |
-| AI providers | OpenAI real providers by default | Accepted |
+| AI providers | DeepSeek default LLM; OpenAI and Gemini protocols supported | Accepted |
 | SaaS Foundation | Auth, CurrentActor, quota, admin, runtime provider config | Accepted for implementation planning |
 | Android DI | Hilt | Accepted |
-| Actual Git initialization | `git@gitee.com:flyPanda/english-tutor-agent.git` (`main`) | Done |
+| Source-control remote | `origin` → `https://github.com/nihao87224/english-tutor-agent.git` (`main`); `gitee` is mirror-only | Done |

@@ -46,7 +46,3 @@ tutor:
   secret:
     encryption-key: ${TUTOR_SECRET_ENCRYPTION_KEY}
     encryption-key-version: ${TUTOR_SECRET_ENCRYPTION_KEY_VERSION:v1}
-  ai:
-    llm-provider: ${LLM_PROVIDER:openai}
-    asr-provider: ${ASR_PROVIDER:openai}
-    tts-provider: ${TTS_PROVIDER:openai}

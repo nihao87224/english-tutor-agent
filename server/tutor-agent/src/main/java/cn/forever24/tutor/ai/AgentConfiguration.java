@@ -17,7 +17,6 @@ import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicatio
 import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -56,21 +55,18 @@ public class AgentConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ChatProvider.class)
-    @ConditionalOnProperty(name = "tutor.ai.llm-provider", havingValue = "openai", matchIfMissing = true)
     ChatProvider openAiChatProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
         return new RuntimeOpenAiChatProvider(configurationService, objectMapper);
     }
 
     @Bean
     @ConditionalOnMissingBean(SpeechToTextProvider.class)
-    @ConditionalOnProperty(name = "tutor.ai.asr-provider", havingValue = "openai", matchIfMissing = true)
     SpeechToTextProvider openAiSpeechToTextProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
         return new RuntimeOpenAiSpeechToTextProvider(configurationService, objectMapper);
     }
 
     @Bean
     @ConditionalOnMissingBean(TextToSpeechProvider.class)
-    @ConditionalOnProperty(name = "tutor.ai.tts-provider", havingValue = "openai", matchIfMissing = true)
     TextToSpeechProvider openAiTextToSpeechProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
         return new RuntimeOpenAiTextToSpeechProvider(configurationService, objectMapper);
     }

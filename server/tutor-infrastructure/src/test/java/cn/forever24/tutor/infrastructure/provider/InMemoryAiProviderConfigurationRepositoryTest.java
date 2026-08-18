@@ -64,7 +64,10 @@ class InMemoryAiProviderConfigurationRepositoryTest {
                 "test-asr",
                 "test-tts",
                 "test-voice",
-                Duration.ofSeconds(30));
+                Duration.ofSeconds(30),
+                true,
+                true,
+                true);
         return new AiProviderConfigurationApplicationService(
                 new InMemoryAiProviderConfigurationRepository(cipher, defaults),
                 CLOCK);

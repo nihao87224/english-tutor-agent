@@ -17,5 +17,6 @@
 | ADR-0010 | M0/M1 优先使用 Fake Provider 跑通确定性闭环 | Superseded by ADR-0013 |
 | ADR-0011 | Java 根包名使用 `cn.forever24.tutor` | Accepted |
 | ADR-0012 | Android 使用 Hilt 依赖注入 | Accepted |
-| ADR-0013 | Production AI uses OpenAI-backed real providers | Accepted |
+| ADR-0013 | Production AI uses OpenAI-backed real providers | Superseded for default LLM by ADR-0015 |
 | ADR-0014 | SaaS Foundation is the next product platform increment | Accepted for implementation planning |
+| ADR-0015 | Multi-provider LLM protocols with DeepSeek as the default | Accepted |

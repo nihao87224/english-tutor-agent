@@ -173,7 +173,7 @@ export interface AdminAuditEntry {
 
 export interface AiProvider {
   providerCode: string;
-  providerType: "OPENAI" | string;
+  providerType: "OPENAI" | "OPENAI_COMPATIBLE" | "GEMINI";
   displayName: string;
   enabled: boolean;
   defaultLlm: boolean;
@@ -181,16 +181,16 @@ export interface AiProvider {
   defaultTts: boolean;
   baseUrl: string;
   llmModel: string;
-  asrModel: string;
-  ttsModel: string;
-  ttsVoice: string;
+  asrModel: string | null;
+  ttsModel: string | null;
+  ttsVoice: string | null;
   timeoutSeconds: number;
   apiKeyConfigured: boolean;
   apiKeyMaskedHint?: string | null;
 }
 
 export interface AiProviderUpdateRequest {
-  providerType: "OPENAI";
+  providerType: "OPENAI" | "OPENAI_COMPATIBLE" | "GEMINI";
   displayName: string;
   enabled: boolean;
   defaultLlm: boolean;
@@ -198,9 +198,9 @@ export interface AiProviderUpdateRequest {
   defaultTts: boolean;
   baseUrl: string;
   llmModel: string;
-  asrModel: string;
-  ttsModel: string;
-  ttsVoice: string;
+  asrModel: string | null;
+  ttsModel: string | null;
+  ttsVoice: string | null;
   timeoutSeconds?: number;
 }
 

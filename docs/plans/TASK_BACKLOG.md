@@ -90,6 +90,7 @@ M5 长期复习与动态掌握、M6 IELTS Speaking、M7 发布准备在对应里
 | SaaS-M7 | Web Admin Console | DONE | SaaS-M5 | Admin UI 与真实 API 联通，不使用生产 mock 数据 |
 | SaaS-M8 | Android Learner Auth + Quota + i18n | DONE | SaaS-M6 | Web/Android 同邮箱看到同一用户、quota 和学习数据 |
 | SaaS-M9 | Hardening + Legacy Cleanup | DONE | SaaS-M1..M8 | 无 legacy identity、无明文 secret、无跨用户访问 |
+| SaaS-M10 | Multi-provider LLM Protocols | DONE | SaaS-M4, ADR-0015 | DeepSeek 默认，OpenAI/Gemini 协议可运行时切换 |
 
 ## Task card template
 

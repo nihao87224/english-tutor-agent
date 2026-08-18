@@ -1308,13 +1308,14 @@ V1 Provider Type 可支持：
 ```text
 OPENAI_COMPATIBLE
 OPENAI
-DEEPSEEK
 GEMINI
 QWEN
 CUSTOM
 ```
 
-具体 Adapter 只实现当前项目实际需要的 Provider。
+DeepSeek uses `OPENAI_COMPATIBLE`; provider code identifies the vendor while
+provider type identifies the wire protocol. Concrete adapters only implement
+the protocols currently required by the project.
 
 ## 14.3 Provider Secret
 

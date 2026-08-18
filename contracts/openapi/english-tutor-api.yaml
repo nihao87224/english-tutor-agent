@@ -2010,9 +2010,6 @@ components:
         - defaultTts
         - baseUrl
         - llmModel
-        - asrModel
-        - ttsModel
-        - ttsVoice
         - timeoutSeconds
         - apiKeyConfigured
       properties:
@@ -2020,7 +2017,7 @@ components:
           type: string
         providerType:
           type: string
-          enum: [OPENAI]
+          enum: [OPENAI, OPENAI_COMPATIBLE, GEMINI]
         displayName:
           type: string
         enabled:
@@ -2037,11 +2034,11 @@ components:
         llmModel:
           type: string
         asrModel:
-          type: string
+          type: [string, 'null']
         ttsModel:
-          type: string
+          type: [string, 'null']
         ttsVoice:
-          type: string
+          type: [string, 'null']
         timeoutSeconds:
           type: integer
           minimum: 1
@@ -2062,13 +2059,10 @@ components:
         - defaultTts
         - baseUrl
         - llmModel
-        - asrModel
-        - ttsModel
-        - ttsVoice
       properties:
         providerType:
           type: string
-          enum: [OPENAI]
+          enum: [OPENAI, OPENAI_COMPATIBLE, GEMINI]
         displayName:
           type: string
           minLength: 1
@@ -2087,14 +2081,11 @@ components:
           type: string
           minLength: 1
         asrModel:
-          type: string
-          minLength: 1
+          type: [string, 'null']
         ttsModel:
-          type: string
-          minLength: 1
+          type: [string, 'null']
         ttsVoice:
-          type: string
-          minLength: 1
+          type: [string, 'null']
         timeoutSeconds:
           type: integer
           minimum: 1

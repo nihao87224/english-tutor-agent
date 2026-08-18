@@ -52,6 +52,35 @@ class RuntimeOpenAiChatProviderTest {
         assertEquals(Duration.ofSeconds(60), capabilities.timeout());
     }
 
+    @Test
+    void capabilitiesResolveOpenAiCompatibleDefaultProvider() {
+        MutableProviderRepository repository = new MutableProviderRepository("first-model", Duration.ofSeconds(30));
+        AiProviderConfigurationApplicationService service = new AiProviderConfigurationApplicationService(
+                repository,
+                Clock.fixed(Instant.parse("2026-08-14T00:00:00Z"), ZoneOffset.UTC));
+        RuntimeOpenAiChatProvider provider = new RuntimeOpenAiChatProvider(service, new ObjectMapper());
+
+        service.saveProvider(
+                "deepseek",
+                AiProviderType.OPENAI_COMPATIBLE.name(),
+                "DeepSeek",
+                true,
+                true,
+                false,
+                false,
+                "https://api.deepseek.com",
+                "deepseek-v4-flash",
+                null,
+                null,
+                null,
+                Duration.ofSeconds(45));
+
+        ProviderCapabilities capabilities = provider.capabilities();
+
+        assertEquals("deepseek", capabilities.providerId());
+        assertEquals("deepseek-v4-flash", capabilities.modelId());
+    }
+
     private static final class MutableProviderRepository implements AiProviderConfigurationRepository {
 
         private ActiveAiProviderConfiguration active;
@@ -77,7 +106,7 @@ class RuntimeOpenAiChatProviderTest {
 
         @Override
         public AiProviderConfiguration save(AiProviderConfigurationDraft draft, Instant now) {
-            active = active(draft.llmModel(), draft.timeout());
+            active = active(draft);
             return new AiProviderConfiguration(
                     draft.providerCode(),
                     draft.providerType(),
@@ -112,6 +141,19 @@ class RuntimeOpenAiChatProviderTest {
                     "tts-model",
                     "voice",
                     timeout);
+        }
+
+        private static ActiveAiProviderConfiguration active(AiProviderConfigurationDraft draft) {
+            return new ActiveAiProviderConfiguration(
+                    draft.providerCode(),
+                    draft.providerType(),
+                    draft.baseUrl(),
+                    "sk-test",
+                    draft.llmModel(),
+                    draft.asrModel(),
+                    draft.ttsModel(),
+                    draft.ttsVoice(),
+                    draft.timeout());
         }
     }
 }

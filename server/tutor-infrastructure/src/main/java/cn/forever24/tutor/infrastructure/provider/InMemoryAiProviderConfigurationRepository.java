@@ -26,11 +26,11 @@ public class InMemoryAiProviderConfigurationRepository implements AiProviderConf
 
     public InMemoryAiProviderConfigurationRepository(AesGcmSecretCipher secretCipher, AiProviderEnvironmentDefaults defaults) {
         this.secretCipher = secretCipher;
-        StoredProvider openAi = StoredProvider.fromDefaults(defaults);
-        providers.put(openAi.providerCode, openAi);
+        StoredProvider configuredProvider = StoredProvider.fromDefaults(defaults);
+        providers.put(configuredProvider.providerCode, configuredProvider);
         if (defaults.apiKey() != null && !defaults.apiKey().isBlank()) {
-            apiKeySecrets.put(openAi.providerCode, secretCipher.encrypt(defaults.apiKey()));
-            maskedHints.put(openAi.providerCode, ProviderSecretMask.mask(defaults.apiKey()));
+            apiKeySecrets.put(configuredProvider.providerCode, secretCipher.encrypt(defaults.apiKey()));
+            maskedHints.put(configuredProvider.providerCode, ProviderSecretMask.mask(defaults.apiKey()));
         }
     }
 
@@ -141,9 +141,9 @@ public class InMemoryAiProviderConfigurationRepository implements AiProviderConf
                     defaults.providerCode(),
                     defaults.providerType(),
                     defaults.displayName(),
-                    true,
-                    true,
-                    true,
+                    defaults.defaultLlm(),
+                    defaults.defaultAsr(),
+                    defaults.defaultTts(),
                     true,
                     defaults.baseUrl(),
                     defaults.llmModel(),

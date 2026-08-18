@@ -58,7 +58,7 @@ export function quotaUsagePercent(quota: AdminQuotaState): number {
 
 export function providerToUpdateRequest(provider: AiProvider): AiProviderUpdateRequest {
   return {
-    providerType: "OPENAI",
+    providerType: provider.providerType,
     displayName: provider.displayName,
     enabled: provider.enabled,
     defaultLlm: provider.defaultLlm,
@@ -464,7 +464,7 @@ function ProvidersPage({ apiClient }: { apiClient: ApiClient }) {
 
 function NewProviderForm({ apiClient, onSaved }: { apiClient: ApiClient; onSaved: () => Promise<void> }) {
   const { t } = useI18n();
-  const [providerCode, setProviderCode] = useState("openai");
+  const [providerCode, setProviderCode] = useState("deepseek");
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
 
@@ -473,17 +473,17 @@ function NewProviderForm({ apiClient, onSaved }: { apiClient: ApiClient; onSaved
     setError("");
     try {
       await apiClient.putAiProvider(providerCode.trim(), {
-        providerType: "OPENAI",
-        displayName: providerCode.trim() || "OpenAI",
+        providerType: "OPENAI_COMPATIBLE",
+        displayName: providerCode.trim() || "DeepSeek",
         enabled: true,
         defaultLlm: true,
-        defaultAsr: true,
-        defaultTts: true,
-        baseUrl: "https://api.openai.com/v1",
-        llmModel: "gpt-4.1-mini",
-        asrModel: "gpt-4o-mini-transcribe",
-        ttsModel: "gpt-4o-mini-tts",
-        ttsVoice: "alloy",
+        defaultAsr: false,
+        defaultTts: false,
+        baseUrl: "https://api.deepseek.com",
+        llmModel: "deepseek-v4-flash",
+        asrModel: null,
+        ttsModel: null,
+        ttsVoice: null,
         timeoutSeconds: 30,
       });
       setFeedback(t("admin.providers.saved"));
@@ -556,6 +556,25 @@ function ProviderEditor({ apiClient, provider, onSaved }: { apiClient: ApiClient
       </div>
       <form className="provider-form" onSubmit={(event) => void save(event)}>
         <label className="field-stack">
+          <span>Protocol</span>
+          <select
+            value={draft.providerType}
+            onChange={(event) => setDraft({
+              ...draft,
+              providerType: event.target.value as AiProviderUpdateRequest["providerType"],
+              defaultAsr: event.target.value === "OPENAI" ? draft.defaultAsr : false,
+              defaultTts: event.target.value === "OPENAI" ? draft.defaultTts : false,
+              asrModel: event.target.value === "OPENAI" ? draft.asrModel : null,
+              ttsModel: event.target.value === "OPENAI" ? draft.ttsModel : null,
+              ttsVoice: event.target.value === "OPENAI" ? draft.ttsVoice : null,
+            })}
+          >
+            <option value="OPENAI">OpenAI Responses</option>
+            <option value="OPENAI_COMPATIBLE">OpenAI Chat Completions compatible</option>
+            <option value="GEMINI">Gemini generateContent</option>
+          </select>
+        </label>
+        <label className="field-stack">
           <span>{t("admin.providers.displayName")}</span>
           <input value={draft.displayName} onChange={(event) => setDraft({ ...draft, displayName: event.target.value })} required />
         </label>
@@ -568,20 +587,20 @@ function ProviderEditor({ apiClient, provider, onSaved }: { apiClient: ApiClient
             <span>{t("admin.providers.llm")}</span>
             <input value={draft.llmModel} onChange={(event) => setDraft({ ...draft, llmModel: event.target.value })} required />
           </label>
-          <label className="field-stack">
+          {draft.providerType === "OPENAI" ? <label className="field-stack">
             <span>{t("admin.providers.asr")}</span>
-            <input value={draft.asrModel} onChange={(event) => setDraft({ ...draft, asrModel: event.target.value })} required />
-          </label>
-          <label className="field-stack">
+            <input value={draft.asrModel ?? ""} onChange={(event) => setDraft({ ...draft, asrModel: event.target.value })} required />
+          </label> : null}
+          {draft.providerType === "OPENAI" ? <label className="field-stack">
             <span>{t("admin.providers.tts")}</span>
-            <input value={draft.ttsModel} onChange={(event) => setDraft({ ...draft, ttsModel: event.target.value })} required />
-          </label>
+            <input value={draft.ttsModel ?? ""} onChange={(event) => setDraft({ ...draft, ttsModel: event.target.value })} required />
+          </label> : null}
         </div>
         <div className="admin-checkbox-grid">
           <label><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> {t("admin.enabled")}</label>
           <label><input type="checkbox" checked={draft.defaultLlm} onChange={(event) => setDraft({ ...draft, defaultLlm: event.target.checked })} /> {t("admin.providers.defaultLlm")}</label>
-          <label><input type="checkbox" checked={draft.defaultAsr} onChange={(event) => setDraft({ ...draft, defaultAsr: event.target.checked })} /> {t("admin.providers.defaultAsr")}</label>
-          <label><input type="checkbox" checked={draft.defaultTts} onChange={(event) => setDraft({ ...draft, defaultTts: event.target.checked })} /> {t("admin.providers.defaultTts")}</label>
+          {draft.providerType === "OPENAI" ? <label><input type="checkbox" checked={draft.defaultAsr} onChange={(event) => setDraft({ ...draft, defaultAsr: event.target.checked })} /> {t("admin.providers.defaultAsr")}</label> : null}
+          {draft.providerType === "OPENAI" ? <label><input type="checkbox" checked={draft.defaultTts} onChange={(event) => setDraft({ ...draft, defaultTts: event.target.checked })} /> {t("admin.providers.defaultTts")}</label> : null}
         </div>
         <button className="primary-action compact" type="submit">{t("admin.save")}</button>
       </form>

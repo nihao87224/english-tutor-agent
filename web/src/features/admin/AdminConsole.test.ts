@@ -89,4 +89,30 @@ describe("AdminConsole helpers", () => {
       timeoutSeconds: 30,
     });
   });
+
+  it("preserves a DeepSeek OpenAI-compatible protocol selection", () => {
+    expect(
+      providerToUpdateRequest({
+        providerCode: "deepseek",
+        providerType: "OPENAI_COMPATIBLE",
+        displayName: "DeepSeek",
+        enabled: true,
+        defaultLlm: true,
+        defaultAsr: false,
+        defaultTts: false,
+        baseUrl: "https://api.deepseek.com",
+        llmModel: "deepseek-v4-flash",
+        asrModel: null,
+        ttsModel: null,
+        ttsVoice: null,
+        timeoutSeconds: 30,
+        apiKeyConfigured: true,
+      }),
+    ).toMatchObject({
+      providerType: "OPENAI_COMPATIBLE",
+      defaultLlm: true,
+      defaultAsr: false,
+      defaultTts: false,
+    });
+  });
 });

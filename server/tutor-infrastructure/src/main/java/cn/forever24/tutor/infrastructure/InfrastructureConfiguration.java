@@ -266,7 +266,7 @@ public class InfrastructureConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AiProviderEnvironmentDefaults aiProviderEnvironmentDefaults(Environment environment) {
-        return AiProviderEnvironmentDefaults.openAi(environment);
+        return AiProviderEnvironmentDefaults.deepSeek(environment);
     }
 
     @Bean

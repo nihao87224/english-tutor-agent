@@ -10,7 +10,7 @@ M0-T02 后端工程基线。
 - Maven multi-module project
 - Spring MVC compatible bootstrap
 - ArchUnit module boundary test
-- OpenAI-backed LLM, ASR and TTS providers behind project-owned interfaces
+- DeepSeek-default LLM with OpenAI-compatible and Gemini protocol adapters behind project-owned interfaces
 
 ## Modules
 
@@ -91,20 +91,16 @@ auto-configuration so regular unit tests do not require external services.
 Testcontainers when a Docker-compatible runtime is available; it is skipped on
 machines without Docker.
 
-## OpenAI AI providers
+## AI providers
 
-Runtime defaults to real OpenAI-backed providers:
+Runtime defaults to DeepSeek for LLM requests. OpenAI remains available for
+LLM, ASR and TTS; Gemini can be configured as an LLM provider in the admin API.
+Non-default provider keys are saved through that API and encrypted at rest:
 
 ```dotenv
-LLM_PROVIDER=openai
-ASR_PROVIDER=openai
-TTS_PROVIDER=openai
-OPENAI_API_KEY=<local-or-production-secret>
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_LLM_MODEL=<responses-model>
-OPENAI_ASR_MODEL=<transcription-model>
-OPENAI_TTS_MODEL=<speech-model>
-OPENAI_TTS_VOICE=<speech-voice>
+DEEPSEEK_API_KEY=<local-or-production-secret>
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_LLM_MODEL=deepseek-v4-flash
 TUTOR_SECRET_ENCRYPTION_KEY=<32-byte-or-base64-encoded-32-byte-secret>
 TUTOR_SECRET_ENCRYPTION_KEY_VERSION=v1
 ```

@@ -15,13 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 class AgentConfigurationTest {
 
     @Test
-    void defaultConfigurationRegistersOpenAiProviders() {
+    void defaultConfigurationRegistersRuntimeProviders() {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
-            context.getEnvironment().getSystemProperties().put("OPENAI_API_KEY", "test-key");
-            context.getEnvironment().getSystemProperties().put("OPENAI_LLM_MODEL", "test-chat-model");
-            context.getEnvironment().getSystemProperties().put("OPENAI_ASR_MODEL", "test-asr-model");
-            context.getEnvironment().getSystemProperties().put("OPENAI_TTS_MODEL", "test-tts-model");
-            context.getEnvironment().getSystemProperties().put("OPENAI_TTS_VOICE", "test-voice");
+            context.getEnvironment().getSystemProperties().put("DEEPSEEK_API_KEY", "test-key");
+            context.getEnvironment().getSystemProperties().put("DEEPSEEK_LLM_MODEL", "deepseek-test-model");
             context.register(AgentConfiguration.class);
             context.refresh();
 
@@ -29,6 +26,21 @@ class AgentConfigurationTest {
             assertInstanceOf(RuntimeOpenAiSpeechToTextProvider.class, context.getBean(SpeechToTextProvider.class));
             assertInstanceOf(RuntimeOpenAiTextToSpeechProvider.class, context.getBean(TextToSpeechProvider.class));
             assertInstanceOf(CorrectionAnalyzer.class, context.getBean(CorrectionAnalyzer.class));
+        }
+    }
+
+    @Test
+    void legacyProviderSelectionPropertiesCannotDisableRuntimeProviders() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.getEnvironment().getSystemProperties().put("tutor.ai.llm-provider", "legacy");
+            context.getEnvironment().getSystemProperties().put("tutor.ai.asr-provider", "legacy");
+            context.getEnvironment().getSystemProperties().put("tutor.ai.tts-provider", "legacy");
+            context.register(AgentConfiguration.class);
+            context.refresh();
+
+            assertInstanceOf(RuntimeOpenAiChatProvider.class, context.getBean(ChatProvider.class));
+            assertInstanceOf(RuntimeOpenAiSpeechToTextProvider.class, context.getBean(SpeechToTextProvider.class));
+            assertInstanceOf(RuntimeOpenAiTextToSpeechProvider.class, context.getBean(TextToSpeechProvider.class));
         }
     }
 }

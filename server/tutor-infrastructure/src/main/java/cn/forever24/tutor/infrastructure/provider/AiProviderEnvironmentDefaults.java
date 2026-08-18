@@ -16,22 +16,28 @@ public record AiProviderEnvironmentDefaults(
         String asrModel,
         String ttsModel,
         String ttsVoice,
-        Duration timeout
+        Duration timeout,
+        boolean defaultLlm,
+        boolean defaultAsr,
+        boolean defaultTts
 ) {
 
-    public static AiProviderEnvironmentDefaults openAi(Environment environment) {
-        String baseUrl = firstNonBlank(environment, "OPENAI_BASE_URL", "LLM_BASE_URL");
+    public static AiProviderEnvironmentDefaults deepSeek(Environment environment) {
+        String baseUrl = firstNonBlank(environment, "DEEPSEEK_BASE_URL");
         return new AiProviderEnvironmentDefaults(
-                "openai",
-                AiProviderType.OPENAI,
-                "OpenAI",
-                URI.create(stripTrailingSlash(baseUrl == null ? "https://api.openai.com/v1" : baseUrl)),
-                firstNonBlank(environment, "OPENAI_API_KEY", "LLM_API_KEY"),
-                firstNonBlank(environment, "OPENAI_LLM_MODEL", "LLM_MODEL"),
-                firstNonBlank(environment, "OPENAI_ASR_MODEL", "ASR_MODEL"),
-                firstNonBlank(environment, "OPENAI_TTS_MODEL", "TTS_MODEL"),
-                firstNonBlank(environment, "OPENAI_TTS_VOICE", "TTS_VOICE"),
-                environment.getProperty("OPENAI_TIMEOUT", Duration.class, Duration.ofSeconds(30)));
+                "deepseek",
+                AiProviderType.OPENAI_COMPATIBLE,
+                "DeepSeek",
+                URI.create(stripTrailingSlash(baseUrl == null ? "https://api.deepseek.com" : baseUrl)),
+                firstNonBlank(environment, "DEEPSEEK_API_KEY"),
+                firstNonBlank(environment, "DEEPSEEK_LLM_MODEL"),
+                null,
+                null,
+                null,
+                environment.getProperty("DEEPSEEK_TIMEOUT", Duration.class, Duration.ofSeconds(30)),
+                true,
+                false,
+                false);
     }
 
     private static String firstNonBlank(Environment environment, String... keys) {

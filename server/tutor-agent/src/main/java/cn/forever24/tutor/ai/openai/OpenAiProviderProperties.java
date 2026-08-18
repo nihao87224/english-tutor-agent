@@ -29,10 +29,10 @@ public final class OpenAiProviderProperties {
     ) {
         this.baseUrl = baseUrl;
         this.apiKey = requireNonBlank(apiKey, "OPENAI_API_KEY");
-        this.llmModel = requireNonBlank(llmModel, "OPENAI_LLM_MODEL");
-        this.asrModel = requireNonBlank(asrModel, "OPENAI_ASR_MODEL");
-        this.ttsModel = requireNonBlank(ttsModel, "OPENAI_TTS_MODEL");
-        this.ttsVoice = requireNonBlank(ttsVoice, "OPENAI_TTS_VOICE");
+        this.llmModel = normalizeOptional(llmModel);
+        this.asrModel = normalizeOptional(asrModel);
+        this.ttsModel = normalizeOptional(ttsModel);
+        this.ttsVoice = normalizeOptional(ttsVoice);
         this.timeout = timeout == null || timeout.isZero() || timeout.isNegative() ? Duration.ofSeconds(30) : timeout;
     }
 
@@ -68,19 +68,19 @@ public final class OpenAiProviderProperties {
     }
 
     public String llmModel() {
-        return llmModel;
+        return requireNonBlank(llmModel, "OPENAI_LLM_MODEL");
     }
 
     public String asrModel() {
-        return asrModel;
+        return requireNonBlank(asrModel, "OPENAI_ASR_MODEL");
     }
 
     public String ttsModel() {
-        return ttsModel;
+        return requireNonBlank(ttsModel, "OPENAI_TTS_MODEL");
     }
 
     public String ttsVoice() {
-        return ttsVoice;
+        return requireNonBlank(ttsVoice, "OPENAI_TTS_VOICE");
     }
 
     public Duration timeout() {
@@ -105,6 +105,10 @@ public final class OpenAiProviderProperties {
             throw new IllegalStateException(envName + " must be configured for the OpenAI provider");
         }
         return value.trim();
+    }
+
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String stripTrailingSlash(String value) {
