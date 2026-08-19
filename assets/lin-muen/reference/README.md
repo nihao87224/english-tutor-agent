@@ -9,7 +9,9 @@ reference/
 ├── main-reference/
 ├── portrait/
 ├── full-body/
-└── outfit-reference/
+├── outfit-reference/
+├── prop-reference/
+└── scene-reference/
 ```
 
 ## Usage Rules
@@ -19,6 +21,8 @@ Main reference defines identity.
 Outfit references define clothing style.
 
 Scene references define environment only.
+
+Prop references define recurring personal objects, such as Lin Muen's phone.
 
 All generated images must preserve Lin Muen visual consistency.
 
