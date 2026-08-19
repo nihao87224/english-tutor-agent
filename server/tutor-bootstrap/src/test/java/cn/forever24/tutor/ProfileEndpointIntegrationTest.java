@@ -378,6 +378,73 @@ class ProfileEndpointIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/assessments/" + assessmentId + "/next")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itemId").value("initial-listening-1"));
+        mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/answers")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "itemId": "initial-listening-1",
+                                  "answerType": "OPTION",
+                                  "option": "C",
+                                  "clientDurationMs": 1600
+                                }
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/assessments/" + assessmentId + "/next")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itemId").value("initial-grammar-1"));
+        mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/answers")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "itemId": "initial-grammar-1",
+                                  "answerType": "OPTION",
+                                  "option": "A",
+                                  "clientDurationMs": 1400
+                                }
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/assessments/" + assessmentId + "/next")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itemId").value("initial-speaking-open-1"));
+        mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/answers")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "itemId": "initial-speaking-open-1",
+                                  "answerType": "TEXT",
+                                  "text": "A recent challenge was coordinating a delayed handoff. I clarified priorities with the team and sent a short update so everyone knew the next step.",
+                                  "clientDurationMs": 4000
+                                }
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/assessments/" + assessmentId + "/next")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itemId").value("initial-writing-open-1"));
+        mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/answers")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "itemId": "initial-writing-open-1",
+                                  "answerType": "TEXT",
+                                  "text": "Hi Alex, could we move our meeting to tomorrow afternoon? I need a little more time to finish the report. Please let me know which time works best for you.",
+                                  "clientDurationMs": 5000
+                                }
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/assessments/" + assessmentId + "/next")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(post("/api/v1/assessments/" + assessmentId + "/complete")
                         .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
