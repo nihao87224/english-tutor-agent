@@ -221,6 +221,11 @@ class AssessmentControllerTest {
             return result(assessmentId);
         }
 
+        @Override
+        public boolean hasCompletedInitialAssessmentResult(UserKey userKey) {
+            return false;
+        }
+
         private AssessmentResult result(String assessmentId) {
             return InitialAssessmentProfileGenerator.generate(
                     assessmentId,

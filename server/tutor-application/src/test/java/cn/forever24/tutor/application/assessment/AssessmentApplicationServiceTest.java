@@ -353,6 +353,19 @@ class AssessmentApplicationServiceTest {
     }
 
     @Test
+    void resultStepWithoutPersistedResultCanCompleteAssessment() {
+        profileRepository.step = OnboardingStep.RESULT;
+        assessmentResultRepository.hasResult = false;
+
+        AssessmentCompletion completion = service.completeAssessment("user-1", "assessment-1");
+
+        assertEquals("assessment-1", completion.assessmentId());
+        assertEquals("COMPLETED", completion.status());
+        assertEquals(1, assessmentResultRepository.completeCount);
+        assertEquals(true, assessmentResultRepository.hasResult);
+    }
+
+    @Test
     void rejectsAssessmentCompletionBeforeAssessmentStep() {
         profileRepository.step = OnboardingStep.SELF_ASSESSMENT;
 
@@ -454,6 +467,7 @@ class AssessmentApplicationServiceTest {
     private static final class FakeAssessmentResultRepository implements AssessmentResultRepository {
 
         private int completeCount;
+        private boolean hasResult;
 
         @Override
         public AssessmentResult completeInitialAssessment(UserKey userKey, String assessmentId) {
@@ -461,6 +475,7 @@ class AssessmentApplicationServiceTest {
                 throw new IllegalArgumentException("assessment session was not found");
             }
             completeCount++;
+            hasResult = true;
             return result(assessmentId);
         }
 
@@ -470,6 +485,11 @@ class AssessmentApplicationServiceTest {
                 throw new IllegalArgumentException("assessment result was not found");
             }
             return result(assessmentId);
+        }
+
+        @Override
+        public boolean hasCompletedInitialAssessmentResult(UserKey userKey) {
+            return hasResult;
         }
 
         private AssessmentResult result(String assessmentId) {

@@ -1,8 +1,10 @@
 package cn.forever24.tutor.api.profile;
 
 import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
+import cn.forever24.tutor.application.assessment.AssessmentResultRepository;
 import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
+import cn.forever24.tutor.assessment.AssessmentResult;
 import cn.forever24.tutor.profile.CorrectionStyle;
 import cn.forever24.tutor.profile.LearningPreferences;
 import cn.forever24.tutor.profile.OnboardingProgress;
@@ -28,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class ProfileControllerTest {
 
     private final ProfileController controller = new ProfileController(
-            new OnboardingApplicationService(new FakeUserProfileRepository()),
+            new OnboardingApplicationService(new FakeUserProfileRepository(), new EmptyAssessmentResultRepository()),
             new CurrentUserKeyResolver(ignored -> "user-1"));
 
     @BeforeEach
@@ -168,6 +170,24 @@ class ProfileControllerTest {
                 return new OnboardingProgress(steps.getOrDefault(userKey, OnboardingStep.PREFERENCES), false, null);
             }
             return new OnboardingProgress(OnboardingStep.GOAL, false, null);
+        }
+    }
+
+    private static final class EmptyAssessmentResultRepository implements AssessmentResultRepository {
+
+        @Override
+        public AssessmentResult completeInitialAssessment(UserKey userKey, String assessmentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AssessmentResult getAssessmentResult(UserKey userKey, String assessmentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasCompletedInitialAssessmentResult(UserKey userKey) {
+            return false;
         }
     }
 }

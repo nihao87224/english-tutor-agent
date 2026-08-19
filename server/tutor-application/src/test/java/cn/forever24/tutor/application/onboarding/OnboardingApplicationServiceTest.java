@@ -1,5 +1,7 @@
 package cn.forever24.tutor.application.onboarding;
 
+import cn.forever24.tutor.application.assessment.AssessmentResultRepository;
+import cn.forever24.tutor.assessment.AssessmentResult;
 import cn.forever24.tutor.profile.CorrectionStyle;
 import cn.forever24.tutor.profile.LearningPreferences;
 import cn.forever24.tutor.profile.OnboardingProgress;
@@ -9,6 +11,7 @@ import cn.forever24.tutor.profile.PrivacySettings;
 import cn.forever24.tutor.profile.ProfileSummary;
 import cn.forever24.tutor.profile.RawContentRetention;
 import cn.forever24.tutor.profile.UserKey;
+import cn.forever24.tutor.profile.UserLearningNextStep;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -20,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class OnboardingApplicationServiceTest {
 
     private final FakeUserProfileRepository repository = new FakeUserProfileRepository();
-    private final OnboardingApplicationService service = new OnboardingApplicationService(repository);
+    private final FakeAssessmentResultRepository assessmentResultRepository = new FakeAssessmentResultRepository();
+    private final OnboardingApplicationService service = new OnboardingApplicationService(repository, assessmentResultRepository);
 
     @Test
     void savesPrimaryGoalAndMovesProgressToPreferences() {
@@ -78,6 +82,23 @@ class OnboardingApplicationServiceTest {
     void rejectsPreferencesBeforePrimaryGoal() {
         assertThrows(IllegalArgumentException.class,
                 () -> service.savePreferences("user-1", 20, "STANDARD", false, true, true));
+    }
+
+    @Test
+    void resultStepWithoutAssessmentResultRequiresAssessment() {
+        service.savePrimaryGoal("user-1", "WORKPLACE");
+        repository.advanceOnboardingToResult(new UserKey("user-1"));
+
+        assertEquals(UserLearningNextStep.ASSESSMENT_REQUIRED, service.getLearningProgress("user-1").nextStep());
+    }
+
+    @Test
+    void resultStepWithAssessmentResultIsReadyForPlan() {
+        service.savePrimaryGoal("user-1", "WORKPLACE");
+        repository.advanceOnboardingToResult(new UserKey("user-1"));
+        assessmentResultRepository.hasResult = true;
+
+        assertEquals(UserLearningNextStep.READY_FOR_PLAN, service.getLearningProgress("user-1").nextStep());
     }
 
     private static final class FakeUserProfileRepository implements UserProfileRepository {
@@ -157,6 +178,26 @@ class OnboardingApplicationServiceTest {
                 return new OnboardingProgress(steps.getOrDefault(userKey, OnboardingStep.PREFERENCES), false, null);
             }
             return new OnboardingProgress(OnboardingStep.GOAL, false, null);
+        }
+    }
+
+    private static final class FakeAssessmentResultRepository implements AssessmentResultRepository {
+
+        private boolean hasResult;
+
+        @Override
+        public AssessmentResult completeInitialAssessment(UserKey userKey, String assessmentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AssessmentResult getAssessmentResult(UserKey userKey, String assessmentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasCompletedInitialAssessmentResult(UserKey userKey) {
+            return hasResult;
         }
     }
 }

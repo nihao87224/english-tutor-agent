@@ -8,4 +8,6 @@ public interface AssessmentResultRepository {
     AssessmentResult completeInitialAssessment(UserKey userKey, String assessmentId);
 
     AssessmentResult getAssessmentResult(UserKey userKey, String assessmentId);
+
+    boolean hasCompletedInitialAssessmentResult(UserKey userKey);
 }

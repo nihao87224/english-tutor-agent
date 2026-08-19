@@ -308,6 +308,7 @@ function LearnerApp({
           quotaLoading={quotaState.status === "loading"}
           onRefreshQuota={loadQuota}
           onOpenAccount={() => setView("account")}
+          onProgressInvalid={loadLearningProgress}
           onStart={setCoachSelection}
         />
       )}

@@ -121,7 +121,8 @@ public class AssessmentApplicationService {
     public AssessmentCompletion completeAssessment(String userKeyValue, String assessmentId) {
         UserKey userKey = new UserKey(userKeyValue);
         OnboardingProgress progress = requireAssessmentStep(userKey);
-        if (progress.step().ordinal() >= OnboardingStep.RESULT.ordinal()) {
+        if (progress.step().ordinal() >= OnboardingStep.RESULT.ordinal()
+                && assessmentResultRepository.hasCompletedInitialAssessmentResult(userKey)) {
             AssessmentResult existingResult = assessmentResultRepository.getAssessmentResult(userKey, assessmentId);
             return new AssessmentCompletion(existingResult.assessmentId(), "COMPLETED");
         }

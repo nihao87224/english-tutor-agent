@@ -73,6 +73,24 @@ public class JdbcAssessmentResultRepository implements AssessmentResultRepositor
         return deserializeResult(session.resultSummaryJson());
     }
 
+    @Override
+    public boolean hasCompletedInitialAssessmentResult(UserKey userKey) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM assessment_session s
+                        JOIN app_user u ON u.id = s.user_id
+                        WHERE u.user_key = ?
+                          AND u.status = 'ACTIVE'
+                          AND s.type = 'INITIAL'
+                          AND s.status = 'COMPLETED'
+                          AND s.result_summary_json IS NOT NULL
+                        """,
+                Integer.class,
+                userKey.value());
+        return count != null && count > 0;
+    }
+
     private AssessmentSessionRow findOwnedInitialSession(UserKey userKey, String assessmentId) {
         if (assessmentId == null || assessmentId.isBlank()) {
             throw new IllegalArgumentException("assessmentId is required");

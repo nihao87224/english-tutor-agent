@@ -327,8 +327,11 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
-    public OnboardingApplicationService onboardingApplicationService(UserProfileRepository userProfileRepository) {
-        return new OnboardingApplicationService(userProfileRepository);
+    public OnboardingApplicationService onboardingApplicationService(
+            UserProfileRepository userProfileRepository,
+            AssessmentResultRepository assessmentResultRepository
+    ) {
+        return new OnboardingApplicationService(userProfileRepository, assessmentResultRepository);
     }
 
     @Bean

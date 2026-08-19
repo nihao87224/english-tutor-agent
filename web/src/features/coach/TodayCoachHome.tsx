@@ -10,6 +10,7 @@ interface TodayCoachHomeProps {
   quotaLoading: boolean;
   onRefreshQuota: () => Promise<void>;
   onOpenAccount: () => void;
+  onProgressInvalid: () => Promise<void>;
   onStart: (selection: CoachSelection) => void;
 }
 
@@ -25,7 +26,7 @@ type LoadState =
   | { status: "empty"; plan?: LearningPlan }
   | { status: "error"; message: string };
 
-export function TodayCoachHome({ apiClient, quota, quotaLoading, onRefreshQuota, onOpenAccount, onStart }: TodayCoachHomeProps) {
+export function TodayCoachHome({ apiClient, quota, quotaLoading, onRefreshQuota, onOpenAccount, onProgressInvalid, onStart }: TodayCoachHomeProps) {
   const { t } = useI18n();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [startState, setStartState] = useState<"idle" | "starting" | "error">("idle");
@@ -37,6 +38,9 @@ export function TodayCoachHome({ apiClient, quota, quotaLoading, onRefreshQuota,
       const plan = await apiClient.getTodayPlan();
       setLoadState(plan.tasks.length > 0 ? { status: "content", plan } : { status: "empty", plan });
     } catch (error) {
+      if (isMissingAssessmentResultError(error)) {
+        await onProgressInvalid();
+      }
       setLoadState({ status: "error", message: error instanceof Error ? error.message : t("home.error.title") });
     }
   }
@@ -92,6 +96,10 @@ export function TodayCoachHome({ apiClient, quota, quotaLoading, onRefreshQuota,
       }}
     />
   );
+}
+
+function isMissingAssessmentResultError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("initial assessment result is required before planning");
 }
 
 function CoachHomeContent({

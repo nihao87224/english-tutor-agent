@@ -212,6 +212,10 @@ class ProfileEndpointIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer("self-user")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("ASSESSMENT"));
+        mockMvc.perform(get("/api/v1/users/me/progress")
+                        .header(HttpHeaders.AUTHORIZATION, bearer("self-user")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nextStep").value("ASSESSMENT_REQUIRED"));
     }
 
     @Test
@@ -462,6 +466,10 @@ class ProfileEndpointIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.step").value("RESULT"));
+        mockMvc.perform(get("/api/v1/users/me/progress")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nextStep").value("READY_FOR_PLAN"));
 
         MvcResult firstPlan = mockMvc.perform(get("/api/v1/plans/today")
                         .header(HttpHeaders.AUTHORIZATION, bearer(userKey)))

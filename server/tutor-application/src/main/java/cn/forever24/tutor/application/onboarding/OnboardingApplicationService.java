@@ -1,5 +1,6 @@
 package cn.forever24.tutor.application.onboarding;
 
+import cn.forever24.tutor.application.assessment.AssessmentResultRepository;
 import cn.forever24.tutor.profile.LearningPreferences;
 import cn.forever24.tutor.profile.OnboardingProgress;
 import cn.forever24.tutor.profile.PrimaryGoal;
@@ -11,9 +12,14 @@ import cn.forever24.tutor.profile.UserLearningProgress;
 public class OnboardingApplicationService {
 
     private final UserProfileRepository userProfileRepository;
+    private final AssessmentResultRepository assessmentResultRepository;
 
-    public OnboardingApplicationService(UserProfileRepository userProfileRepository) {
+    public OnboardingApplicationService(
+            UserProfileRepository userProfileRepository,
+            AssessmentResultRepository assessmentResultRepository
+    ) {
         this.userProfileRepository = userProfileRepository;
+        this.assessmentResultRepository = assessmentResultRepository;
     }
 
     public ProfileSummary savePrimaryGoal(String userKeyValue, String primaryGoalValue) {
@@ -62,6 +68,9 @@ public class OnboardingApplicationService {
     }
 
     public UserLearningProgress getLearningProgress(String userKeyValue) {
-        return UserLearningProgress.from(getProgress(userKeyValue));
+        UserKey userKey = new UserKey(userKeyValue);
+        return UserLearningProgress.from(
+                userProfileRepository.getOnboardingProgress(userKey),
+                assessmentResultRepository.hasCompletedInitialAssessmentResult(userKey));
     }
 }

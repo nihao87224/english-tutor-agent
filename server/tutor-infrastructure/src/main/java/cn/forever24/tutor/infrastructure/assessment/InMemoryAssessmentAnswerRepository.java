@@ -93,6 +93,12 @@ public class InMemoryAssessmentAnswerRepository implements AssessmentAnswerRepos
         return result;
     }
 
+    @Override
+    public boolean hasCompletedInitialAssessmentResult(UserKey userKey) {
+        String prefix = userKey.value() + ":";
+        return results.keySet().stream().anyMatch(key -> key.startsWith(prefix));
+    }
+
     private List<AssessmentAttemptEvidence> attemptsFor(UserKey userKey, String assessmentId) {
         String prefix = userKey.value() + ":" + assessmentId + ":";
         List<AssessmentAttemptEvidence> evidence = new ArrayList<>();

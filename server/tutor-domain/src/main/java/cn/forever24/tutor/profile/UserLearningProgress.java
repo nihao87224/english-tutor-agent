@@ -10,12 +10,14 @@ public record UserLearningProgress(
         }
     }
 
-    public static UserLearningProgress from(OnboardingProgress onboardingProgress) {
+    public static UserLearningProgress from(OnboardingProgress onboardingProgress, boolean hasInitialAssessmentResult) {
         OnboardingStep step = onboardingProgress.step();
         UserLearningNextStep nextStep = switch (step) {
             case GOAL, PREFERENCES, SELF_ASSESSMENT -> UserLearningNextStep.ONBOARDING_REQUIRED;
             case ASSESSMENT -> UserLearningNextStep.ASSESSMENT_REQUIRED;
-            case RESULT, COMPLETE -> UserLearningNextStep.READY_FOR_PLAN;
+            case RESULT, COMPLETE -> hasInitialAssessmentResult
+                    ? UserLearningNextStep.READY_FOR_PLAN
+                    : UserLearningNextStep.ASSESSMENT_REQUIRED;
         };
         return new UserLearningProgress(nextStep, step);
     }
