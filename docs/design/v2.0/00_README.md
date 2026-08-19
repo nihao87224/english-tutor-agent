@@ -27,7 +27,7 @@ V2.0 不推翻 1.x 已有模块化单体和学习闭环，而是在现有能力�
 
 | 文件 | 作用 |
 |---|---|
-| `01_ARCHITECTURE.md` | V2.0 总体架构、模块职责、资源访问、推荐、权限、部署边界 |
+| `01_ARCHITECTURE.md` | **V2.0 权威架构基线：系统上下文、现有 Maven 模块映射、领域与数据所有权、关键时序、AI/权限/内容发布边界、部署与测试架构** |
 | `02_RESOURCE_MODEL.md` | LearningResource / Collection / Asset / Entitlement / Progress 数据与领域模型 |
 | `03_SCENARIO_LESSON_FLOW.md` | Scenario Lesson 状态机、页面流程、AI Speaking、Retry、恢复与降级 |
 | `04_CONTENT_PIPELINE.md` | 离线课程生产、校验、TTS、图片、打包、导入、发布和版本化 Pipeline |
@@ -51,6 +51,8 @@ V2.0 为增量设计。以下 V1.x 结论继续有效，除非 V2.0 文档明确
 - Provider 抽象、可观测性、幂等、隐私与测试基线。
 
 V2.0 优先复用现有 Maven 模块，不因为新增 Resource 领域立即拆出新的微服务或 Maven module。
+
+`01_ARCHITECTURE.md` 同时区分仓库已有的 `REUSE` 基础能力、V2 必须补齐的 `V2-P0` 能力和后续 `LATER` 演进，不能把目标架构误读为已经完成的实现。
 
 ## 4. V2.0 设计总原则
 
@@ -147,3 +149,6 @@ V2.0 PRD
 13. Daily Learning Prescription 先选择 Skill Unit 和教学策略，再匹配 Episode；
 14. Season 1 的 10 个 Episode 不是所有用户统一的十节固定课程；
 15. 课程资源必须声明 Evidence Criteria、适配条件和可训练 Skill。
+16. 现有八个后端 Maven 模块继续作为 V2.0 部署与依赖基线；新增业务能力优先使用 package + application port 表达；
+17. Web 是 V2.0 P0 主客户端，API 同时保持后续 Android Compose/UDF、离线缓存和半双工 PTT 的兼容边界；
+18. 具体 OpenAPI、JSON Schema、数据库 DDL、推荐阈值和媒体访问方案必须由专项契约冻结，架构文档不擅自替代这些契约。
