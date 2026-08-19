@@ -227,6 +227,7 @@ Episode 至少定义：
 - 可承载的 Skill Unit；
 - 难度变体和可替换任务；
 - 图片、音频、对话和任务资源；
+- 每个可发布任务变体的 scene-specific `task_hero`，用于今日处方任务卡和 Scenario Lesson 场景引导；
 - Story continuity state；
 - 不依赖技能顺序的进入条件。
 
@@ -360,6 +361,7 @@ AI 输出必须先解析、Schema 校验、业务校验，再进入学习状态�
 
 - 每个推荐 Skill Unit 都能映射到至少一个 Lin Muen 场景；
 - 故事、对话、图片、音频和任务保持角色一致；
+- 真实任务页面必须展示与当前 Scene / Mission 匹配、清晰出现 Lin Muen 的 `task_hero`，进入 Speaking / Role Play 后仍保留人物视觉存在；
 - 跳集或切换难度时仍有自然的体验过渡；
 - 用户完成的是情景沟通任务，而不是孤立语法题；
 - Lin Muen 的鼓励不替代准确反馈和 Retry。

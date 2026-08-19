@@ -44,7 +44,21 @@
       ]
     }
   ],
-  "images": [],
+  "images": [
+    {
+      "id": "season1.ep001.introduction.b1.task-hero",
+      "version": "1.0.0",
+      "purpose": "task_hero",
+      "assetKey": "images/season1/ep001/introduction/b1/task-hero.webp",
+      "contentHash": "sha256:...",
+      "mimeType": "image/webp",
+      "aspectRatio": "16:9",
+      "focalPoint": { "x": 0.68, "y": 0.42 },
+      "altText": "Lin Muen greets the learner in a bright café before starting a conversation task.",
+      "generationPrompt": "...",
+      "characterReferenceIds": ["lin-muen-main-v1"]
+    }
+  ],
   "audio": [],
   "dialogue": [],
   "practice": [],
@@ -67,6 +81,7 @@ Each episode must provide:
 
 - Story
 - Visual assets
+- Exactly one scene-specific `task_hero` image for each publishable lesson variant
 - Learner fit and prerequisites
 - Skill Unit mappings
 - Learning objectives and communication goals
@@ -88,6 +103,7 @@ Images and audio should contain:
 - contentHash
 - generation model/version metadata
 - character reference ids for Lin Muen images
+- `purpose`, `mimeType`, `aspectRatio`, `focalPoint` and `altText` for images
 - speakerRole, voiceId, accent and speechRate for audio
 
 ## Selection Rules
@@ -105,6 +121,10 @@ Images and audio should contain:
 - Role Play 必须声明 user role、AI role、goal 和 success criteria；
 - Audio Script 与 Transcript 必须逐句一致；
 - 图片不得依赖生成文字传递关键信息；
+- 每个可发布资源必须有且仅有一个 `purpose = task_hero` 的任务主图；
+- `task_hero` 必须清晰出现 Lin Muen，并与 Episode / Scene / Mission 匹配；
+- `task_hero` 必须提供 `focalPoint` 和 `altText`，确保任务卡、桌面和移动端裁切仍保留人物；
+- Lin Muen canonical reference 不得直接替代 scene-specific `task_hero`，只能作为生成输入或加载失败 fallback；
 - Completion 与 Mastery 必须分离；
 - resourceVersion 必须被 Evidence 引用；
 - AI 生成结果须依次通过解析、JSON Schema 和业务校验。

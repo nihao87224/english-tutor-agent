@@ -63,7 +63,7 @@ lessons/
             ├── questions.json
             ├── expressions.json
             ├── speaking_tasks.json
-            ├── image.webp
+            ├── task-hero.webp
             └── audio.mp3
 ```
 
@@ -168,6 +168,10 @@ lessons/
 ## 目标
 
 图片不是展示，而是帮助用户理解场景。
+
+每个可发布课程变体必须生成 `task-hero.webp`。真实产品会在今日处方任务卡和 Scenario Lesson 场景引导区显示这张主图，并在后续 Speaking / Role Play 阶段保留 Lin Muen 的人物缩略图或头像。
+
+`task_hero` 必须清晰出现 Lin Muen，并表达当前 Scene、动作和沟通问题；通用环境图、纯头像或人物不清晰的远景不能作为正式任务主图。生成时输出 `purpose`、`assetKey`、`contentHash`、`aspectRatio`、`focalPoint`、`altText` 和 `characterReferenceIds`。
 
 ## 风格
 

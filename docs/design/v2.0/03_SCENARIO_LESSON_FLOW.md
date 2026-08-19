@@ -9,6 +9,8 @@ Scenario Lesson 不是播放课程，而是完成一次输入到输出闭环。
 ```text
 进入课程
  ↓
+任务主图 + 场景引导
+ ↓
 理解场景
  ↓
 First Listen
@@ -32,7 +34,21 @@ Evidence
 Memory / Review
 ```
 
-## 3. 完成条件
+## 3. 真实实现页面视觉契约
+
+`task_hero` 是 P0 Scenario Lesson 的必备视觉资源，不是原型专用装饰。
+
+- 今日处方中的任务卡展示 `task_hero` 的响应式裁切缩略图；
+- 进入课程后，在“理解场景”区域展示完整任务主图、Episode / Scene、任务目标和 Lin Muen 当前诉求；
+- 任务主图必须清晰出现 Lin Muen，并体现当前地点、动作或沟通问题，不能只使用无人物环境图；
+- Guided Speaking、Role Play 和反馈阶段至少保留 Lin Muen 的人物缩略图或头像，让人物陪伴不在进入任务后消失；
+- 页面文字、按钮、航班、菜单或工作信息使用结构化 UI overlay，不依赖图片内生成文字；
+- 使用 `focalPoint` 或预生成裁切变体适配桌面、移动端和任务卡，不得在窄屏裁掉 Lin Muen；
+- 首屏使用离线预生成并已发布的图片资源，不在用户进入课程时等待实时生成。
+
+主图加载失败时显示 Lin Muen 的已发布人物 fallback、场景文字和 Audio / Transcript；失败不阻断学习，也不改变教学处方。
+
+## 4. 完成条件
 
 不能只根据播放完成判断。
 
@@ -42,7 +58,7 @@ Memory / Review
 - 完成理解检查；
 - 完成一次 Speaking Task。
 
-## 4. AI 节点
+## 5. AI 节点
 
 实时调用模型：
 
@@ -59,15 +75,15 @@ Memory / Review
 - Transcript展示；
 - 基础题目展示。
 
-## 5. 降级
+## 6. 降级
 
-图片失败：继续 Audio + Text。
+图片失败：显示人物 fallback 并继续 Audio + Text。
 
 Audio失败：继续 Transcript + Speaking。
 
 AI失败：保存回答，稍后重新分析。
 
-## 6. 与 Planner 集成
+## 7. 与 Planner 集成
 
 完成后输出：
 
