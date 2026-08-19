@@ -36,6 +36,14 @@ V2.0 不推翻 1.x 已有模块化单体和学习闭环，而是在现有能力�
 | `08_SKILL_GRAPH_AND_LEARNING_STATE_MODEL.md` | Learner Model、Evidence、Mastery 与 Weak Point |
 | `09_RECOMMENDATION_ENGINE_DESIGN.md` | Daily Learning Prescription、教学策略与推荐解释 |
 | `11_PERSONALIZED_TUTOR_AND_IMMERSIVE_LEARNING_DESIGN.md` | **AI 私教专业性与 Lin Muen 沉浸体验的权威桥接设计** |
+| `12_HIGH_LEVEL_DESIGN.md` | Web 交互到逻辑组件、P0 用例、数据组、API 分组与验收场景的概要设计 |
+| `13_BACKEND_DETAILED_DESIGN.md` | 后端聚合、策略、Application Service、端口、状态机、事务、AI 重试与测试详细设计 |
+| `14_API_AND_DATABASE_DESIGN.md` | V2 canonical REST/SSE、DTO、错误码、幂等和 Flyway V19–V27 数据库设计 |
+
+配套交付物：
+
+- `docs/ui/v2.0/ENGLISH_TUTOR_AGENT_WEB_UI_PROTOTYPE_v2.0.html`：可交互 Web 原型；
+- `docs/plans/v2.0/CODEX_TASK_BREAKDOWN.md`：按依赖排序、一次一张任务卡执行的开发拆解。
 
 ## 3. 与 V1.x 文档关系
 
@@ -129,7 +137,11 @@ V2.0 PRD
 -> 03_SCENARIO_LESSON_FLOW
 -> 04_CONTENT_PIPELINE
 -> 05_RESOURCE_PREGENERATION_CODEX_GUIDE
--> Implementation Plan / Task Backlog（后续）
+-> Web UI Prototype
+-> 12_HIGH_LEVEL_DESIGN
+-> 13_BACKEND_DETAILED_DESIGN
+-> 14_API_AND_DATABASE_DESIGN
+-> CODEX_TASK_BREAKDOWN
 ```
 
 ## 6. 关键冻结决策
