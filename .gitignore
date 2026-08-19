@@ -54,5 +54,8 @@ playwright-report/
 user-data/
 recordings/
 
+# Local Lin Muen reference assets and generated media source material
+assets/
+
 # MinIO / MySQL local volumes
 .infrastructure-data/
