@@ -53,6 +53,8 @@
       "contentHash": "sha256:...",
       "mimeType": "image/webp",
       "aspectRatio": "16:9",
+      "shotType": "environmental_three_quarter",
+      "displaySurfaces": ["prescription_card", "scenario_intro", "scenario_training"],
       "focalPoint": { "x": 0.68, "y": 0.42 },
       "altText": "Lin Muen greets the learner in a bright café before starting a conversation task.",
       "generationPrompt": "...",
@@ -103,7 +105,7 @@ Images and audio should contain:
 - contentHash
 - generation model/version metadata
 - character reference ids for Lin Muen images
-- `purpose`, `mimeType`, `aspectRatio`, `focalPoint` and `altText` for images
+- `purpose`, `mimeType`, `aspectRatio`, `shotType`, `displaySurfaces`, `focalPoint` and `altText` for images
 - speakerRole, voiceId, accent and speechRate for audio
 
 ## Selection Rules
@@ -123,7 +125,10 @@ Images and audio should contain:
 - 图片不得依赖生成文字传递关键信息；
 - 每个可发布资源必须有且仅有一个 `purpose = task_hero` 的任务主图；
 - `task_hero` 必须清晰出现 Lin Muen，并与 Episode / Scene / Mission 匹配；
+- `task_hero.displaySurfaces` 必须至少包含 `scenario_intro` 和 `scenario_training`；训练页不得用 `character_avatar` 代替场景图；
+- `task_hero.shotType` 默认使用 `environmental_full_body`、`environmental_three_quarter` 或 `environmental_medium`，并保留完成任务所需的环境线索；
 - `task_hero` 必须提供 `focalPoint` 和 `altText`，确保任务卡、桌面和移动端裁切仍保留人物；
+- 可选 `purpose = scene_state` 用于任务子步骤变化，但必须与主图保持人物、服装和场景连续性；
 - Lin Muen canonical reference 不得直接替代 scene-specific `task_hero`，只能作为生成输入或加载失败 fallback；
 - Completion 与 Mastery 必须分离；
 - resourceVersion 必须被 Evidence 引用；

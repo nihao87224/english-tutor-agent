@@ -169,9 +169,9 @@ lessons/
 
 图片不是展示，而是帮助用户理解场景。
 
-每个可发布课程变体必须生成 `task-hero.webp`。真实产品会在今日处方任务卡和 Scenario Lesson 场景引导区显示这张主图，并在后续 Speaking / Role Play 阶段保留 Lin Muen 的人物缩略图或头像。
+每个可发布课程变体必须生成 `task-hero.webp`。真实产品会在今日处方任务卡、Scenario Lesson 场景引导区以及后续 Speaking / Role Play 训练主体区域显示这张场景图；头像只能补充对话身份，不能替代情景图。
 
-`task_hero` 必须清晰出现 Lin Muen，并表达当前 Scene、动作和沟通问题；通用环境图、纯头像或人物不清晰的远景不能作为正式任务主图。生成时输出 `purpose`、`assetKey`、`contentHash`、`aspectRatio`、`focalPoint`、`altText` 和 `characterReferenceIds`。
+`task_hero` 必须清晰出现 Lin Muen，并表达当前 Scene、动作和沟通问题；默认使用全身、四分之三身或环境中景。通用环境图、纯头像、人物不清晰的远景或“背景图 + 悬浮头像”不能作为正式情景训练视觉。生成时输出 `purpose`、`assetKey`、`contentHash`、`aspectRatio`、`shotType`、`displaySurfaces`、`focalPoint`、`altText` 和 `characterReferenceIds`。
 
 ## 风格
 

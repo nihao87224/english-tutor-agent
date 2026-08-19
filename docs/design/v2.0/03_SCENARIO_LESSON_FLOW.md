@@ -41,12 +41,13 @@ Memory / Review
 - 今日处方中的任务卡展示 `task_hero` 的响应式裁切缩略图；
 - 进入课程后，在“理解场景”区域展示完整任务主图、Episode / Scene、任务目标和 Lin Muen 当前诉求；
 - 任务主图必须清晰出现 Lin Muen，并体现当前地点、动作或沟通问题，不能只使用无人物环境图；
-- Guided Speaking、Role Play 和反馈阶段至少保留 Lin Muen 的人物缩略图或头像，让人物陪伴不在进入任务后消失；
+- Guided Speaking 和 Role Play 的训练主体区域必须继续展示当前 `task_hero`，或展示与当前子步骤匹配的 `scene_state` 场景图；画面需同时看见 Lin Muen 与可识别的环境关系，头像只能作为对话身份补充，不能满足情景视觉要求；
+- 场景图应优先采用全身、四分之三身或环境中景。例如登机口确认任务应展示 Lin Muen 位于登机口候机区域，而不是只在对话框旁挂一枚头像；
 - 页面文字、按钮、航班、菜单或工作信息使用结构化 UI overlay，不依赖图片内生成文字；
 - 使用 `focalPoint` 或预生成裁切变体适配桌面、移动端和任务卡，不得在窄屏裁掉 Lin Muen；
 - 首屏使用离线预生成并已发布的图片资源，不在用户进入课程时等待实时生成。
 
-主图加载失败时显示 Lin Muen 的已发布人物 fallback、场景文字和 Audio / Transcript；失败不阻断学习，也不改变教学处方。
+主图或 `scene_state` 加载失败时才显示 Lin Muen 的已发布人物 fallback、场景文字和 Audio / Transcript；头像属于降级方案，不是正常训练页面的主视觉实现。
 
 ## 4. 完成条件
 
