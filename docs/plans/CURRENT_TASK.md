@@ -2,7 +2,7 @@
 
 ## Task
 
-`AI Provider Configuration Refactor`
+`V2.0 Dual-Core Product Rebaseline`
 
 ## Status
 
@@ -10,41 +10,36 @@
 
 ## Goal
 
-Make MySQL the single runtime source for AI provider endpoints, models,
-defaults and encrypted API keys, while preserving Hexagonal Architecture and
-allowing the application to start before a provider is configured.
+Rebase V2.0 so the product simultaneously delivers a professional,
+evidence-driven personalized AI tutor and a motivating Lin Muen immersive
+learning experience.
 
 ## Implemented
 
-- Removed all `DEEPSEEK_*`, `OPENAI_*` and generic LLM environment runtime
-  fallbacks.
-- Added V18 to clear historical defaults that have no encrypted database API
-  key. Existing Flyway V1–V17 remain unchanged.
-- Added a non-fatal startup warning and first-admin configuration guidance.
-- Added `POST /api/v1/admin/ai-providers/{providerCode}/test`, its OpenAPI
-  contract and the Admin Console connection-test action.
-- Added AES-GCM database-only resolution and application/agent outbound port
-  coverage without real paid API calls.
+- Defined Personalized Tutor Core as the teaching decision authority.
+- Defined Lin Muen Season / Episode as the immersive experience layer.
+- Separated Capability Graph from Experience Graph through Episode Mapping.
+- Replaced fixed Episode curriculum assumptions with Daily Learning
+  Prescription, Skill Unit variants and evidence-driven selection.
+- Added deterministic pedagogical baselines for prerequisites, mastery,
+  spacing, difficulty, interleaving, transfer and retry.
+- Updated PRD, architecture, curriculum, recommendation, resource schema,
+  episode, character and content-generation guidance.
 
 ## Verification Record
 
-- `server> .\mvnw.cmd -q -pl tutor-bootstrap -am verify` — PASS.
-- `web> pnpm test -- --run` — PASS (44 tests).
-- `web> pnpm run build` — PASS.
-- `python scripts\validate_project.py` — PASS.
+- Bundled Python `scripts\validate_project.py` — PASS.
+- `git diff --check` — PASS.
+- Markdown reference and terminology audit — PASS.
 
 ## Decision Note
 
-The supplied plan called for `V15__ai_provider_configuration_refactor.sql`,
-but V15, V16 and V17 already exist on this branch. The refactor therefore uses
-the only safe forward Flyway version: V18.
+Season 1 `EP001`–`EP010` remains the narrative world, while the 72 launch
+items are Skill Unit variants. The tutor chooses the teaching target first and
+maps it to an eligible Episode second; story order cannot override learner
+needs, review urgency or access rules.
 
 ## Follow-up Task
 
-`User Learning Progress Flow Fix` — `DONE`
-
-The learner entry now uses `GET /api/v1/users/me/progress`, which derives the
-next action from server-owned onboarding state. The Web flow completes profile
-setup, self-assessment and the resumable initial assessment before exposing
-today's plan. Verification: Maven `verify`, Web tests (48), and Web build all
-passed.
+Create the machine-readable V2.0 Episode/Skill Unit JSON Schema and regenerate
+Season 1 resources only after media-generation parameters are frozen.

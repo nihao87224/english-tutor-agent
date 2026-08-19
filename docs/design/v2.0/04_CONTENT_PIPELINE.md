@@ -9,6 +9,12 @@
 ```text
 Lesson Blueprint
  ↓
+Skill Unit / Learner Fit / Prerequisite
+ ↓
+Pedagogical Variants / Evidence Criteria
+ ↓
+Lin Muen Episode Mapping
+ ↓
 LLM Generate Script
  ↓
 Generate Questions
@@ -34,12 +40,15 @@ Publish
 
 正确顺序：
 
-1. 确定教学目标；
-2. 生成 Script；
-3. 校验 CEFR 难度；
-4. 生成音频；
-5. 生成图片；
-6. 打包 manifest。
+1. 确定 Skill Unit、教学目标和 learner fit；
+2. 确定 prerequisites、难度、支架和 Training Type；
+3. 定义 common error mappings、Evidence Criteria、Retry 和 Review；
+4. 选择可承载该训练的 Lin Muen Episode Mapping；
+5. 生成 Story、Mission、Script 和任务；
+6. 校验 CEFR、communication complexity 和教学价值；
+7. 生成音频与图片；
+8. 校验 Schema、业务规则和人物一致性；
+9. 打包 manifest。
 
 ## 4. Quality Check
 
@@ -51,6 +60,10 @@ Publish
 - 问题可回答；
 - 图片符合场景；
 - 音频清晰。
+- 推荐引擎可以依据 learner fit 和 Skill Unit 检索；
+- Evidence Criteria 可观察、可评价；
+- Story 顺序未覆盖教学适配；
+- Lin Muen 身份、语气和视觉一致。
 
 ## 5. Codex 生产要求
 

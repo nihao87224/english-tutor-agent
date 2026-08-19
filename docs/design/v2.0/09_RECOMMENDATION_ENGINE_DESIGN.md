@@ -1,6 +1,6 @@
 # English Tutor Agent V2.0 Recommendation Engine Design
 
-> 文档版本：`2.0.0`
+> 文档版本：`2.0.1`
 > 分支：`develop/v2.0`
 > 目标：定义 AI 如何基于用户状态选择下一步最值得训练的内容。
 
@@ -29,6 +29,8 @@ Content Capability
 +
 Available Time
 ```
+
+输出不是简单的课程列表，而是可解释的 `Daily Learning Prescription`。Lin Muen Episode 只在教学目标确定后参与体验匹配。
 
 ---
 
@@ -140,22 +142,31 @@ Explain Technical Problem
 User State
     |
     v
-Identify Weak Skills
+Resolve Urgent Goal and Review Due
     |
     v
-Find Matching Skill Units
+Identify High-value Skill Gaps
     |
     v
-Access Filter
+Apply Prerequisite and Mastery Policy
     |
     v
-Difficulty Matching
+Find Matching Skill Unit Variants
     |
     v
-Ranking
+Publish and Access Filter
     |
     v
-Generate Today Plan
+Difficulty / Time / Freshness Ranking
+    |
+    v
+Apply Interleaving and Transfer Policy
+    |
+    v
+Map to Lin Muen Episode / Scene
+    |
+    v
+Generate Daily Learning Prescription
 ```
 
 ---
@@ -224,12 +235,26 @@ SkillGap
 +
 ErrorMatch
 +
+ReviewUrgency
++
 DifficultyFit
++
+TransferValue
 +
 Freshness
 +
+TimeFit
++
 UserPreference
 ```
+
+P0 评分后仍需执行组合约束：
+
+- 今日至少一个主动输出块；
+- 到期高优先级复习不得被故事新鲜度长期挤出；
+- 连续失败时增加支架或降低 communication complexity；
+- 连续轻松完成时提高复杂度或安排跨场景迁移；
+- Episode continuity 仅作为体验匹配因子，不得覆盖能力和复习因子。
 
 ---
 
@@ -343,10 +368,13 @@ Load User State
 Select Priority Skills
       |
       v
-Select Training Resources
+Select Skill Units and Teaching Strategies
       |
       v
-Compose Daily Plan
+Map Experience Context
+      |
+      v
+Compose Daily Learning Prescription
       |
       v
 Save Plan
@@ -377,6 +405,16 @@ Role Play
 Production Incident
 10 min
 ```
+
+处方还必须保存：
+
+- target skill 与选择原因；
+- difficulty / scaffolding；
+- selected episode mapping；
+- expected evidence；
+- completion policy；
+- fallback resource；
+- prescription version。
 
 ---
 
@@ -482,3 +520,5 @@ English Tutor Agent 推荐系统：
 ```
 你现在最需要补齐什么能力，为什么，以及下一步如何验证你已经掌握。
 ```
+
+Lin Muen 回答的是“如何让这次训练真实、有关系、有动力”；Personalized Tutor Core 回答的是“为什么今天练这个、难度如何、怎样判断有效”。

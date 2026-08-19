@@ -5,6 +5,9 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Rebased V2.0 around a dual-core product model: an evidence-driven
+  Personalized Tutor Core selects Skill Units and teaching strategies first,
+  then maps them into Lin Muen Season/Episode immersive experiences.
 - Added OpenAI-compatible and Gemini native LLM protocol adapters, with
   DeepSeek configured as the default LLM provider.
 - Removed legacy AI provider-selection settings so stale values cannot prevent

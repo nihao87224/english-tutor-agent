@@ -1,5 +1,8 @@
 # Codex Task Prompt - English Tutor Agent V2.0 Learning Resource Generation
 
+> Status: `V2.0.1_DUAL_CORE_PROMPT`
+> Use this prompt together with the current dual-core sources below. Skill Unit, learner fit, pedagogical variants, Evidence Criteria and Episode Mapping must be defined before story/media generation. Where this file conflicts with the sources below, the sources below win.
+
 ## Role
 
 You are the content generation engineer for English Tutor Agent V2.0.
@@ -29,10 +32,14 @@ Learning Memory Update
 Before generating anything, read:
 
 ```
-docs/design/v2.0/11_CODEX_SINGLE_FILE_RESOURCE_SPEC.md
+docs/prd/v2.0/ENGLISH_TUTOR_AGENT_PRD_v2.0.0.md
+docs/design/v2.0/07_COURSE_RESOURCE_SCHEMA.md
+docs/design/v2.0/08_CODEX_GENERATION_GUIDE.md
+docs/design/v2.0/09_SAMPLE_EPISODES.md
+docs/design/v2.0/11_PERSONALIZED_TUTOR_AND_IMMERSIVE_LEARNING_DESIGN.md
 ```
 
-This file is the only source of truth for:
+These files are the source of truth for:
 
 - lesson list;
 - scenario definitions;
@@ -48,12 +55,15 @@ Do not change lesson IDs.
 
 # 2. Generation Scope
 
-Generate MVP resources:
+Generate the current dual-core Season 1 scope:
 
 ```
-Level: B1
-Lesson Count: 12
+Episodes: EP001-EP010
+Skill Unit Variants: defined by the V2.0 capability map
+Levels: selected per Skill Unit learner fit
 ```
+
+Episodes are experience containers, not a fixed curriculum. Generate resources from Skill Units and map them to eligible Episodes.
 
 Output location:
 
@@ -65,7 +75,7 @@ resources/learning-content/v2.0/
 
 # 3. Generation Workflow
 
-For every lesson:
+For every Skill Unit / Episode package:
 
 ## Step 1
 Understand:
@@ -251,7 +261,8 @@ Generation report must include:
 
 Before completion verify:
 
-- all 12 lessons generated;
+- all planned Skill Unit Variants generated;
+- EP001-EP010 mappings covered;
 - all JSON files valid;
 - all referenced paths exist;
 - images match scenarios;

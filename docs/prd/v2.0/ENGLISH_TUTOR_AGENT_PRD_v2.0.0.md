@@ -1,8 +1,8 @@
 # English Tutor Agent 产品需求文档（PRD）
 
-> 文档版本：`2.0.0`  
-> 文档状态：`V2.0 产品需求基线`  
-> 产品阶段：`AI 主动训练 + 标准学习资源库 + 私有随心学`  
+> 文档版本：`2.0.1`
+> 文档状态：`V2.0 双核心产品需求基线`
+> 产品阶段：`个性化 AI 私教 + Lin Muen 沉浸式情景陪伴`
 > 更新日期：`2026-08-19`  
 > 主要客户端：`Web-first，兼容后续 Android`  
 > 文档用途：作为 V2.0 概要设计、详细设计、UI 设计、开发拆解、内容生产、测试验收和发布评审的产品依据。
@@ -31,15 +31,17 @@ V2.0 不重新发明这些能力，而是在现有 Agent 学习闭环之上补�
 
 因此 V2.0 的核心不是“增加视频课程”，而是建立：
 
-1. 标准化 Learning Resource 资源体系；
-2. Scenario Lesson 场景课程；
-3. 听力输入 → 理解 → 表达学习 → 开口 → Role Play → Correction → Retry → Memory 的完整闭环；
-4. “随心学”私有授权课程区；
-5. 面向后续大规模内容生产的离线资源生成体系。
+1. 能持续识别用户目标、能力缺口、遗忘风险和近期诉求的 Personalized Tutor Core；
+2. 可解释、可测试的每日课程处方与教学策略；
+3. 标准化 Learning Resource 与 Skill Unit 资源体系；
+4. 由 Lin Muen 承载的 Season / Episode 沉浸式情景学习体验；
+5. 听力输入 → 理解 → 表达学习 → 开口 → Role Play → Correction → Retry → Evidence → Memory 的完整闭环；
+6. “随心学”私有授权课程区；
+7. 面向后续大规模内容生产的离线资源生成体系。
 
 ## 0.2 V2.0 一句话定义
 
-> **让 English Tutor Agent 从“会规划、会纠错的 AI 教练”，升级为“拥有稳定教材资源、能够主动组织训练的 AI 英语私教”。**
+> **让 AI 像专业私教一样每天安排最适合用户的训练，并由 Lin Muen 把训练转化成值得参与、愿意坚持的沉浸式英语经历。**
 
 ## 0.3 本文档不包含
 
@@ -78,6 +80,27 @@ V2.0 在该定位下新增一个重要原则：
 
 > **个性化的是训练内容、训练顺序和交互反馈，而不是每次都实时生成昂贵的视频素材。**
 
+V2.0 冻结“双核心”定位：
+
+1. **AI 私教核心**：以用户目标、Skill State、Error Memory、Evidence、遗忘风险和可用时间为依据，生成每日学习处方；
+2. **Lin Muen 沉浸体验核心**：以一致的人物、故事、视觉、声音和关系承载训练，让用户在真实任务中持续开口。
+
+两者关系：
+
+```text
+AI 私教决定教学目标与训练策略
+        ↓
+系统选择匹配的 Skill Unit
+        ↓
+Lin Muen Episode 承载情景、任务与陪伴
+        ↓
+用户输出形成 Evidence
+        ↓
+AI 私教更新明日处方
+```
+
+Lin Muen 不替代 Planner、Skill Graph 或教学规则；剧情连续性不得强迫用户学习已经掌握或当前不适合的内容。
+
 ## 1.2 版本演进
 
 | 版本 | 核心能力 | 产品价值 |
@@ -109,9 +132,14 @@ V2.0 用户应能够：
 
 ### P0 目标
 
+- 建立 Learner Model，统一目标、Skill State、Error Memory、Evidence、Review State 和临时诉求；
+- 建立可解释、可测试的 Daily Learning Prescription；
+- 建立前置技能、掌握度、难度适配、间隔复习、交错练习、迁移和 Retry 教学策略；
 - 建立统一 Learning Resource 模型；
+- 建立 Skill Unit 与 Episode Experience 的双图谱及映射；
 - 建立 Scenario Lesson 标准资源格式；
-- 首发覆盖 8 个主题 × 3 个场景 × 3 个等级，共 72 个标准课程；
+- 首发覆盖 8 个主题 × 3 个场景 × 3 个等级，共 72 个 Skill Unit Variant；
+- 建立 Lin Muen Season 1 的 10 个 Episode，作为可被个性化课程选择的沉浸式体验容器；
 - 支持图片、TTS 音频、Transcript、重点表达、理解题和口语任务；
 - 将标准资源接入今日学习推荐；
 - 完成从资源学习到 Speaking / Correction / Retry / Memory 的闭环；
@@ -146,7 +174,10 @@ V2.0 不追求：
 - 首发覆盖 A1、C1、C2 全等级；
 - 首发完成专业级发音评测；
 - 用视频数量作为学习价值指标；
-- 让第三方私有课程直接绕过权限系统进入推荐。
+- 让第三方私有课程直接绕过权限系统进入推荐；
+- 让所有用户按 EP001 → EP010 接受同一套固定教学顺序；
+- 让 Lin Muen 或 LLM 凭主观感觉替代确定性的掌握、复习、难度和权限规则；
+- 用剧情播放量或角色互动量替代能力改善指标。
 
 ---
 
@@ -221,6 +252,34 @@ V2.0 默认策略：
 - 独立 Access Scope；
 - 独立进度；
 - 不影响 INTERNAL 标准学习资源。
+
+## 3.6 教学决策先于情景包装
+
+系统必须先根据用户状态确定训练目标、难度、Training Type 和预期 Evidence，再选择最适合承载该训练的 Lin Muen Episode。
+
+禁止：
+
+```text
+先决定今天推进哪一集剧情
+→ 再为该剧情寻找一个看似相关的知识点
+```
+
+正确顺序：
+
+```text
+识别能力缺口或到期复习
+→ 选择 Skill Unit 与教学策略
+→ 匹配 Episode / Scene
+→ 生成沉浸式任务
+```
+
+## 3.7 专业教学与情感陪伴同时成立
+
+- AI 私教的判断必须可解释、可追踪、可测试；
+- Lin Muen 的反馈必须温暖、自然、非评判式；
+- 温暖表达不能省略必要纠错和 Retry；
+- 科学训练不能退化成冷冰冰的题库与分数；
+- 用户可以调整情景陪伴强度，但不能绕过必要的能力前置和安全规则。
 
 ---
 
@@ -437,6 +496,16 @@ ScenarioLesson
 - review tasks；
 - tomorrow plan。
 
+## 6.4 Skill Unit 与 Episode Experience
+
+V2.0 教学最小单位为 `Skill Unit`，体验容器为 `Episode`。
+
+Skill Unit 定义 communication goal、target / supporting skills、prerequisites、difficulty、scaffolding、training types、common error mappings、evidence criteria 和 review template。
+
+Episode 定义 Lin Muen 故事背景、场景与角色关系、可承载的 Skill Unit、图片、音频、Dialogue、Mission、难度变体和 story continuity。
+
+同一 Episode 可以服务不同能力状态的用户；同一 Skill Unit 也可以映射到不同 Episode，以验证能力迁移。
+
 ---
 
 # 7. 首发内容体系
@@ -445,7 +514,9 @@ ScenarioLesson
 
 V2.0 不以 Grammar Unit 作为一级目录，而以用户真实想完成的 communication task 组织课程。
 
-首发 8 个一级主题：
+首发内容由“能力资源图谱”和“沉浸体验图谱”共同组成。
+
+能力资源图谱包含 8 个一级主题：
 
 1. Daily Life；
 2. Food & Shopping；
@@ -458,11 +529,15 @@ V2.0 不以 Grammar Unit 作为一级目录，而以用户真实想完成的 com
 
 每个主题首发 3 个核心场景，每个场景提供 A2 / B1 / B2 三个等级。
 
-总计：
+能力资源总计：
 
-`8 × 3 × 3 = 72 Lessons`
+`8 × 3 × 3 = 72 Skill Unit Variants`
 
-## 7.2 72 个首发课程目录
+Lin Muen 沉浸体验图谱首发 Season 1：`Getting Closer to English`，包含 `EP001`–`EP010`。Episode 不替代 72 个能力资源，也不是强制教学顺序；它通过 `episodeMappings` 承载一个或多个 Skill Unit Variant。
+
+用户看到的是连贯世界，Planner 操作的是可组合的能力单元。
+
+## 7.2 72 个首发 Skill Unit Variant 目录
 
 | 一级主题 | 场景 1 | 场景 2 | 场景 3 |
 |---|---|---|---|
@@ -788,6 +863,25 @@ AND
 ```
 
 权限被撤销时，Planner 自动回退到 INTERNAL 公共资源，不产生“推荐后无法打开”的失败体验。
+
+## 12.5 Daily Learning Prescription
+
+今日学习输出必须是一份教学处方，而不只是 Resource 列表。至少包含：
+
+- 今日优先目标；
+- target skills 与选择原因；
+- 到期复习块；
+- 新技能或巩固块；
+- 主动输出块；
+- 可选迁移块；
+- 难度与支架级别；
+- Lin Muen experience context；
+- 预计时间；
+- 完成条件和预期 Evidence。
+
+P0 教学策略至少覆盖 prerequisite、retrieval practice、spaced practice、difficulty fit、interleaving、transfer、feedback and retry。
+
+核心决策由确定性规则负责；LLM 可以解释推荐、生成受约束的互动变化，但不能直接写入 mastery 或自行改变到期复习。
 
 ---
 
@@ -1141,6 +1235,28 @@ Role Play 是否强制完成，可根据课程类型配置。
 
 > 随着用户数增长，教材成本应主要表现为固定/摊薄成本，而不是每个用户重复生成。
 
+## 19.5 私教专业性与沉浸体验指标
+
+私教专业性：
+
+- 推荐理由可解释率；
+- 到期复习命中率；
+- 难度适配率；
+- Retry 后关键问题改善率；
+- 跨场景迁移成功率；
+- 不同 Skill State 用户计划差异率；
+- Evidence 对下一计划产生影响的比例。
+
+沉浸体验：
+
+- Episode 进入后主动输出率；
+- Lin Muen Mission 完成率；
+- 连续学习天数；
+- 故事体验后进入 Role Play 的转化率；
+- 用户对陪伴强度和情景相关性的反馈。
+
+主成功指标必须同时包含能力改善和持续参与，不能只使用播放、点击或对话轮数。
+
 ---
 
 # 20. 非功能需求
@@ -1186,9 +1302,16 @@ Role Play 是否强制完成，可根据课程类型配置。
 
 ## 21.1 P0
 
+- Learner Model；
+- Skill Graph + Experience Graph；
+- Daily Learning Prescription；
+- 可测试的教学策略基线与推荐原因；
 - Learning Resource 统一模型；
 - Scenario Lesson；
-- 8 主题 × 3 场景 × A2/B1/B2 = 72 Lessons；
+- 8 主题 × 3 场景 × A2/B1/B2 = 72 Skill Unit Variants；
+- Lin Muen Season 1（EP001–EP010）沉浸体验；
+- Skill Unit 与 Episode Mapping；
+- Episode 资源中的 Evidence Criteria 和适配条件；
 - Image + Audio + Transcript；
 - Key Vocabulary / Expressions；
 - Comprehension Questions；
@@ -1232,12 +1355,16 @@ Role Play 是否强制完成，可根据课程类型配置。
 
 # 22. 开发与交付建议
 
-## 22.1 里程碑 M1：资源底座
+## 22.1 里程碑 M1：个性化私教与资源底座
 
-目标：系统能够保存、查询、授权、播放标准资源。
+目标：系统能够基于用户状态选择训练目标，并保存、查询、授权、播放标准资源。
 
 包含：
 
+- Learner Model；
+- Skill Graph 与 Skill Unit；
+- 确定性教学策略；
+- Daily Learning Prescription 与推荐解释；
 - Resource / Collection / Asset / Entitlement；
 - Access Filter；
 - Object Storage；
@@ -1246,7 +1373,7 @@ Role Play 是否强制完成，可根据课程类型配置。
 
 ## 22.2 里程碑 M2：Scenario Lesson Player
 
-目标：完成“听 → 理解 → 表达”的固定资源学习流程。
+目标：完成“个性化目标 → Lin Muen 情景 → 听 → 理解 → 表达”的资源学习流程。
 
 建议先生产：
 
@@ -1265,7 +1392,7 @@ Role Play 是否强制完成，可根据课程类型配置。
 - Evidence；
 - Memory / Review。
 
-## 22.4 里程碑 M4：完整 72 Lessons
+## 22.4 里程碑 M4：完整 72 Skill Unit Variants
 
 补齐 A2 / B2，完成内容质量校验。
 
@@ -1297,7 +1424,7 @@ V2.0 发布至少满足以下条件。
 - 用户能够完成至少一节完整 Scenario Lesson；
 - Audio 不依赖运行时生成；
 - Transcript、Expressions、Questions 与 Audio 一致；
-- 至少 72 个目标课程资源处于发布状态；
+- 至少 72 个目标 Skill Unit Variant 处于发布状态；
 - A2/B1/B2 难度差异经过内容检查。
 
 ## 23.2 主动训练
@@ -1310,7 +1437,11 @@ V2.0 发布至少满足以下条件。
 
 ## 23.3 推荐
 
-- 今日计划可推荐符合等级和目标的 Scenario Lesson；
+- 今日计划可根据目标、Skill Gap、Evidence、Review Urgency 和可用时间生成教学处方；
+- 两个不同 Skill State 的同等级用户可获得不同训练；
+- 每个推荐包含可验证的简短原因；
+- 已掌握 Skill 不会因 Season 剧情顺序被重复作为基础课推荐；
+- Episode 选择发生在 Skill Unit 和教学策略确定之后；
 - 无权限资源不会进入用户候选池；
 - 私有资源不可用时存在公共资源 fallback。
 
@@ -1379,7 +1510,7 @@ V2.0 发布至少满足以下条件。
 
 ## 24.5 资源过度重复
 
-风险：72 节课很快产生“套路感”。
+风险：72 个能力变体在体验层重复使用相同模板，仍会快速产生“套路感”。
 
 应对：
 
@@ -1410,19 +1541,33 @@ V2.0 发布至少满足以下条件。
 - 不把第三方内容混入公共资源；
 - 当使用范围扩大时单独确认授权边界。
 
+## 24.8 情景 IP 掩盖私教价值
+
+风险：产品因 Lin Muen 故事体验获得短期互动提升，但所有用户仍学习同样内容，最终退化为角色化课程 App。
+
+应对：
+
+- 教学决策先于 Episode 匹配；
+- Skill Graph 与 Experience Graph 分离；
+- Season 不作为强制教学顺序；
+- 验收不同能力状态是否产生不同计划；
+- 以 Evidence、Retry 改善和迁移表现衡量私教价值；
+- 以持续学习和主动输出衡量沉浸价值。
+
 ---
 
 # 25. 成功标准
 
-V2.0 成功不以“上线 72 个课程”作为唯一标准，而以以下产品信号判断：
+V2.0 成功不以“上线 72 个 Skill Unit Variant”作为唯一标准，而以以下产品信号判断：
 
-1. 用户愿意完成“听 → 说 → Retry”，而不是只播放音频；
-2. 推荐课程完成率高于随机自选；
-3. 用户在重复场景中的输出质量有改善；
-4. 今日学习不因新资源体系变得更复杂；
-5. 标准教材运行时成本显著低于实时生成完整课程；
-6. 私有随心学资源不会污染公共推荐链路；
-7. Resource 架构可以继续扩展到 300、1000+ 课程而不需要推翻重做。
+1. 不同目标、短板和掌握状态的用户得到不同且可解释的每日处方；
+2. 用户愿意在 Lin Muen 情景中完成“听 → 说 → Retry”，而不是只播放音频；
+3. 推荐训练相较随机或固定顺序具有更高完成率和 Evidence 改善；
+4. 用户在不同场景中的输出质量和迁移能力有改善；
+5. 今日学习同时降低选课负担并增强继续学习动力；
+6. 标准教材运行时成本显著低于实时生成完整课程；
+7. 私有随心学资源不会污染公共推荐链路；
+8. Skill / Experience / Resource 架构可扩展到 300、1000+ 能力与内容变体而不需要推翻重做。
 
 ---
 
@@ -1527,7 +1672,7 @@ PRD 冻结后，建议按以下顺序继续：
    冻结听力、Transcript、Speaking、Role Play、Retry 的 UI 流程。
 
 4. `docs/design/v2.0/CONTENT_PIPELINE.md`  
-   定义 72 课批量生产规范、Prompt、TTS、图片生成、QA 和发布流程。
+   定义 72 个 Skill Unit Variant 与 Season 1 Episode Mapping 的批量生产、Prompt、TTS、图片生成、QA 和发布流程。
 
 5. `docs/plans/v2.0/IMPLEMENTATION_PLAN.md`  
    将 V2.0 拆成可开发里程碑。
@@ -1543,6 +1688,10 @@ PRD 冻结后，建议按以下顺序继续：
 # 29. 产品基线结论
 
 V2.0 最终确定以下方向：
+
+> **V2.0 的产品决策核心是 Personalized Tutor Core：它依据用户目标、能力状态、短板、遗忘风险和近期诉求，使用可测试的教学策略生成每日课程处方。**
+
+> **V2.0 的体验核心是 Lin Muen Immersive Experience：它把处方选择的 Skill Unit 转化为连续故事、真实情景和温暖陪伴，但不替代教学决策。**
 
 > **主学习流继续以“今日学习”为核心；新增 INTERNAL 标准 Scenario Lesson 资源库，通过预生成图片、真人感 TTS、Transcript 和训练任务保证速度与成本；实时 AI 只用于推荐、对话、反馈、纠错和学习状态更新。**
 

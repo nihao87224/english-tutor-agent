@@ -69,6 +69,9 @@
 ```text
 ScenarioLesson
  |
+ +-- learnerFit
+ +-- skillUnitVariants
+ +-- episodeMappings
  +-- image
  +-- audio
  +-- transcript
@@ -77,6 +80,34 @@ ScenarioLesson
  +-- speakingTasks
  +-- rolePlay
 ```
+
+## SkillUnitVariant
+
+教学最小单位，至少包含：
+
+- skillUnitId；
+- communicationGoal；
+- target / supporting skills；
+- prerequisites；
+- CEFR 与 communication complexity；
+- training types；
+- scaffolding levels；
+- common error mappings；
+- evidence criteria；
+- completion / retry / review policy。
+
+## EpisodeMapping
+
+连接 Capability Graph 与 Lin Muen Experience Graph：
+
+- skillUnitId；
+- seasonId / episodeId / sceneId；
+- eligible levels；
+- story transition；
+- experience fit score inputs；
+- asset variant references。
+
+Planner 先选择 Skill Unit Variant，再解析 Episode Mapping。Episode 顺序不得作为 mastery 或 review 的替代条件。
 
 ## 3. Resource Version
 
@@ -89,6 +120,8 @@ workplace.daily_update.b1@1.0.0
 ```
 
 历史学习记录绑定 resourceVersion。
+
+Learning Evidence 还必须绑定当时的 `skillUnitId`、`episodeId`、`taskType` 和 `attemptId`，确保内容更新后仍可解释掌握状态变化。
 
 ## 4. 权限模型
 

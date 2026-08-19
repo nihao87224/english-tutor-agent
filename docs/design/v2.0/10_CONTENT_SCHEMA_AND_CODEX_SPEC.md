@@ -1,6 +1,6 @@
 # English Tutor Agent V2.0 Content Schema 与 Codex 资源生成规范
 
-> 文档版本：`2.0.0`
+> 文档版本：`2.0.1`
 > 分支：`develop/v2.0`
 > 用途：指导 Codex 批量生成 V2.0 学习资源。
 
@@ -20,6 +20,13 @@
 核心原则：
 
 > 不生成素材，而是生成可以驱动 AI 教学闭环的课程资源。
+
+Season / Episode 资源还必须遵循：
+
+- `07_COURSE_RESOURCE_SCHEMA.md`：Skill Unit + Episode 概念契约；
+- `11_PERSONALIZED_TUTOR_AND_IMMERSIVE_LEARNING_DESIGN.md`：个性化教学与沉浸体验边界。
+
+本文中的旧式单课示例仅用于文件拆分说明，不得被解释为“所有用户按固定课程顺序学习”。
 
 ---
 
@@ -87,6 +94,14 @@ lessons/
 # 5. Lesson 必备内容
 
 每个 Skill Unit 必须包含：
+
+- learner fit；
+- prerequisites；
+- difficulty / scaffolding variants；
+- common error mappings；
+- Evidence Criteria；
+- Episode Mappings；
+- completion / retry / review policy。
 
 ## Context
 
@@ -250,23 +265,23 @@ Generate 100 English lessons.
 ```
 1. Read Skill Unit definition
 
-2. Generate learning objective
+2. Define learner fit, prerequisites and target skills
 
-3. Generate scenario
+3. Define difficulty, scaffolding and Training Type variants
 
-4. Generate dialogue
+4. Define Evidence Criteria, Retry and Review policy
 
-5. Generate expressions
+5. Select an eligible Lin Muen Episode Mapping
 
-6. Generate speaking tasks
+6. Generate scenario and story context
 
-7. Generate evaluation criteria
+7. Generate dialogue and expressions
 
-8. Generate image prompt
+8. Generate speaking and transfer tasks
 
-9. Generate audio script
+9. Generate image prompt and audio script
 
-10. Validate schema
+10. Validate JSON Schema and business rules
 ```
 
 ---
@@ -304,7 +319,7 @@ Generate 100 English lessons.
 
 # 13. 首批生成顺序
 
-不要一次生成72课。
+不要一次生成 72 个 Skill Unit Variant。
 
 推荐：
 

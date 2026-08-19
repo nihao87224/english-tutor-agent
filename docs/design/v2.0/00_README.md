@@ -1,7 +1,7 @@
 # English Tutor Agent V2.0 设计文档包
 
-> 版本：`2.0.0`  
-> 状态：`V2.0 设计基线初版`  
+> 版本：`2.0.1`
+> 状态：`V2.0 双核心设计基线`
 > 日期：`2026-08-19`  
 > 上游需求：`docs/prd/v2.0/ENGLISH_TUTOR_AGENT_PRD_v2.0.0.md`  
 > 设计原则：`离线生产教材，运行时个性化教学；权限先于推荐；不实时生成视频`
@@ -14,12 +14,14 @@
 
 V2.0 不推翻 1.x 已有模块化单体和学习闭环，而是在现有能力之上增加：
 
-1. Learning Resource 统一资源层；
-2. Scenario Lesson 标准教材包；
-3. 资源权限、Private Collection 与“随心学”；
-4. Scenario Lesson Player 与 AI Speaking 闭环；
-5. 离线内容生产 Pipeline；
-6. 可由 Codex 批量预生成的文本、图片、TTS 音频和 Manifest 规范。
+1. Personalized Tutor Core 与 Daily Learning Prescription；
+2. Skill Graph、Learner Model 和确定性教学策略；
+3. Learning Resource 与 Skill Unit 统一资源层；
+4. Lin Muen Season / Episode 沉浸体验层；
+5. Skill Unit 与 Episode Mapping；
+6. 资源权限、Private Collection 与“随心学”；
+7. AI Speaking、Evidence、Memory、Review 闭环；
+8. 可批量预生成的文本、图片、TTS 音频和 Manifest Pipeline。
 
 ## 2. 文档目录
 
@@ -29,7 +31,11 @@ V2.0 不推翻 1.x 已有模块化单体和学习闭环，而是在现有能力�
 | `02_RESOURCE_MODEL.md` | LearningResource / Collection / Asset / Entitlement / Progress 数据与领域模型 |
 | `03_SCENARIO_LESSON_FLOW.md` | Scenario Lesson 状态机、页面流程、AI Speaking、Retry、恢复与降级 |
 | `04_CONTENT_PIPELINE.md` | 离线课程生产、校验、TTS、图片、打包、导入、发布和版本化 Pipeline |
-| `05_RESOURCE_PREGENERATION_CODEX_GUIDE.md` | **可直接交给 Codex 的资源预生成规范、72 课目录、目录结构、质量门槛和 Master Prompt** |
+| `05_RESOURCE_PREGENERATION_CODEX_GUIDE.md` | **可直接交给 Codex 的 72 个 Skill Unit Variant、Episode Mapping、目录结构与质量门槛** |
+| `07_CURRICULUM_AND_RECOMMENDATION_DESIGN.md` | Skill Unit、课程图谱与教学目标设计 |
+| `08_SKILL_GRAPH_AND_LEARNING_STATE_MODEL.md` | Learner Model、Evidence、Mastery 与 Weak Point |
+| `09_RECOMMENDATION_ENGINE_DESIGN.md` | Daily Learning Prescription、教学策略与推荐解释 |
+| `11_PERSONALIZED_TUTOR_AND_IMMERSIVE_LEARNING_DESIGN.md` | **AI 私教专业性与 Lin Muen 沉浸体验的权威桥接设计** |
 
 ## 3. 与 V1.x 文档关系
 
@@ -95,11 +101,28 @@ server/**/src/main/resources/
 
 避免媒体被打包进 JAR / Docker image。
 
+### 4.3 教学决策与体验呈现分离
+
+```text
+Learner Model + Pedagogical Policy
+  -> Daily Learning Prescription
+  -> Skill Unit
+  -> Episode Mapping
+  -> Lin Muen Story / Mission / Dialogue
+  -> Evidence
+```
+
+AI 私教决定今天学什么和怎么练；Lin Muen 决定训练如何以连续、真实、温暖的方式呈现。Season 不作为强制教学顺序。
+
 ## 5. 推荐实施阅读顺序
 
 ```text
 V2.0 PRD
 -> 01_ARCHITECTURE
+-> 11_PERSONALIZED_TUTOR_AND_IMMERSIVE_LEARNING_DESIGN
+-> 07_CURRICULUM_AND_RECOMMENDATION_DESIGN
+-> 08_SKILL_GRAPH_AND_LEARNING_STATE_MODEL
+-> 09_RECOMMENDATION_ENGINE_DESIGN
 -> 02_RESOURCE_MODEL
 -> 03_SCENARIO_LESSON_FLOW
 -> 04_CONTENT_PIPELINE
@@ -114,8 +137,13 @@ V2.0 PRD
 3. EngFluent 作为 Private Collection，通过 `ADMIN_GRANTED` 控制访问；
 4. Private Collection 默认不进入“今日学习”推荐；
 5. 推荐链路必须先做 publish/access filter，再做个性化排序；
-6. 72 节首发课程按 `24 scenes x A2/B1/B2` 生产；
+6. 72 个首发 Skill Unit Variant 按 `24 scenes x A2/B1/B2` 生产；
 7. 内容生产可由 Codex/脚本批量执行，但产物必须通过 Schema + 自动规则 + Reviewer + 抽检；
 8. 内容资源必须版本化，学习证据绑定当时的 `resourceVersion`；
 9. 关键文字信息不依赖 AI 图片中的文字，菜单/航班/Jira 等使用结构化 UI overlay；
-10. 运行时只在用户回答、Role Play、纠错、评价、记忆更新和 Planner 个性化节点使用 LLM。
+10. 运行时只在用户回答、Role Play、纠错、评价、记忆更新和 Planner 个性化节点使用 LLM；
+11. AI 私教是决策核心，Lin Muen 是体验核心；两者不可互相替代；
+12. Skill Graph 与 Experience Graph 分离，通过 Episode Mapping 连接；
+13. Daily Learning Prescription 先选择 Skill Unit 和教学策略，再匹配 Episode；
+14. Season 1 的 10 个 Episode 不是所有用户统一的十节固定课程；
+15. 课程资源必须声明 Evidence Criteria、适配条件和可训练 Skill。

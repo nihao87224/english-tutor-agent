@@ -4,7 +4,7 @@
 
 本文件用于指导 Codex 批量生成 V2.0 学习资源。
 
-目标：生成可直接导入 Resource Catalog 的标准课程资产。
+目标：生成可直接导入 Resource Catalog、可由 Personalized Tutor Core 选择，并可映射到 Lin Muen Episode 的标准课程资产。
 
 ## 2. 输出目录
 
@@ -24,27 +24,28 @@ resources/learning-content/v2.0/
 
 ## 3. 首批生成范围
 
-72 lessons:
+72 Skill Unit Variants:
 
 - 8 topics
 - 24 scenes
 - A2/B1/B2
 
-优先生成 B1 24 lessons 验证流程。
+优先生成 B1 24 Skill Unit Variants 验证流程，并为 Season 1 建立 Episode Mappings。
 
 ## 4. 单课生成 Prompt 约束
 
 Codex/LLM 必须生成：
 
-1. Communication Goal
-2. Scene Context
-3. Natural Dialogue
-4. Transcript
-5. Key Expressions
-6. Vocabulary
-7. Comprehension Questions
-8. Speaking Tasks
-9. Role Play Goal
+1. Learner Fit and Prerequisites
+2. Communication Goal and Target Skills
+3. Difficulty / Scaffolding Variants
+4. Common Error Mappings
+5. Evidence Criteria and Retry Policy
+6. Episode Mappings
+7. Scene Context and Natural Dialogue
+8. Transcript, Expressions and Vocabulary
+9. Comprehension and Speaking Tasks
+10. Role Play Goal and Review Template
 
 禁止：
 
@@ -84,6 +85,13 @@ Prompt 要求：
   "topic":"Workplace",
   "scene":"Daily Update",
   "communicationGoal":"Give a work progress update",
+  "skillUnitId":"work.report_progress.b1",
+  "episodeMappings":["EP009"],
+  "evidenceCriteria":[
+    "describe progress",
+    "explain one blocker",
+    "state the next step"
+  ],
   "assets":{
     "image":"image.webp",
     "audio":"audio.mp3"
@@ -101,7 +109,10 @@ Prompt 要求：
 
 重点投入：
 
+- 教学适配与 Evidence 可评价性；
 - 场景真实性；
 - 音频质量；
 - 输出任务设计；
 - AI Role Play 衔接。
+
+内容生成顺序必须是 `Skill Unit -> Pedagogical Variants -> Evidence -> Episode Mapping -> Story/Media`。不得先按 Season 顺序生成十节统一课程。

@@ -1,6 +1,6 @@
 # English Tutor Agent V2.0 课程体系与智能推荐设计
 
-> 文档版本：`2.0.0`
+> 文档版本：`2.0.1`
 > 状态：`V2.0 教学体系设计基线`
 > 日期：`2026-08-19`
 > 目标：定义 AI 如何判断用户应该学什么，以及课程如何围绕能力提升设计。
@@ -12,6 +12,21 @@
 V2.0 最大的产品价值不是增加更多学习素材，而是：
 
 > **让 AI 在正确的时间，为正确的用户，安排正确的训练内容。**
+
+Lin Muen 提供沉浸情景和持续动力，但不决定训练顺序。课程体系采用双图谱：
+
+```text
+Capability Graph
+Goal -> Skill -> Skill Unit -> Difficulty Variant
+
+Experience Graph
+Season -> Episode -> Scene -> Story State
+
+Episode Mapping
+Skill Unit Variant <-> Episode Scene
+```
+
+推荐系统先在 Capability Graph 中完成教学决策，再在 Experience Graph 中选择最合适的 Lin Muen 体验。
 
 图片、音频、视频只是教学载体，不是核心价值。
 
@@ -120,6 +135,10 @@ Skill Unit
  +-- Evaluation
  +-- Review
 ```
+
+每个 Skill Unit 还必须声明 prerequisites、common error mappings、scaffolding levels、evidence criteria、review template 和可用 Episode Mappings。
+
+Season/Episode 不是 Skill Unit。Episode 可以承载多个能力变体；同一能力也应能跨 Episode 迁移。
 
 例如：
 
@@ -284,6 +303,20 @@ Resource Entitlement
 Today's Training Plan
 ```
 
+P0 输出应升级为 `Daily Learning Prescription`，至少包含到期复习、新技能/巩固、主动输出、可选迁移、Lin Muen experience context、推荐原因和预期 Evidence。
+
+确定性教学策略至少覆盖：
+
+- prerequisite；
+- retrieval practice；
+- spaced practice；
+- difficulty fit；
+- interleaving；
+- transfer；
+- feedback and retry。
+
+LLM 可生成推荐解释与受约束的情景变化，但不得直接决定 mastery、review due time 或权限。
+
 ---
 
 # 8. 推荐优先级
@@ -391,6 +424,16 @@ Mastery
 4. Dialogue；
 5. Speaking Task；
 6. Evaluation Criteria。
+
+随后必须增加：
+
+7. Learner Fit；
+8. Prerequisites；
+9. Difficulty / Scaffolding Variants；
+10. Common Error Mappings；
+11. Evidence Criteria；
+12. Episode Mappings；
+13. Review Template。
 
 图片和音频只是实现这些目标的资源。
 
