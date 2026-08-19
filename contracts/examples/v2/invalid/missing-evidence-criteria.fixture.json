@@ -1,0 +1,13 @@
+{
+  "caseId": "missing-evidence-criteria",
+  "description": "A Skill Unit Variant has no observable evidence criterion.",
+  "baseExample": "../valid/season1-ep006-gate-change-b1.manifest.json",
+  "expectedRule": "EVIDENCE_CRITERIA_REQUIRED",
+  "mutations": [
+    {
+      "operation": "replace",
+      "path": "/skillUnitVariants/0/evidenceCriteria",
+      "value": []
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/v2/skill-unit-variant/2.0.1",
+  "title": "V2 Skill Unit Variant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "skillUnitVariantId", "skillUnitId", "communicationGoal", "targetSkills",
+    "supportingSkills", "prerequisites", "level", "communicationComplexity", "trainingTypes",
+    "scaffoldingLevels", "commonErrorMappings", "evidenceCriteria", "completionPolicy",
+    "retryPolicy", "reviewTemplate"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.1" },
+    "skillUnitVariantId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,149}$" },
+    "skillUnitId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,149}$" },
+    "communicationGoal": { "type": "string", "minLength": 10, "maxLength": 300 },
+    "targetSkills": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,99}$" }
+    },
+    "supportingSkills": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,99}$" }
+    },
+    "prerequisites": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,149}$" }
+    },
+    "level": { "type": "string", "enum": ["A2", "B1", "B2"] },
+    "communicationComplexity": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "trainingTypes": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "enum": ["comprehension", "guided_speaking", "role_play", "transfer", "review"] }
+    },
+    "scaffoldingLevels": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "enum": ["high", "medium", "low", "none"] }
+    },
+    "commonErrorMappings": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["errorTag", "correctionFocus", "critical"],
+        "properties": {
+          "errorTag": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "correctionFocus": { "type": "string", "minLength": 5, "maxLength": 300 },
+          "critical": { "type": "boolean" }
+        }
+      }
+    },
+    "evidenceCriteria": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["criterionId", "description", "observableIn", "required"],
+        "properties": {
+          "criterionId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+          "description": { "type": "string", "minLength": 8, "maxLength": 300 },
+          "observableIn": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": { "type": "string", "enum": ["guided_speaking", "role_play", "retry", "transfer", "review"] }
+          },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "completionPolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["minimumOutputTasks", "requiredCriterionIds", "completionDoesNotImplyMastery"],
+      "properties": {
+        "minimumOutputTasks": { "type": "integer", "minimum": 1, "maximum": 10 },
+        "requiredCriterionIds": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" }
+        },
+        "completionDoesNotImplyMastery": { "const": true }
+      }
+    },
+    "retryPolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["criticalErrorRequiresRetry", "maxAttempts", "retryEvidenceIsIndependent"],
+      "properties": {
+        "criticalErrorRequiresRetry": { "type": "boolean" },
+        "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "retryEvidenceIsIndependent": { "const": true }
+      }
+    },
+    "reviewTemplate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["trigger", "taskType", "retrievalGoal"],
+      "properties": {
+        "trigger": { "type": "string", "enum": ["scheduled", "error_memory", "low_confidence", "transfer"] },
+        "taskType": { "type": "string", "enum": ["retrieval", "guided_speaking", "role_play", "transfer"] },
+        "retrievalGoal": { "type": "string", "minLength": 8, "maxLength": 300 }
+      }
+    }
+  }
+}

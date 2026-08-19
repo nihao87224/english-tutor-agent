@@ -1,0 +1,13 @@
+{
+  "caseId": "missing-task-hero",
+  "description": "A publishable lesson has no scene-specific task hero.",
+  "baseExample": "../valid/season1-ep006-gate-change-b1.manifest.json",
+  "expectedRule": "TASK_HERO_COUNT",
+  "mutations": [
+    {
+      "operation": "removeMatching",
+      "path": "/assets",
+      "match": { "purpose": "task_hero" }
+    }
+  ]
+}

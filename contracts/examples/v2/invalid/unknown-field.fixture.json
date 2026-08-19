@@ -1,0 +1,13 @@
+{
+  "caseId": "unknown-field",
+  "description": "An undeclared field is added to the lesson package.",
+  "baseExample": "../valid/season1-ep006-gate-change-b1.manifest.json",
+  "expectedRule": "JSON_SCHEMA",
+  "mutations": [
+    {
+      "operation": "add",
+      "path": "/lessonPackage/unexpectedField",
+      "value": true
+    }
+  ]
+}

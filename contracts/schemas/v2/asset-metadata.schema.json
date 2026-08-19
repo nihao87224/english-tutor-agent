@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/v2/asset-metadata/2.0.1",
+  "title": "V2 Asset Metadata",
+  "oneOf": [
+    { "$ref": "#/$defs/imageAsset" },
+    { "$ref": "#/$defs/audioAsset" }
+  ],
+  "$defs": {
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "modelVersion", "promptVersion"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "model": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "modelVersion": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "promptVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "focalPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "audioScriptLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sentenceId", "speaker", "text"],
+      "properties": {
+        "sentenceId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+        "speaker": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "imageAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId", "version", "mediaType", "purpose", "assetKey", "contentHash",
+        "mimeType", "generationPrompt", "generation", "characterReferenceIds",
+        "aspectRatio", "shotType", "displaySurfaces", "focalPoint", "altText", "sceneId"
+      ],
+      "properties": {
+        "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "mediaType": { "const": "IMAGE" },
+        "purpose": { "type": "string", "enum": ["task_hero", "scene_state", "character_fallback"] },
+        "assetKey": { "type": "string", "pattern": "^images/.+\\.(webp|png|jpg|jpeg)$" },
+        "contentHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "mimeType": { "type": "string", "enum": ["image/webp", "image/png", "image/jpeg"] },
+        "generationPrompt": { "type": "string", "minLength": 20, "maxLength": 8000 },
+        "generation": { "$ref": "#/$defs/generation" },
+        "characterReferenceIds": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
+        "aspectRatio": { "type": "string", "enum": ["16:9", "4:3", "1:1"] },
+        "shotType": {
+          "type": "string",
+          "enum": ["environmental_full_body", "environmental_three_quarter", "environmental_medium", "portrait"]
+        },
+        "displaySurfaces": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["prescription_card", "scenario_intro", "scenario_training", "dialogue_identity", "media_fallback"]
+          }
+        },
+        "focalPoint": { "$ref": "#/$defs/focalPoint" },
+        "altText": { "type": "string", "minLength": 10, "maxLength": 300 },
+        "sceneId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9_-]{2,31}$" },
+        "continuityGroupId": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "purpose": { "const": "task_hero" } }, "required": ["purpose"] },
+          "then": {
+            "properties": {
+              "shotType": {
+                "enum": ["environmental_full_body", "environmental_three_quarter", "environmental_medium"]
+              },
+              "displaySurfaces": {
+                "allOf": [
+                  { "contains": { "const": "scenario_intro" }, "minContains": 1 },
+                  { "contains": { "const": "scenario_training" }, "minContains": 1 }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "audioAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId", "version", "mediaType", "purpose", "assetKey", "contentHash",
+        "mimeType", "generationPrompt", "generation", "speakerRole", "voiceId",
+        "accent", "speechRate", "transcriptRef", "audioScript"
+      ],
+      "properties": {
+        "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "mediaType": { "const": "AUDIO" },
+        "purpose": { "type": "string", "enum": ["scene_dialogue", "role_play_prompt", "review_prompt"] },
+        "assetKey": { "type": "string", "pattern": "^audio/.+\\.(mp3|m4a|wav|ogg)$" },
+        "contentHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "mimeType": { "type": "string", "enum": ["audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg"] },
+        "generationPrompt": { "type": "string", "minLength": 20, "maxLength": 8000 },
+        "generation": { "$ref": "#/$defs/generation" },
+        "speakerRole": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "voiceId": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "accent": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "speechRate": { "type": "number", "minimum": 0.5, "maximum": 1.5 },
+        "transcriptRef": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" },
+        "audioScript": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/audioScriptLine" }
+        }
+      }
+    }
+  }
+}

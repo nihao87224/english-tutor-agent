@@ -3,7 +3,7 @@ name: baseline-validation
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop/v2.0]
 
 jobs:
   project-and-contracts:

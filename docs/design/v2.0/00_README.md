@@ -43,7 +43,9 @@ V2.0 不推翻 1.x 已有模块化单体和学习闭环，而是在现有能力�
 配套交付物：
 
 - `docs/ui/v2.0/ENGLISH_TUTOR_AGENT_WEB_UI_PROTOTYPE_v2.0.html`：可交互 Web 原型；
-- `docs/plans/v2.0/CODEX_TASK_BREAKDOWN.md`：按依赖排序、一次一张任务卡执行的开发拆解。
+- `docs/plans/v2.0/CODEX_TASK_BREAKDOWN.md`：按依赖排序、一次一张任务卡执行的开发拆解；
+- `contracts/schemas/v2/`：Learning Resource Manifest、Skill Unit Variant、Episode Mapping、Lesson Package、Asset Metadata 机器契约；
+- `contracts/examples/v2/`：可导入的有效资源样例和定向无效校验 fixture。
 
 ## 3. 与 V1.x 文档关系
 

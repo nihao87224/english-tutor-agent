@@ -1,0 +1,301 @@
+{
+  "schemaVersion": "2.0.1",
+  "resourceId": "season1.ep006.gate_change.b1",
+  "resourceVersion": "1.0.0",
+  "provider": "english-tutor-agent",
+  "collectionId": "INTERNAL_SCENARIO_LIBRARY",
+  "resourceType": "SCENARIO_LESSON",
+  "title": "Confirm a Gate Change with Lin Muen",
+  "level": "B1",
+  "topic": "Travel",
+  "accessScope": "PUBLIC",
+  "skillUnitVariants": [
+    {
+      "schemaVersion": "2.0.1",
+      "skillUnitVariantId": "travel.confirm_gate_change.b1",
+      "skillUnitId": "travel.confirm_information",
+      "communicationGoal": "Confirm a changed boarding gate and the next action clearly",
+      "targetSkills": ["confirm_information", "clarifying_question"],
+      "supportingSkills": ["active_listening"],
+      "prerequisites": ["travel.understand_flight_details.a2"],
+      "level": "B1",
+      "communicationComplexity": 2,
+      "trainingTypes": ["comprehension", "guided_speaking", "role_play", "review"],
+      "scaffoldingLevels": ["high", "medium", "none"],
+      "commonErrorMappings": [
+        {
+          "errorTag": "missing_confirmation",
+          "correctionFocus": "Repeat the new gate and ask when boarding starts",
+          "critical": true
+        }
+      ],
+      "evidenceCriteria": [
+        {
+          "criterionId": "confirm_new_gate",
+          "description": "States or confirms the new boarding gate accurately",
+          "observableIn": ["guided_speaking", "role_play", "retry", "review"],
+          "required": true
+        },
+        {
+          "criterionId": "ask_next_action",
+          "description": "Asks a clear follow-up question about boarding time or direction",
+          "observableIn": ["role_play", "retry", "review"],
+          "required": true
+        }
+      ],
+      "completionPolicy": {
+        "minimumOutputTasks": 1,
+        "requiredCriterionIds": ["confirm_new_gate", "ask_next_action"],
+        "completionDoesNotImplyMastery": true
+      },
+      "retryPolicy": {
+        "criticalErrorRequiresRetry": true,
+        "maxAttempts": 3,
+        "retryEvidenceIsIndependent": true
+      },
+      "reviewTemplate": {
+        "trigger": "scheduled",
+        "taskType": "retrieval",
+        "retrievalGoal": "Recall how to confirm changed travel information and ask what happens next"
+      }
+    }
+  ],
+  "episodeMappings": [
+    {
+      "schemaVersion": "2.0.1",
+      "episodeMappingId": "season1.ep006.gate_change.travel.confirm_gate_change.b1",
+      "skillUnitVariantId": "travel.confirm_gate_change.b1",
+      "seasonId": "S01",
+      "episodeId": "EP006",
+      "sceneId": "GATE_CHANGE",
+      "eligibleLevels": ["B1"],
+      "storyTransition": {
+        "entryContext": "Lin Muen notices that her boarding gate has changed while waiting at the airport.",
+        "completionBeat": "Lin Muen reaches the correct gate after the learner confirms the details with airport staff.",
+        "continuityRequired": false
+      },
+      "experienceFitInputs": {
+        "goalTags": ["travel_communication"],
+        "topicTags": ["airport", "flight"],
+        "interactionTags": ["clarification", "information_confirmation"],
+        "contraindications": []
+      },
+      "assetVariantRefs": {
+        "taskHeroAssetId": "season1.ep006.gate_change.b1.task-hero",
+        "sceneStateAssetIds": [],
+        "audioAssetIds": ["season1.ep006.gate_change.b1.scene-dialogue"]
+      },
+      "storyOrderRequired": false
+    }
+  ],
+  "lessonPackage": {
+    "schemaVersion": "2.0.1",
+    "resourceId": "season1.ep006.gate_change.b1",
+    "resourceVersion": "1.0.0",
+    "character": "Lin Muen",
+    "seasonId": "S01",
+    "episodeId": "EP006",
+    "sceneId": "GATE_CHANGE",
+    "story": {
+      "title": "The Gate Has Changed",
+      "context": "Lin Muen is waiting in the airport departure area when she sees that her gate may have changed.",
+      "mission": "Help Lin Muen confirm the new gate and find out when boarding starts.",
+      "continuityRequired": false
+    },
+    "learnerFit": {
+      "goalTags": ["travel_communication"],
+      "cefrRange": ["B1"],
+      "estimatedMinutes": 12,
+      "prerequisites": ["Understand common flight and gate details"],
+      "contraindications": []
+    },
+    "skillUnitVariantIds": ["travel.confirm_gate_change.b1"],
+    "episodeMappingIds": ["season1.ep006.gate_change.travel.confirm_gate_change.b1"],
+    "dialogue": [
+      {
+        "sentenceId": "gate-001",
+        "speaker": "Lin Muen",
+        "text": "Excuse me, I think my boarding gate has changed. Could you help me check?"
+      },
+      {
+        "sentenceId": "gate-002",
+        "speaker": "Airport Agent",
+        "text": "Of course. Your flight now departs from Gate 24, and boarding begins at 3:20."
+      },
+      {
+        "sentenceId": "gate-003",
+        "speaker": "Lin Muen",
+        "text": "So it is Gate 24, and I should be there before 3:20. Is it far from here?"
+      },
+      {
+        "sentenceId": "gate-004",
+        "speaker": "Airport Agent",
+        "text": "It is about a five-minute walk. Follow the signs to the right."
+      }
+    ],
+    "transcript": {
+      "transcriptId": "season1.ep006.gate_change.b1.transcript",
+      "sentences": [
+        {
+          "sentenceId": "gate-001",
+          "speaker": "Lin Muen",
+          "text": "Excuse me, I think my boarding gate has changed. Could you help me check?"
+        },
+        {
+          "sentenceId": "gate-002",
+          "speaker": "Airport Agent",
+          "text": "Of course. Your flight now departs from Gate 24, and boarding begins at 3:20."
+        },
+        {
+          "sentenceId": "gate-003",
+          "speaker": "Lin Muen",
+          "text": "So it is Gate 24, and I should be there before 3:20. Is it far from here?"
+        },
+        {
+          "sentenceId": "gate-004",
+          "speaker": "Airport Agent",
+          "text": "It is about a five-minute walk. Follow the signs to the right."
+        }
+      ]
+    },
+    "expressions": [
+      {
+        "expression": "Could you help me check?",
+        "meaningZh": "你能帮我确认一下吗？",
+        "usage": "Polite request for information confirmation"
+      },
+      {
+        "expression": "So it is Gate 24, right?",
+        "meaningZh": "所以是24号登机口，对吗？",
+        "usage": "Repeat important information to confirm it"
+      },
+      {
+        "expression": "When does boarding begin?",
+        "meaningZh": "什么时候开始登机？",
+        "usage": "Ask for the next important time"
+      },
+      {
+        "expression": "Is it far from here?",
+        "meaningZh": "离这里远吗？",
+        "usage": "Ask whether extra travel time is needed"
+      }
+    ],
+    "questions": [
+      {
+        "questionId": "gate-q1",
+        "prompt": "What is Lin Muen's new boarding gate?",
+        "answer": "Gate 24",
+        "evidenceType": "comprehension"
+      },
+      {
+        "questionId": "gate-q2",
+        "prompt": "When does boarding begin?",
+        "answer": "At 3:20",
+        "evidenceType": "comprehension"
+      }
+    ],
+    "practice": [
+      {
+        "taskId": "gate-guided-1",
+        "type": "guided_speaking",
+        "prompt": "Confirm Gate 24 and ask when boarding begins.",
+        "successCriteria": ["Confirm the new gate", "Ask one clear follow-up question"],
+        "scaffolding": ["So the new gate is...", "When does...?"]
+      },
+      {
+        "taskId": "gate-transfer-1",
+        "type": "transfer",
+        "prompt": "Your train platform changes. Confirm the new platform and departure time.",
+        "successCriteria": ["Confirm changed information", "Ask about the next action"],
+        "scaffolding": []
+      }
+    ],
+    "rolePlay": {
+      "taskId": "gate-role-play-1",
+      "goal": "Confirm a gate change and decide where to go next",
+      "userRole": "Traveler helping Lin Muen",
+      "aiRole": "Airport service agent",
+      "successCriteria": ["Confirm Gate 24", "Confirm boarding time", "Ask for directions"],
+      "openingLine": "Hello. How can I help you?"
+    },
+    "reviewTasks": [
+      {
+        "taskId": "gate-review-1",
+        "type": "retrieval",
+        "prompt": "Without looking at the expressions, confirm a changed gate and ask when boarding starts.",
+        "retrievalTarget": "Confirm changed information and ask one next-step question"
+      }
+    ],
+    "imageAssetIds": ["season1.ep006.gate_change.b1.task-hero"],
+    "audioAssetIds": ["season1.ep006.gate_change.b1.scene-dialogue"]
+  },
+  "assets": [
+    {
+      "assetId": "season1.ep006.gate_change.b1.task-hero",
+      "version": "1.0.0",
+      "mediaType": "IMAGE",
+      "purpose": "task_hero",
+      "assetKey": "images/season1/ep006/gate_change/b1/task-hero.webp",
+      "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "mimeType": "image/webp",
+      "generationPrompt": "Create a realistic airport scene with Lin Muen standing full-body near a boarding gate, checking changed flight information and preparing to ask an airport agent. Natural light, clear environmental context, no readable text.",
+      "generation": {
+        "provider": "openai",
+        "model": "image-generation-model",
+        "modelVersion": "2026-08",
+        "promptVersion": "1.0.0"
+      },
+      "characterReferenceIds": ["lin-muen-main-v1", "lin-muen-travel-outfit-v1"],
+      "aspectRatio": "16:9",
+      "shotType": "environmental_full_body",
+      "displaySurfaces": ["prescription_card", "scenario_intro", "scenario_training"],
+      "focalPoint": { "x": 0.62, "y": 0.48 },
+      "altText": "Lin Muen stands near an airport boarding gate and prepares to confirm changed flight details.",
+      "sceneId": "GATE_CHANGE",
+      "continuityGroupId": "season1.ep006.gate-change"
+    },
+    {
+      "assetId": "season1.ep006.gate_change.b1.scene-dialogue",
+      "version": "1.0.0",
+      "mediaType": "AUDIO",
+      "purpose": "scene_dialogue",
+      "assetKey": "audio/season1/ep006/gate_change/b1/scene-dialogue.mp3",
+      "contentHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "mimeType": "audio/mpeg",
+      "generationPrompt": "Generate a natural B1 airport conversation with two clearly distinct voices, neutral American English, realistic pace, short natural pauses, and no textbook-style delivery.",
+      "generation": {
+        "provider": "openai",
+        "model": "text-to-speech-model",
+        "modelVersion": "2026-08",
+        "promptVersion": "1.0.0"
+      },
+      "speakerRole": "Lin Muen and Airport Agent",
+      "voiceId": "lin-muen-v1+airport-agent-v1",
+      "accent": "American neutral",
+      "speechRate": 0.95,
+      "transcriptRef": "season1.ep006.gate_change.b1.transcript",
+      "audioScript": [
+        {
+          "sentenceId": "gate-001",
+          "speaker": "Lin Muen",
+          "text": "Excuse me, I think my boarding gate has changed. Could you help me check?"
+        },
+        {
+          "sentenceId": "gate-002",
+          "speaker": "Airport Agent",
+          "text": "Of course. Your flight now departs from Gate 24, and boarding begins at 3:20."
+        },
+        {
+          "sentenceId": "gate-003",
+          "speaker": "Lin Muen",
+          "text": "So it is Gate 24, and I should be there before 3:20. Is it far from here?"
+        },
+        {
+          "sentenceId": "gate-004",
+          "speaker": "Airport Agent",
+          "text": "It is about a five-minute walk. Follow the signs to the right."
+        }
+      ]
+    }
+  ]
+}

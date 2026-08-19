@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/v2/lesson-package/2.0.1",
+  "title": "V2 Lesson Package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "resourceId", "resourceVersion", "character", "seasonId", "episodeId", "sceneId",
+    "story", "learnerFit", "skillUnitVariantIds", "episodeMappingIds", "dialogue", "transcript",
+    "expressions", "questions", "practice", "rolePlay", "reviewTasks", "imageAssetIds", "audioAssetIds"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.1" },
+    "resourceId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,179}$" },
+    "resourceVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "character": { "const": "Lin Muen" },
+    "seasonId": { "type": "string", "pattern": "^S[0-9]{2}$" },
+    "episodeId": { "type": "string", "pattern": "^EP[0-9]{3}$" },
+    "sceneId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9_-]{2,31}$" },
+    "story": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "context", "mission", "continuityRequired"],
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "context": { "type": "string", "minLength": 15, "maxLength": 800 },
+        "mission": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "continuityRequired": { "type": "boolean" }
+      }
+    },
+    "learnerFit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["goalTags", "cefrRange", "estimatedMinutes", "prerequisites", "contraindications"],
+      "properties": {
+        "goalTags": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "cefrRange": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "enum": ["A2", "B1", "B2"] }
+        },
+        "estimatedMinutes": { "type": "integer", "minimum": 5, "maximum": 45 },
+        "prerequisites": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 150 }
+        },
+        "contraindications": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 150 }
+        }
+      }
+    },
+    "skillUnitVariantIds": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,149}$" }
+    },
+    "episodeMappingIds": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,179}$" }
+    },
+    "dialogue": {
+      "type": "array", "minItems": 2,
+      "items": { "$ref": "#/$defs/sentence" }
+    },
+    "transcript": {
+      "type": "object", "additionalProperties": false,
+      "required": ["transcriptId", "sentences"],
+      "properties": {
+        "transcriptId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" },
+        "sentences": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/sentence" }
+        }
+      }
+    },
+    "expressions": {
+      "type": "array", "minItems": 3, "maxItems": 8,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["expression", "meaningZh", "usage"],
+        "properties": {
+          "expression": { "type": "string", "minLength": 2, "maxLength": 200 },
+          "meaningZh": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "usage": { "type": "string", "minLength": 2, "maxLength": 200 }
+        }
+      }
+    },
+    "questions": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["questionId", "prompt", "answer", "evidenceType"],
+        "properties": {
+          "questionId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+          "prompt": { "type": "string", "minLength": 5, "maxLength": 500 },
+          "answer": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "evidenceType": { "const": "comprehension" }
+        }
+      }
+    },
+    "practice": {
+      "type": "array", "minItems": 1,
+      "contains": {
+        "type": "object",
+        "properties": { "type": { "enum": ["guided_speaking", "transfer"] } },
+        "required": ["type"]
+      },
+      "minContains": 1,
+      "items": { "$ref": "#/$defs/practiceTask" }
+    },
+    "rolePlay": {
+      "type": "object", "additionalProperties": false,
+      "required": ["taskId", "goal", "userRole", "aiRole", "successCriteria", "openingLine"],
+      "properties": {
+        "taskId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+        "goal": { "type": "string", "minLength": 8, "maxLength": 300 },
+        "userRole": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "aiRole": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "successCriteria": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 5, "maxLength": 250 }
+        },
+        "openingLine": { "type": "string", "minLength": 2, "maxLength": 500 }
+      }
+    },
+    "reviewTasks": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["taskId", "type", "prompt", "retrievalTarget"],
+        "properties": {
+          "taskId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+          "type": { "type": "string", "enum": ["retrieval", "guided_speaking", "transfer"] },
+          "prompt": { "type": "string", "minLength": 8, "maxLength": 500 },
+          "retrievalTarget": { "type": "string", "minLength": 5, "maxLength": 300 }
+        }
+      }
+    },
+    "imageAssetIds": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" }
+    },
+    "audioAssetIds": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" }
+    }
+  },
+  "$defs": {
+    "sentence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sentenceId", "speaker", "text"],
+      "properties": {
+        "sentenceId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+        "speaker": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "practiceTask": {
+      "type": "object", "additionalProperties": false,
+      "required": ["taskId", "type", "prompt", "successCriteria", "scaffolding"],
+      "properties": {
+        "taskId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,99}$" },
+        "type": { "type": "string", "enum": ["guided_speaking", "transfer"] },
+        "prompt": { "type": "string", "minLength": 8, "maxLength": 500 },
+        "successCriteria": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 5, "maxLength": 250 }
+        },
+        "scaffolding": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 250 }
+        }
+      }
+    }
+  }
+}

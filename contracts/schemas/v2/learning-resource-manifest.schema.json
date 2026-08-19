@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/v2/learning-resource-manifest/2.0.1",
+  "title": "V2 Learning Resource Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "resourceId", "resourceVersion", "provider", "collectionId", "resourceType",
+    "title", "level", "topic", "accessScope", "skillUnitVariants", "episodeMappings", "lessonPackage", "assets"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.1" },
+    "resourceId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,179}$" },
+    "resourceVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "provider": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "collectionId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9_-]{2,99}$" },
+    "resourceType": { "const": "SCENARIO_LESSON" },
+    "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+    "level": { "type": "string", "enum": ["A2", "B1", "B2"] },
+    "topic": { "type": "string", "minLength": 2, "maxLength": 120 },
+    "accessScope": { "type": "string", "enum": ["PUBLIC", "ADMIN_GRANTED", "ADMIN_ONLY", "DISABLED"] },
+    "skillUnitVariants": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "https://english-tutor.local/schemas/v2/skill-unit-variant/2.0.1" }
+    },
+    "episodeMappings": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "https://english-tutor.local/schemas/v2/episode-mapping/2.0.1" }
+    },
+    "lessonPackage": { "$ref": "https://english-tutor.local/schemas/v2/lesson-package/2.0.1" },
+    "assets": {
+      "type": "array", "minItems": 2,
+      "contains": {
+        "type": "object",
+        "properties": {
+          "mediaType": { "const": "IMAGE" },
+          "purpose": { "const": "task_hero" }
+        },
+        "required": ["mediaType", "purpose"]
+      },
+      "minContains": 1,
+      "maxContains": 1,
+      "items": { "$ref": "https://english-tutor.local/schemas/v2/asset-metadata/2.0.1" }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "caseId": "wrong-character",
+  "description": "The lesson replaces the required protagonist.",
+  "baseExample": "../valid/season1-ep006-gate-change-b1.manifest.json",
+  "expectedRule": "JSON_SCHEMA",
+  "mutations": [
+    {
+      "operation": "replace",
+      "path": "/lessonPackage/character",
+      "value": "Another Character"
+    }
+  ]
+}

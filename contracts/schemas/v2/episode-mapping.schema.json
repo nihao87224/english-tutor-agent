@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://english-tutor.local/schemas/v2/episode-mapping/2.0.1",
+  "title": "V2 Episode Mapping",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "episodeMappingId", "skillUnitVariantId", "seasonId", "episodeId", "sceneId",
+    "eligibleLevels", "storyTransition", "experienceFitInputs", "assetVariantRefs", "storyOrderRequired"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.1" },
+    "episodeMappingId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,179}$" },
+    "skillUnitVariantId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,149}$" },
+    "seasonId": { "type": "string", "pattern": "^S[0-9]{2}$" },
+    "episodeId": { "type": "string", "pattern": "^EP[0-9]{3}$" },
+    "sceneId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9_-]{2,31}$" },
+    "eligibleLevels": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "enum": ["A2", "B1", "B2"] }
+    },
+    "storyTransition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entryContext", "completionBeat", "continuityRequired"],
+      "properties": {
+        "entryContext": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "completionBeat": { "type": "string", "minLength": 10, "maxLength": 500 },
+        "continuityRequired": { "type": "boolean" }
+      }
+    },
+    "experienceFitInputs": {
+      "type": "object", "additionalProperties": false,
+      "required": ["goalTags", "topicTags", "interactionTags", "contraindications"],
+      "properties": {
+        "goalTags": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "topicTags": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "interactionTags": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "contraindications": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "assetVariantRefs": {
+      "type": "object", "additionalProperties": false,
+      "required": ["taskHeroAssetId", "sceneStateAssetIds", "audioAssetIds"],
+      "properties": {
+        "taskHeroAssetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" },
+        "sceneStateAssetIds": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" }
+        },
+        "audioAssetIds": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,199}$" }
+        }
+      }
+    },
+    "storyOrderRequired": { "const": false }
+  }
+}

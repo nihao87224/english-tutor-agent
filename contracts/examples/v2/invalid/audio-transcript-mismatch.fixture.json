@@ -1,0 +1,13 @@
+{
+  "caseId": "audio-transcript-mismatch",
+  "description": "The TTS script text differs from the published transcript.",
+  "baseExample": "../valid/season1-ep006-gate-change-b1.manifest.json",
+  "expectedRule": "AUDIO_TRANSCRIPT_MISMATCH",
+  "mutations": [
+    {
+      "operation": "replace",
+      "path": "/assets/1/audioScript/0/text",
+      "value": "This sentence is not the published transcript."
+    }
+  ]
+}
