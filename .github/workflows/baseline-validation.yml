@@ -28,7 +28,9 @@ jobs:
           cache: maven
       - name: Verify server
         working-directory: server
-        run: ./mvnw --batch-mode clean verify
+        run: |
+          chmod +x ./mvnw
+          ./mvnw --batch-mode clean verify
 
   android:
     runs-on: ubuntu-latest
