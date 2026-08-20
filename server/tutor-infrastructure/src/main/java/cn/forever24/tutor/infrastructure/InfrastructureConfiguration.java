@@ -99,10 +99,11 @@ import cn.forever24.tutor.infrastructure.provider.InMemoryAiProviderConfiguratio
 import cn.forever24.tutor.infrastructure.provider.JdbcAiProviderConfigurationRepository;
 import cn.forever24.tutor.infrastructure.quota.InMemoryDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.quota.JdbcDailyQuotaRepository;
-import cn.forever24.tutor.infrastructure.resource.InMemoryResourceCatalogRepository;
-import cn.forever24.tutor.infrastructure.resource.JdbcResourceCatalogRepository;
 import cn.forever24.tutor.infrastructure.resource.DenyHistoricalResourceAccessRepository;
 import cn.forever24.tutor.infrastructure.resource.HmacMediaAccessUrlIssuer;
+import cn.forever24.tutor.infrastructure.resource.InMemoryResourceCatalogRepository;
+import cn.forever24.tutor.infrastructure.resource.JdbcHistoricalResourceAccessRepository;
+import cn.forever24.tutor.infrastructure.resource.JdbcResourceCatalogRepository;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.DirectLessonSessionTransactionOperations;
@@ -457,8 +458,14 @@ public class InfrastructureConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(HistoricalResourceAccessRepository.class)
-    public HistoricalResourceAccessRepository historicalResourceAccessRepository() {
-        return new DenyHistoricalResourceAccessRepository();
+    public HistoricalResourceAccessRepository historicalResourceAccessRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new DenyHistoricalResourceAccessRepository();
+        }
+        return new JdbcHistoricalResourceAccessRepository(jdbcTemplate);
     }
 
     @Bean

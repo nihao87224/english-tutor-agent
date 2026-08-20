@@ -1800,6 +1800,364 @@ legend {
   opacity: 0.5;
 }
 
+.scenario-lesson-shell {
+  min-height: 100vh;
+  background: #f4f1ea;
+  color: #17202a;
+}
+
+.scenario-lesson-topbar {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto minmax(160px, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 12px clamp(18px, 4vw, 56px);
+  border-bottom: 1px solid #d8d3c9;
+  background: rgb(255 255 255 / 92%);
+}
+
+.scenario-lesson-topbar > div {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+
+.scenario-lesson-topbar span {
+  color: #657066;
+  font-size: 0.76rem;
+}
+
+.scenario-lesson-topbar > button {
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #aab4ab;
+  background: #fff;
+  color: #233029;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.scenario-lesson-topbar > button:last-child {
+  justify-self: end;
+}
+
+.scenario-progress {
+  height: 5px;
+  overflow: hidden;
+  background: #dfe2dd;
+}
+
+.scenario-progress span {
+  height: 100%;
+  display: block;
+  background: #236457;
+  transition: width 180ms ease;
+}
+
+.scenario-lesson-grid {
+  width: min(1440px, 100%);
+  min-height: calc(100vh - 77px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(380px, 0.75fr);
+}
+
+.scenario-stage {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+  height: calc(100vh - 77px);
+  margin: 0;
+  overflow: hidden;
+  background: #20342f;
+}
+
+.scenario-stage img,
+.scenario-image-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+  display: block;
+  object-fit: cover;
+}
+
+.scenario-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 48%, rgb(10 23 18 / 68%) 100%);
+}
+
+.scenario-stage figcaption {
+  position: absolute;
+  z-index: 2;
+  right: 28px;
+  bottom: 28px;
+  left: 28px;
+  display: grid;
+  gap: 5px;
+  color: #fff;
+}
+
+.scenario-stage figcaption span {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scenario-stage figcaption strong {
+  font-size: clamp(1.35rem, 2.4vw, 2.2rem);
+}
+
+.scenario-overlay {
+  position: absolute;
+  z-index: 2;
+  top: 24px;
+  left: 24px;
+  max-width: min(560px, calc(100% - 48px));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.scenario-overlay span {
+  padding: 7px 9px;
+  border: 1px solid rgb(255 255 255 / 55%);
+  background: rgb(12 28 22 / 72%);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.scenario-image-fallback {
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 30px;
+  background: linear-gradient(145deg, #28483f, #819f94);
+  color: #fff;
+  text-align: center;
+}
+
+.scenario-image-fallback > span {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgb(255 255 255 / 65%);
+  border-radius: 50%;
+  font-family: Georgia, serif;
+  font-size: 2rem;
+}
+
+.scenario-image-fallback > div {
+  display: grid;
+  gap: 5px;
+}
+
+.scenario-image-fallback small {
+  color: #eef5f2;
+}
+
+.scenario-panel {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  padding: clamp(34px, 5vw, 72px) clamp(24px, 4vw, 58px);
+  background: #fff;
+}
+
+.scenario-panel h1,
+.scenario-panel h2,
+.scenario-panel p {
+  margin: 0;
+}
+
+.scenario-panel h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(2.2rem, 4vw, 4.4rem);
+  line-height: 1.02;
+}
+
+.scenario-context {
+  color: #58635d;
+  font-size: 1.04rem;
+  line-height: 1.75;
+}
+
+.scenario-mission {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px;
+  padding: 20px;
+  border-left: 4px solid #ca6c3c;
+  background: #fff5ee;
+}
+
+.scenario-mission > span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ca6c3c;
+  color: #fff;
+  font-weight: 900;
+}
+
+.scenario-mission div {
+  display: grid;
+  gap: 7px;
+}
+
+.scenario-mission h2 {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scenario-mission p {
+  line-height: 1.6;
+}
+
+.scenario-primary-action {
+  min-height: 52px;
+  padding: 0 22px;
+  border: 0;
+  background: #236457;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.scenario-primary-action:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.lesson-paused,
+.media-fallback-notice,
+.scenario-step-gate {
+  padding: 14px 16px;
+  border: 1px solid #d8d3c9;
+  background: #f8f6f1;
+  color: #4e5a53;
+}
+
+.lesson-paused {
+  border-color: #deb67f;
+  background: #fff7e8;
+}
+
+.scenario-audio {
+  width: 100%;
+}
+
+.media-fallback-notice {
+  display: grid;
+  gap: 4px;
+  border-color: #d69a81;
+  background: #fff3ee;
+}
+
+.language-support {
+  display: grid;
+  gap: 18px;
+}
+
+.language-support > button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #236457;
+  background: #eef7f3;
+  color: #236457;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.language-support > div {
+  display: grid;
+  gap: 18px;
+}
+
+.language-support h2 {
+  font-family: Georgia, serif;
+  font-size: 1.4rem;
+}
+
+.transcript-hidden-note {
+  color: #707a74;
+  font-size: 0.88rem;
+}
+
+.scenario-transcript,
+.scenario-expressions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario-transcript {
+  display: grid;
+  gap: 14px;
+}
+
+.scenario-transcript li {
+  display: grid;
+  gap: 5px;
+  padding-left: 14px;
+  border-left: 2px solid #9cb9af;
+}
+
+.scenario-transcript strong {
+  color: #236457;
+  font-size: 0.78rem;
+}
+
+.scenario-transcript p {
+  line-height: 1.55;
+}
+
+.scenario-expressions {
+  display: grid;
+  gap: 10px;
+}
+
+.scenario-expressions li {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid #e1e4df;
+  background: #fbfcfa;
+}
+
+.scenario-expressions span,
+.scenario-expressions small {
+  color: #657068;
+}
+
+.upcoming-lesson-step {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid #d9e2de;
+  background: #f2f7f5;
+}
+
+.prescription-start {
+  width: 100%;
+  margin-top: 22px;
+}
+
 .admin-forbidden {
   min-height: 100vh;
   display: grid;
@@ -1890,6 +2248,60 @@ legend {
 
   .prescription-controls {
     position: static;
+  }
+
+  .scenario-lesson-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 10px 12px;
+  }
+
+  .scenario-lesson-topbar > div strong {
+    font-size: 0.82rem;
+  }
+
+  .scenario-lesson-topbar > button {
+    min-width: 42px;
+    padding: 0 8px;
+    font-size: 0.78rem;
+  }
+
+  .scenario-lesson-grid {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-stage {
+    position: relative;
+    height: min(66vh, 520px);
+  }
+
+  .scenario-stage img,
+  .scenario-image-fallback {
+    min-height: 0;
+  }
+
+  .scenario-overlay {
+    top: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+  }
+
+  .scenario-overlay span:last-child {
+    max-width: 100%;
+  }
+
+  .scenario-stage figcaption {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .scenario-panel {
+    padding: 34px 20px 52px;
+  }
+
+  .scenario-panel h1 {
+    font-size: 2.5rem;
   }
 
   .feedback-group > div,

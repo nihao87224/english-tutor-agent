@@ -71,6 +71,8 @@ function renderPrescription(prescription: DailyLearningPrescription): string {
         onRegenerate: vi.fn(),
         onRefreshQuota: vi.fn(async () => undefined),
         onOpenAccount: vi.fn(),
+        startingBlockId: undefined,
+        onStartLesson: vi.fn(),
       }),
     }),
   );

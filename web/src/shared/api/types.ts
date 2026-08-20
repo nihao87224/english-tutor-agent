@@ -359,6 +359,97 @@ export interface PrescriptionRegenerationRequest {
   note?: string | null;
 }
 
+export type LessonInputMode = "VOICE_OR_TEXT" | "VOICE_ONLY" | "TEXT_ONLY";
+export type LessonSessionStatus = "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "ABANDONED";
+export type LessonStep =
+  | "SCENE_CONTEXT"
+  | "FIRST_LISTEN"
+  | "COMPREHENSION"
+  | "TRANSCRIPT_EXPRESSIONS"
+  | "GUIDED_SPEAKING"
+  | "ROLE_PLAY"
+  | "FEEDBACK"
+  | "RETRY"
+  | "EVIDENCE"
+  | "COMPLETE";
+
+export interface StartLessonSessionRequest {
+  prescriptionId: string;
+  prescriptionVersion: number;
+  blockId: string;
+  inputMode: LessonInputMode;
+}
+
+export interface LessonSession {
+  sessionId: string;
+  prescriptionId: string;
+  prescriptionVersion: number;
+  blockId: string;
+  status: LessonSessionStatus;
+  resource: PrescriptionResourceReference;
+  skillUnitVariantId: string;
+  episodeMappingId: string;
+  inputMode: LessonInputMode;
+  currentStep: LessonStep;
+  step: {
+    stepId: LessonStep;
+    completionMode: "CLIENT_ACKNOWLEDGEMENT" | "ATTEMPT_REQUIRED" | "SYSTEM";
+    clientCompletable: boolean;
+  };
+  progress: { completedSteps: number; totalRequiredSteps: number };
+  version: number;
+}
+
+export interface CatalogAsset {
+  assetId: string;
+  assetVersion: string;
+  mediaType: "IMAGE" | "AUDIO";
+  purpose: string;
+  accessScope: "PUBLIC" | "ADMIN_GRANTED" | "ADMIN_ONLY" | "DISABLED";
+  mimeType: string;
+  contentHash: string;
+  byteLength: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface LearningResourceDetail {
+  resourceId: string;
+  resourceVersion: string;
+  collectionId: string;
+  providerCode: string;
+  type: "SCENARIO_LESSON";
+  title: string;
+  description?: string | null;
+  language: string;
+  level: string;
+  topic: string;
+  scene: string;
+  communicationGoal: string;
+  accessScope: "PUBLIC" | "ADMIN_GRANTED" | "ADMIN_ONLY" | "DISABLED";
+  publishStatus: "DRAFT" | "PUBLISHED" | "UNPUBLISHED" | "DISABLED";
+  estimatedMinutes: number;
+  skillUnitVariantIds: string[];
+  taskHero?: CatalogAsset | null;
+  audioAssets: CatalogAsset[];
+  learnerFit: Record<string, unknown>;
+  content: Record<string, unknown>;
+  assets: CatalogAsset[];
+  publishedAt?: string | null;
+}
+
+export interface MediaAccessRequest {
+  assetId: string;
+  purpose: "DISPLAY" | "PLAYBACK";
+}
+
+export interface MediaAccessResponse {
+  assetId: string;
+  url: string;
+  expiresAt?: string | null;
+  mimeType: string;
+  contentHash: string;
+}
+
 export interface TrainingSession {
   sessionId: string;
   planId: string;

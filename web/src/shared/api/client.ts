@@ -26,6 +26,11 @@ import type {
   CurrentTrainingTask,
   DailyLearningPrescription,
   LearningPlan,
+  LearningResourceDetail,
+  LessonSession,
+  LessonStep,
+  MediaAccessRequest,
+  MediaAccessResponse,
   OnboardingProgress,
   SelfAssessmentRequest,
   UserLearningProgress,
@@ -38,6 +43,7 @@ import type {
   ProfileSummary,
   QuotaStatus,
   StartTrainingSessionRequest,
+  StartLessonSessionRequest,
   TaskAttemptReceipt,
   TaskAttemptRequest,
   TrainingSession,
@@ -99,6 +105,17 @@ export interface ApiClient {
     request: PrescriptionRegenerationRequest,
     options?: RequestOptions,
   ): Promise<DailyLearningPrescription>;
+  startLessonSession(request: StartLessonSessionRequest, options?: RequestOptions): Promise<LessonSession>;
+  getLessonSession(sessionId: string, options?: RequestOptions): Promise<LessonSession>;
+  pauseLessonSession(sessionId: string, options?: RequestOptions): Promise<LessonSession>;
+  resumeLessonSession(sessionId: string, options?: RequestOptions): Promise<LessonSession>;
+  completeLessonStep(sessionId: string, stepId: LessonStep, options?: RequestOptions): Promise<LessonSession>;
+  getLearningResourceVersion(resourceId: string, version: string, options?: RequestOptions): Promise<LearningResourceDetail>;
+  createLearningResourceMediaAccess(
+    resourceId: string,
+    request: MediaAccessRequest,
+    options?: RequestOptions,
+  ): Promise<MediaAccessResponse>;
   startTrainingSession(request: StartTrainingSessionRequest, options?: RequestOptions): Promise<TrainingSession>;
   getTrainingSession(sessionId: string, options?: RequestOptions): Promise<TrainingSession>;
   pauseTrainingSession(sessionId: string, options?: RequestOptions): Promise<TrainingSession>;
@@ -369,6 +386,46 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         method: "POST",
         body: request,
       });
+    },
+    startLessonSession(request, requestOptions) {
+      return requestJson<LessonSession>("/api/v1/lesson-sessions", {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+        body: request,
+      });
+    },
+    getLessonSession(sessionId, requestOptions) {
+      return requestJson<LessonSession>(`/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}`, requestOptions);
+    },
+    pauseLessonSession(sessionId, requestOptions) {
+      return requestJson<LessonSession>(`/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/pause`, {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+      });
+    },
+    resumeLessonSession(sessionId, requestOptions) {
+      return requestJson<LessonSession>(`/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/resume`, {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+      });
+    },
+    completeLessonStep(sessionId, stepId, requestOptions) {
+      return requestJson<LessonSession>(
+        `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/steps/${encodeURIComponent(stepId)}/completions`,
+        { ...mutationOptions(requestOptions), method: "POST" },
+      );
+    },
+    getLearningResourceVersion(resourceId, version, requestOptions) {
+      return requestJson<LearningResourceDetail>(
+        `/api/v1/learning-resources/${encodeURIComponent(resourceId)}/versions/${encodeURIComponent(version)}`,
+        requestOptions,
+      );
+    },
+    createLearningResourceMediaAccess(resourceId, request, requestOptions) {
+      return requestJson<MediaAccessResponse>(
+        `/api/v1/learning-resources/${encodeURIComponent(resourceId)}/media-access`,
+        { ...mutationOptions(requestOptions), method: "POST", body: request },
+      );
     },
     startTrainingSession(request, requestOptions) {
       return requestJson<TrainingSession>("/api/v1/training-sessions", {

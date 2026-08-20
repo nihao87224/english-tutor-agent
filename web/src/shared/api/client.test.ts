@@ -72,6 +72,46 @@ describe("createApiClient", () => {
     }
   });
 
+  it("uses canonical lesson-session, locked resource and media routes", async () => {
+    const fetchFn = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/media-access")) return jsonResponse({ assetId: "hero-1", url: "https://cdn.test/hero.webp" });
+      if (url.includes("/learning-resources/")) return jsonResponse({ resourceId: "resource-1", resourceVersion: "1.0.0" });
+      return jsonResponse({ sessionId: "lesson-1", currentStep: "FIRST_LISTEN" });
+    });
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      accessToken: "access-token",
+      fetchFn,
+      idempotencyKeyFactory: () => "lesson-idem-key",
+    });
+
+    await client.startLessonSession({ prescriptionId: "prx-1", prescriptionVersion: 2, blockId: "block-1", inputMode: "VOICE_OR_TEXT" });
+    await client.getLessonSession("lesson/1");
+    await client.pauseLessonSession("lesson/1");
+    await client.resumeLessonSession("lesson/1");
+    await client.completeLessonStep("lesson/1", "SCENE_CONTEXT");
+    await client.getLearningResourceVersion("resource/1", "1.0.0+b1");
+    await client.createLearningResourceMediaAccess("resource/1", { assetId: "hero-1", purpose: "DISPLAY" });
+
+    expect(fetchFn.mock.calls.map((call) => String(call[0]))).toEqual([
+      "http://api.test/api/v1/lesson-sessions",
+      "http://api.test/api/v1/lesson-sessions/lesson%2F1",
+      "http://api.test/api/v1/lesson-sessions/lesson%2F1/pause",
+      "http://api.test/api/v1/lesson-sessions/lesson%2F1/resume",
+      "http://api.test/api/v1/lesson-sessions/lesson%2F1/steps/SCENE_CONTEXT/completions",
+      "http://api.test/api/v1/learning-resources/resource%2F1/versions/1.0.0%2Bb1",
+      "http://api.test/api/v1/learning-resources/resource%2F1/media-access",
+    ]);
+    const start = fetchFn.mock.calls[0][1] as RequestInit;
+    const completion = fetchFn.mock.calls[4][1] as RequestInit;
+    const media = fetchFn.mock.calls[6][1] as RequestInit;
+    expect((start.headers as Headers).get("Idempotency-Key")).toBe("lesson-idem-key");
+    expect((completion.headers as Headers).get("Idempotency-Key")).toBe("lesson-idem-key");
+    expect((media.headers as Headers).get("Idempotency-Key")).toBe("lesson-idem-key");
+    expect(JSON.parse(media.body as string)).toEqual({ assetId: "hero-1", purpose: "DISPLAY" });
+  });
+
   it("preserves prescription fallback details from API errors", async () => {
     const fetchFn = vi.fn(async () => jsonResponse({
       type: "about:blank",

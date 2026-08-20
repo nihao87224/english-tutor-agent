@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { createApiClient, type AuthResponse, type QuotaStatus, type TrainingSessionCompletion, type UserLearningProgress } from "../shared/api";
+import { createApiClient, type AuthResponse, type DailyLearningPrescription, type PrescriptionBlock, type QuotaStatus, type TrainingSessionCompletion, type UserLearningProgress } from "../shared/api";
 import { CoachWorkspace } from "../features/coach/CoachWorkspace";
 import { TodayCoachHome, type CoachSelection } from "../features/coach/TodayCoachHome";
 import { TodayPrescriptionPage } from "../features/prescription/TodayPrescriptionPage";
+import { ScenarioLessonPage } from "../features/scenario-lesson/ScenarioLessonPage";
 import { SummaryView } from "../features/summary/SummaryView";
 import { OnboardingPanel } from "../features/onboarding/OnboardingPanel";
 import { InitialAssessmentPanel } from "../features/onboarding/InitialAssessmentPanel";
@@ -189,6 +190,11 @@ function LearnerApp({
     setCurrentPath("/");
   }
 
+  function navigate(path: string) {
+    window.history.pushState(null, "", path);
+    setCurrentPath(path);
+  }
+
   if (bootState === "refreshing") {
     return (
       <main className="app-shell">
@@ -238,6 +244,11 @@ function LearnerApp({
 
   if (learnerScreen === "assessment") {
     return <InitialAssessmentPanel apiClient={apiClient} onCompleted={() => void loadLearningProgress()} />;
+  }
+
+  const lessonSessionId = lessonSessionIdFromPath(currentPath);
+  if (lessonSessionId) {
+    return <ScenarioLessonPage apiClient={apiClient} sessionId={lessonSessionId} onBack={() => navigate("/")} />;
   }
 
   if (completion) {
@@ -323,10 +334,29 @@ function LearnerApp({
           timezone={authSession.user.timezone}
           onRefreshQuota={loadQuota}
           onOpenAccount={() => setView("account")}
+          onStartLesson={async (prescription: DailyLearningPrescription, block: PrescriptionBlock) => {
+            const session = await apiClient.startLessonSession({
+              prescriptionId: prescription.prescriptionId,
+              prescriptionVersion: prescription.version,
+              blockId: block.blockId,
+              inputMode: "VOICE_OR_TEXT",
+            });
+            navigate(`/lesson-sessions/${encodeURIComponent(session.sessionId)}`);
+          }}
         />
       )}
     </main>
   );
+}
+
+function lessonSessionIdFromPath(path: string): string | undefined {
+  const match = /^\/lesson-sessions\/([^/]+)\/?$/.exec(path);
+  if (!match) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return undefined;
+  }
 }
 
 function HistoryPage({ history }: { history: PracticeHistoryItem[] }) {

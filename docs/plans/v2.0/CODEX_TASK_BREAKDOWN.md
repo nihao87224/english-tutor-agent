@@ -56,7 +56,7 @@ Codex 每次任务必须：
 | V2-T08 | Daily Prescription 后端 | T04,T05,T07 | DONE |
 | V2-T09 | Web 今日处方 | T08 | DONE |
 | V2-T10 | Scenario Lesson Session 基线 | T06,T08 | DONE |
-| V2-T11 | Web 场景引导与媒体输入 | T10 | TODO |
+| V2-T11 | Web 场景引导与媒体输入 | T10 | DONE |
 | V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | TODO |
 | V2-T13 | Audio Upload / ASR 确认 | T10 | TODO |
 | V2-T14 | Role Play SSE | T12,T13 | TODO |
@@ -289,6 +289,8 @@ Codex 每次任务必须：
 测试：task hero required、avatar only rejected in UI fixture、image failure、audio failure、resume、responsive crop、accessibility。
 
 验收：机场任务显示 Lin Muen 位于登机口关系中的情景图，Speaking 区继续保留场景图。
+
+完成记录（2026-08-20）：Web 已从今日处方启动 canonical Lesson Session，并以 `/lesson-sessions/{sessionId}` 作为可刷新、可跨设备恢复的课程地址；页面严格读取服务端 `currentStep` 和 Session 锁定的 ResourceVersion。Scene Context、First Listen、Transcript/Expressions 基础界面已接入，task hero 必须是包含 Lin Muen 与环境关系的 `environmental_*` 情景图，avatar-only fixture 会被拒绝；机场场景使用服务端 `focalPoint` 响应式裁切，结构化 UI 单独显示场景、难度、主题和沟通目标，Speaking 阶段继续保留整张场景图。音频控件、hidden-first Transcript、图片/音频独立 fallback、暂停/继续及客户端可确认步骤均已覆盖。基础设施新增基于 Session owner + 精确 ResourceVersion 的历史资源只读授权，保证刷新不依赖该版本仍是 active；单元、组件、API、JDBC 和 Playwright 覆盖 required hero、avatar rejection、媒体失败、resume、responsive crop、keyboard/accessibility 与既有 Web 回归。
 
 ### V2-T12 Comprehension 与 Guided Speaking
 

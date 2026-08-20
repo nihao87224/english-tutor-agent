@@ -25,6 +25,7 @@ interface TodayPrescriptionPageProps {
   timezone: string;
   onRefreshQuota: () => Promise<void>;
   onOpenAccount: () => void;
+  onStartLesson: (prescription: DailyLearningPrescription, block: PrescriptionBlock) => Promise<void>;
 }
 
 const AVAILABLE_MINUTES = [5, 10, 15, 20] as const;
@@ -36,10 +37,13 @@ export function TodayPrescriptionPage({
   timezone,
   onRefreshQuota,
   onOpenAccount,
+  onStartLesson,
 }: TodayPrescriptionPageProps) {
   const { t } = useI18n();
   const [viewState, setViewState] = useState<PrescriptionViewState>({ status: "loading" });
   const [availableMinutes, setAvailableMinutes] = useState<number>(10);
+  const [startingBlockId, setStartingBlockId] = useState<string>();
+  const [startError, setStartError] = useState<string>();
 
   const loadPrescription = useCallback(
     async (signal?: AbortSignal) => {
@@ -78,6 +82,18 @@ export function TodayPrescriptionPage({
       );
     } catch (error) {
       setViewState(prescriptionFailed(error, current));
+    }
+  }
+
+  async function startLesson(prescription: DailyLearningPrescription, block: PrescriptionBlock) {
+    if (startingBlockId) return;
+    setStartingBlockId(block.blockId);
+    setStartError(undefined);
+    try {
+      await onStartLesson(prescription, block);
+    } catch (error) {
+      setStartingBlockId(undefined);
+      setStartError(error instanceof Error ? error.message : t("prescription.startError"));
     }
   }
 
@@ -126,6 +142,9 @@ export function TodayPrescriptionPage({
       onRegenerate={regenerate}
       onRefreshQuota={onRefreshQuota}
       onOpenAccount={onOpenAccount}
+      startingBlockId={startingBlockId}
+      startError={startError}
+      onStartLesson={(block) => void startLesson(viewState.prescription, block)}
     />
   );
 }
@@ -141,6 +160,9 @@ export function PrescriptionContent({
   onRegenerate,
   onRefreshQuota,
   onOpenAccount,
+  startingBlockId,
+  startError,
+  onStartLesson,
 }: {
   prescription: DailyLearningPrescription;
   regenerating: boolean;
@@ -152,6 +174,9 @@ export function PrescriptionContent({
   onRegenerate: (reason: PrescriptionRegenerationReason) => void;
   onRefreshQuota: () => Promise<void>;
   onOpenAccount: () => void;
+  startingBlockId?: string;
+  startError?: string;
+  onStartLesson: (block: PrescriptionBlock) => void;
 }) {
   const { t, locale } = useI18n();
   const primaryBlock = primaryPrescriptionBlock(prescription);
@@ -183,6 +208,10 @@ export function PrescriptionContent({
               <div><dt>{t("prescription.level")}</dt><dd>{primaryBlock.difficulty} · {t(`prescription.scaffolding.${primaryBlock.scaffolding}`)}</dd></div>
               <div><dt>{t("prescription.evidence")}</dt><dd>{primaryBlock.expectedEvidence.map(humanizeCode).join(" · ")}</dd></div>
             </dl>
+            <button className="primary-action prescription-start" type="button" disabled={Boolean(startingBlockId)} onClick={() => onStartLesson(primaryBlock)}>
+              {startingBlockId === primaryBlock.blockId ? t("prescription.starting") : t("prescription.start")}
+            </button>
+            {startError ? <p className="form-error" role="alert">{startError}</p> : null}
           </article>
         </div>
       ) : null}

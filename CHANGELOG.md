@@ -31,6 +31,10 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the V2.0 Web Scenario Lesson entry flow with server-owned session resume,
+  scene-specific environmental Lin Muen task-hero validation, focal-point responsive
+  staging, structured scene overlays, first-listen audio, hidden-first transcript and
+  expressions, independent media fallbacks, and owner-scoped locked-version reads.
 - Added the V2.0 Scenario Lesson Session baseline with V24 session/attempt fields,
   exact prescription resource-version locking, transactional authoritative access
   rechecks, idempotent starts, server-owned step progression, optimistic persistence,
