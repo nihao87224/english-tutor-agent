@@ -52,7 +52,7 @@ Codex 每次任务必须：
 | V2-T04 | Experience Graph / Episode Mapping | T02,T03 | DONE |
 | V2-T05 | Entitlement / Access Filter | T03 | DONE |
 | V2-T06 | Catalog learner/admin API | T03,T05 | DONE |
-| V2-T07 | Pedagogical Policy 基线 | T02 | TODO |
+| V2-T07 | Pedagogical Policy 基线 | T02 | DONE |
 | V2-T08 | Daily Prescription 后端 | T04,T05,T07 | TODO |
 | V2-T09 | Web 今日处方 | T08 | TODO |
 | V2-T10 | Scenario Lesson Session 基线 | T06,T08 | TODO |

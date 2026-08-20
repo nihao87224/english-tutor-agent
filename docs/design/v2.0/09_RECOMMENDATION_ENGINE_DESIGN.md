@@ -256,6 +256,52 @@ P0 评分后仍需执行组合约束：
 - 连续轻松完成时提高复杂度或安排跨场景迁移；
 - Episode continuity 仅作为体验匹配因子，不得覆盖能力和复习因子。
 
+## 7.1 V2-P0-1 确定性策略参数
+
+V2-T07 冻结首个可执行策略版本为 `V2-P0-1`。该版本属于 Domain 规则，接收显式
+`Clock`/时间输入，不访问数据库、网络或 LLM；相同输入必须产生相同 decision、score 和
+reason code。
+
+教学准入规则：
+
+- Prerequisite 同时满足 `minimumMastery` 与 `minimumConfidence` 才可进入候选；缺状态视为未满足；
+- `mastery >= 0.8000` 视为已掌握，不再进入基础 Acquisition，只允许到期 Review、更高难度 Upgrade 或新场景 Transfer；
+- Transfer 要求技能已掌握、至少存在一个已练场景，且候选场景尚未用于该技能；
+- 连续失败达到 2 次时，保持当前 CEFR、最大 communication complexity 为 2，并使用 HIGH scaffolding；
+- 连续轻松完成达到 3 次时，提升一个 CEFR 档、最大 complexity 为 4，并使用 LOW scaffolding；
+- critical criterion 失败且未到最大次数时必须 Retry；到最大次数进入 FINAL_FAILURE；非关键反馈可以接受并留待后续 Evidence 处理；
+- Completion 必须完成主要输入、理解检查、配置要求的 OUTPUT 数量和全部 required criteria；Completion 永不直接改变 Mastery。
+
+Spacing 规则：
+
+```text
+baseDays = 2 ^ min(completedReviews, 5)
+qualityMultiplier = FAILED 1.00 / EFFORTFUL 0.75 / SUCCESSFUL 1.25 / EASY 1.75
+confidenceMultiplier = 0.75 + 0.50 * confidence
+intervalDays = ceil(baseDays * qualityMultiplier * confidenceMultiplier), clamp 1..60
+FAILED 时 intervalDays 固定重置为 1
+forgettingRisk = clamp((elapsedDays / intervalDays) * (1.25 - 0.50 * confidence), 0..1)
+```
+
+排序因子全部由上游归一化为 `[0,1]`，权重之和为 `1.0000`：
+
+| Factor | Weight |
+|---|---:|
+| Goal Match | 0.1800 |
+| Skill Gap | 0.1800 |
+| Review Urgency | 0.1700 |
+| Error Match | 0.1000 |
+| Difficulty Fit | 0.1200 |
+| Transfer Value | 0.0800 |
+| Freshness | 0.0600 |
+| Time Fit | 0.0600 |
+| User Preference | 0.0500 |
+
+`Access` 不是可补偿的加权项，而是排序前硬过滤。最终分数按四位小数 `HALF_UP` 固定；
+先按教学分降序，只在教学分完全相同时使用 Episode continuity，再按稳定 candidate key
+排序，因此剧情不能让低教学分候选越级。组合器必须预留至少一个 OUTPUT block，总时长不得
+超出 time budget，并尽量避免相邻 block 训练同一 Skill。
+
 ---
 
 # 8. 各因素说明

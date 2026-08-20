@@ -31,6 +31,9 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the versioned V2-P0-1 deterministic pedagogical policy baseline for
+  prerequisite/mastery eligibility, spacing, difficulty/scaffolding, transfer,
+  retry, completion, normalized prescription ranking and time-bounded interleaving.
 - Added the V2.0 canonical Catalog learner/admin API with access-filtered cursor
   pagination, learner-safe resource/version DTOs, protected resource and collection
   reads, and short-lived actor-scoped media access URLs that do not expose private object keys.
