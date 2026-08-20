@@ -77,6 +77,22 @@ public class JdbcPrescriptionRepository implements PrescriptionRepository {
     }
 
     @Override
+    public Optional<DailyLearningPrescription> findOwnedForUpdate(UserKey userKey, String prescriptionId) {
+        return findOne(
+                """
+                        SELECT lp.*, u.user_key,
+                               superseded.plan_key AS supersedes_plan_key
+                        FROM learning_plan lp
+                        JOIN app_user u ON u.id = lp.user_id
+                        LEFT JOIN learning_plan superseded ON superseded.id = lp.supersedes_plan_id
+                        WHERE u.user_key = ? AND u.status = 'ACTIVE'
+                          AND lp.plan_key = ? AND lp.prescription_version IS NOT NULL
+                        FOR UPDATE
+                        """,
+                userKey.value(), prescriptionId);
+    }
+
+    @Override
     public Optional<PrescriptionMutationResult> findReplay(
             UserKey userKey,
             String operation,

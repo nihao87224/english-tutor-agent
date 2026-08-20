@@ -55,7 +55,7 @@ Codex 每次任务必须：
 | V2-T07 | Pedagogical Policy 基线 | T02 | DONE |
 | V2-T08 | Daily Prescription 后端 | T04,T05,T07 | DONE |
 | V2-T09 | Web 今日处方 | T08 | DONE |
-| V2-T10 | Scenario Lesson Session 基线 | T06,T08 | TODO |
+| V2-T10 | Scenario Lesson Session 基线 | T06,T08 | DONE |
 | V2-T11 | Web 场景引导与媒体输入 | T10 | TODO |
 | V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | TODO |
 | V2-T13 | Audio Upload / ASR 确认 | T10 | TODO |
@@ -271,6 +271,8 @@ Codex 每次任务必须：
 测试：idempotent start、owner、revoke before start、stale prescription、invalid step transition、resume、optimistic conflict、rollback。
 
 验收：刷新后能从服务端恢复步骤，客户端不能自报完成。
+
+完成记录（2026-08-20）：V24 第一部分已扩展 `training_session`/`task_attempt` 并新增 canonical `/api/v1/lesson-sessions` start/get/pause/resume/step completion。启动在单一事务内锁定 owner/处方，复检精确 ResourceVersion `PUBLISHED` 与 authoritative AccessDecision，并以 request hash 保证 start 幂等；Session 固化 resource/variant/mapping、服务端步骤序列和 current step，JDBC 更新使用乐观锁。客户端仅能确认无 Attempt 的确定性当前步骤，不能完成 Attempt/Evidence/System 或整个课程。领域、应用、API、JDBC 测试覆盖 idempotent start、owner、revoke before start、stale prescription、invalid transition、resume、optimistic conflict 与 rollback；完整后端回归及机器契约校验通过。
 
 ### V2-T11 Web 场景引导与媒体输入
 

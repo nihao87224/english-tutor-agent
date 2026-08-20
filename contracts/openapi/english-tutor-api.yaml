@@ -1016,6 +1016,114 @@ paths:
         '404': {$ref: '#/components/responses/Problem'}
         '409': {$ref: '#/components/responses/Problem'}
 
+  /api/v1/lesson-sessions:
+    post:
+      tags: [Training]
+      summary: Start a V2 scenario lesson from an exact prescription block
+      operationId: startLessonSession
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 128}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StartLessonSessionRequest'}
+      responses:
+        '201':
+          description: Scenario lesson started with the prescribed resource version locked
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonSessionResponse'}
+        '200':
+          description: Idempotent replay of an existing scenario lesson start
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonSessionResponse'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}:
+    get:
+      tags: [Training]
+      summary: Restore an owned scenario lesson at the server-authoritative current step
+      operationId: getLessonSession
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+      responses:
+        '200':
+          description: Current scenario lesson state
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonSessionResponse'}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}/pause:
+    post:
+      tags: [Training]
+      summary: Pause an in-progress scenario lesson
+      operationId: pauseLessonSession
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      responses:
+        '200':
+          description: Paused or already-paused scenario lesson
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonSessionResponse'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}/resume:
+    post:
+      tags: [Training]
+      summary: Resume a paused scenario lesson at its persisted current step
+      operationId: resumeLessonSession
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      responses:
+        '200':
+          description: Resumed or already-active scenario lesson
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonSessionResponse'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}/steps/{stepId}/completions:
+    post:
+      tags: [Training]
+      summary: Acknowledge the current deterministic no-attempt step
+      description: The server rejects attempt-required, evidence, system, out-of-order, and whole-lesson completion.
+      operationId: completeLessonSessionStep
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: stepId, in: path, required: true, schema: {$ref: '#/components/schemas/LessonStep'}}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      responses:
+        '200':
+          description: Step acknowledged and server current step advanced
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonSessionResponse'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
   /api/v1/plans/today/adjustments:
     post:
       tags: [Planning]
@@ -2007,6 +2115,52 @@ components:
       properties:
         reason: {type: string, minLength: 1, maxLength: 200}
         note: {type: [string, 'null'], maxLength: 800}
+
+    StartLessonSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [prescriptionId, prescriptionVersion, blockId, inputMode]
+      properties:
+        prescriptionId: {type: string, minLength: 1, maxLength: 64}
+        prescriptionVersion: {type: integer, minimum: 1}
+        blockId: {type: string, minLength: 1, maxLength: 64}
+        inputMode: {type: string, enum: [VOICE_OR_TEXT, VOICE_ONLY, TEXT_ONLY]}
+
+    LessonSessionResponse:
+      type: object
+      additionalProperties: false
+      required: [sessionId, prescriptionId, prescriptionVersion, blockId, status, resource, skillUnitVariantId, episodeMappingId, inputMode, currentStep, step, progress, version]
+      properties:
+        sessionId: {type: string, maxLength: 64}
+        prescriptionId: {type: string, maxLength: 64}
+        prescriptionVersion: {type: integer, minimum: 1}
+        blockId: {type: string, maxLength: 64}
+        status: {type: string, enum: [IN_PROGRESS, PAUSED, COMPLETED, ABANDONED]}
+        resource: {$ref: '#/components/schemas/PrescriptionResourceReference'}
+        skillUnitVariantId: {type: string}
+        episodeMappingId: {type: string}
+        inputMode: {type: string, enum: [VOICE_OR_TEXT, VOICE_ONLY, TEXT_ONLY]}
+        currentStep: {$ref: '#/components/schemas/LessonStep'}
+        step:
+          type: object
+          additionalProperties: false
+          required: [stepId, completionMode, clientCompletable]
+          properties:
+            stepId: {$ref: '#/components/schemas/LessonStep'}
+            completionMode: {type: string, enum: [CLIENT_ACKNOWLEDGEMENT, ATTEMPT_REQUIRED, SYSTEM]}
+            clientCompletable: {type: boolean}
+        progress:
+          type: object
+          additionalProperties: false
+          required: [completedSteps, totalRequiredSteps]
+          properties:
+            completedSteps: {type: integer, minimum: 0}
+            totalRequiredSteps: {type: integer, minimum: 1}
+        version: {type: integer, format: int64, minimum: 1}
+
+    LessonStep:
+      type: string
+      enum: [SCENE_CONTEXT, FIRST_LISTEN, COMPREHENSION, TRANSCRIPT_EXPRESSIONS, GUIDED_SPEAKING, ROLE_PLAY, FEEDBACK, RETRY, EVIDENCE, COMPLETE]
 
     PlanTask:
       type: object

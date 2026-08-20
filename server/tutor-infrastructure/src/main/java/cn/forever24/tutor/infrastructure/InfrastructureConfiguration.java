@@ -50,6 +50,10 @@ import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
 import cn.forever24.tutor.application.training.TrainingSessionRepository;
+import cn.forever24.tutor.application.training.LessonSessionApplicationService;
+import cn.forever24.tutor.application.training.LessonSessionKeyGenerator;
+import cn.forever24.tutor.application.training.LessonSessionRepository;
+import cn.forever24.tutor.application.training.LessonSessionTransactionOperations;
 import cn.forever24.tutor.entitlement.AccessPolicy;
 import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
 import cn.forever24.tutor.infrastructure.auth.HmacJwtAccessTokenService;
@@ -101,6 +105,10 @@ import cn.forever24.tutor.infrastructure.resource.DenyHistoricalResourceAccessRe
 import cn.forever24.tutor.infrastructure.resource.HmacMediaAccessUrlIssuer;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
+import cn.forever24.tutor.infrastructure.training.DirectLessonSessionTransactionOperations;
+import cn.forever24.tutor.infrastructure.training.InMemoryLessonSessionRepository;
+import cn.forever24.tutor.infrastructure.training.JdbcLessonSessionRepository;
+import cn.forever24.tutor.infrastructure.training.SpringLessonSessionTransactionOperations;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.beans.factory.ObjectProvider;
@@ -537,6 +545,39 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(LessonSessionRepository.class)
+    public LessonSessionRepository lessonSessionRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            Clock clock
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryLessonSessionRepository();
+        }
+        return new JdbcLessonSessionRepository(
+                jdbcTemplate, objectMapperProvider.getIfAvailable(ObjectMapper::new), clock);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(LessonSessionTransactionOperations.class)
+    public LessonSessionTransactionOperations lessonSessionTransactionOperations(
+            ObjectProvider<PlatformTransactionManager> transactionManagerProvider
+    ) {
+        PlatformTransactionManager transactionManager = transactionManagerProvider.getIfAvailable();
+        if (transactionManager == null) {
+            return new DirectLessonSessionTransactionOperations();
+        }
+        return new SpringLessonSessionTransactionOperations(new TransactionTemplate(transactionManager));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(LessonSessionKeyGenerator.class)
+    public LessonSessionKeyGenerator lessonSessionKeyGenerator() {
+        return () -> "lsn_" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    @Bean
     @ConditionalOnMissingBean(DailyQuotaRepository.class)
     public DailyQuotaRepository dailyQuotaRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
         JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
@@ -681,6 +722,26 @@ public class InfrastructureConfiguration {
                 userProfileRepository,
                 learningPlanRepository,
                 trainingSessionRepository,
+                clock);
+    }
+
+    @Bean
+    public LessonSessionApplicationService lessonSessionApplicationService(
+            PrescriptionRepository prescriptionRepository,
+            EntitlementApplicationService entitlementApplicationService,
+            ResourceCatalogRepository resourceCatalogRepository,
+            LessonSessionRepository lessonSessionRepository,
+            LessonSessionTransactionOperations lessonSessionTransactionOperations,
+            LessonSessionKeyGenerator lessonSessionKeyGenerator,
+            Clock clock
+    ) {
+        return new LessonSessionApplicationService(
+                prescriptionRepository,
+                entitlementApplicationService,
+                resourceCatalogRepository,
+                lessonSessionRepository,
+                lessonSessionTransactionOperations,
+                lessonSessionKeyGenerator,
                 clock);
     }
 

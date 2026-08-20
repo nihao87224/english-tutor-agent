@@ -290,7 +290,7 @@ Header `Idempotency-Key` required。返回更新后 session；非法状态 409�
 
 ### 6.4 POST `/api/v1/lesson-sessions/{sessionId}/steps/{stepId}/completions`
 
-仅用于无需 Attempt 的确定性步骤，例如确认完成 First Listen/查看必要内容。后端根据 resource policy 判断能否完成，不接受客户端自报完成整个课程。
+Header `Idempotency-Key` required。仅用于无需 Attempt 的确定性步骤，例如确认完成 First Listen/查看必要内容。后端根据固化的步骤策略判断能否完成，Attempt、Evidence、System 与非当前步骤一律返回 409 `SESSION_STATE_CONFLICT`；不接受客户端自报完成整个课程。
 
 ### 6.5 POST `/api/v1/lesson-sessions/{sessionId}/completions`
 
@@ -718,10 +718,12 @@ V23 同步新增处方反馈与幂等记录表，字段包括 actor、原处方�
 - `resource_version_id BIGINT NULL FK`；
 - `skill_unit_variant_id BIGINT NULL FK`；
 - `episode_mapping_id BIGINT NULL FK`；
+- `prescription_version BIGINT NULL`，锁定启动来源处方版本；
+- `start_request_hash VARCHAR(64) NULL`，校验 start session 幂等键是否被不同请求复用；
 - `current_step VARCHAR(64)`；
 - `step_state_json JSON`。
 
-已有 `plan_id` 保留。V2 Session type 使用 `SCENARIO_LESSON`。
+已有 `plan_id` 与 `idempotency_key` 保留。V2 Session type 使用 `SCENARIO_LESSON`。`step_state_json` 固化服务端步骤序列与已完成步骤；客户端只可确认 `CLIENT_ACKNOWLEDGEMENT` 步骤，Attempt/Evidence/System 步骤不得自报完成。启动事务锁定处方与 actor，并在写 Session 前执行 authoritative AccessDecision 和精确 ResourceVersion `PUBLISHED` 复检。
 
 ### `task_attempt` 新增
 

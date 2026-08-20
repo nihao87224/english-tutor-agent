@@ -35,6 +35,13 @@ public final class InMemoryPrescriptionRepository implements PrescriptionReposit
     }
 
     @Override
+    public Optional<DailyLearningPrescription> findOwnedForUpdate(UserKey userKey, String prescriptionId) {
+        synchronized (monitor) {
+            return findOwned(userKey, prescriptionId);
+        }
+    }
+
+    @Override
     public Optional<PrescriptionMutationResult> findReplay(
             UserKey userKey,
             String operation,

@@ -109,6 +109,7 @@ public class JdbcTrainingSessionRepository implements TrainingSessionRepository 
                             WHERE u.user_key = ?
                               AND u.status = 'ACTIVE'
                               AND ts.session_key = ?
+                              AND ts.type <> 'SCENARIO_LESSON'
                             """,
                     (resultSet, rowNum) -> new TrainingSession(
                             resultSet.getString("session_key"),

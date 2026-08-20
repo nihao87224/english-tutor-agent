@@ -31,6 +31,10 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the V2.0 Scenario Lesson Session baseline with V24 session/attempt fields,
+  exact prescription resource-version locking, transactional authoritative access
+  rechecks, idempotent starts, server-owned step progression, optimistic persistence,
+  canonical lesson-session APIs and resume-safe current-step restoration.
 - Added the V2.0 Web Daily Prescription experience with typed prescription APIs,
   scene-specific Lin Muen task heroes, recommendation rationale and ordered blocks,
   three feedback categories with idempotent recomposition, explicit stale/fallback

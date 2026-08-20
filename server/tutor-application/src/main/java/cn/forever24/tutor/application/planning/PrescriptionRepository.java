@@ -12,6 +12,10 @@ public interface PrescriptionRepository {
 
     Optional<DailyLearningPrescription> findOwned(UserKey userKey, String prescriptionId);
 
+    default Optional<DailyLearningPrescription> findOwnedForUpdate(UserKey userKey, String prescriptionId) {
+        return findOwned(userKey, prescriptionId);
+    }
+
     Optional<PrescriptionMutationResult> findReplay(
             UserKey userKey,
             String operation,
