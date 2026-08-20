@@ -31,6 +31,7 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the V2.0 Experience Graph/Episode Mapping vertical slice with V21 tables, deterministic learner-fit resolution, same-variant fallback, Season 1 EP002/EP006/EP009 fixtures, and transactional in-memory/JDBC repositories.
 - Added the V2.0 Resource Catalog/Asset vertical slice with V20 tables, immutable resource versions and assets, task-hero/media metadata validation, published-candidate queries, and transactional in-memory/JDBC repositories.
 - Added the V2.0 Curriculum/Skill Graph vertical slice with V19 tables, deterministic graph/import validation, active-variant queries and transactional in-memory/JDBC repositories.
 - Added V2.0 machine-readable content contracts for manifests, Skill Unit Variants, Episode Mappings, lesson packages and media metadata, with Lin Muen/task-hero/evidence/audio-transcript validation fixtures.

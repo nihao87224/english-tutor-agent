@@ -31,6 +31,6 @@ class FlywayMysqlContainerSmokeTest {
 
         assertTrue(Arrays.stream(flyway.info().applied())
                 .anyMatch(migration -> migration.getVersion() != null
-                        && "20".equals(migration.getVersion().getVersion())));
+                        && "21".equals(migration.getVersion().getVersion())));
     }
 }

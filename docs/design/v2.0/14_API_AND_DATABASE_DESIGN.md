@@ -639,13 +639,13 @@ scene_key unique、episode_id FK、title、location、story_context、character_
 
 ### `episode_mapping`
 
-mapping_key unique、variant_id FK、episode_id FK、scene_id FK、eligible_levels_json、learner_fit_json、story_transition、fit_inputs_json、fallback_mapping_id nullable、status、version。
+mapping_key unique、variant_id FK、episode_id FK、scene_id FK、eligible_levels_json、learner_fit_json（目标标签与禁忌条件）、story_transition_json、fit_inputs_json（确定性体验匹配输入）、fallback_mapping_id nullable、status、timestamps/version。fallback 必须保持同一 Skill Unit Variant，且 P0 resolver 必须先执行 Variant、eligible level 与禁忌条件过滤，剧情连续性只能对合格候选作次级排序。
 
 Indexes：`(variant_id,status)`、`(episode_id,scene_id,status)`。
 
 ### `episode_mapping_resource`
 
-mapping_id、resource_version_id、priority；PK `(mapping_id,resource_version_id)`。
+mapping_id、resource_version_id、priority；PK `(mapping_id,resource_version_id)`，引用精确且不可变的 Resource Version。
 
 ## 16. V22 Entitlement 表
 

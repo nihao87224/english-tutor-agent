@@ -11,6 +11,9 @@ import cn.forever24.tutor.application.conversation.ConversationApplicationServic
 import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
 import cn.forever24.tutor.application.curriculum.CurriculumApplicationService;
 import cn.forever24.tutor.application.curriculum.CurriculumRepository;
+import cn.forever24.tutor.application.experience.ExperienceCatalogApplicationService;
+import cn.forever24.tutor.application.experience.ExperienceReferenceResolver;
+import cn.forever24.tutor.application.experience.ExperienceRepository;
 import cn.forever24.tutor.application.assessment.SelfAssessmentRepository;
 import cn.forever24.tutor.application.auth.AccessTokenIssuer;
 import cn.forever24.tutor.application.auth.AuthApplicationService;
@@ -41,6 +44,9 @@ import cn.forever24.tutor.infrastructure.auth.JdbcUserAccountRepository;
 import cn.forever24.tutor.infrastructure.auth.Sha256RefreshTokenService;
 import cn.forever24.tutor.infrastructure.curriculum.InMemoryCurriculumRepository;
 import cn.forever24.tutor.infrastructure.curriculum.JdbcCurriculumRepository;
+import cn.forever24.tutor.infrastructure.experience.InMemoryExperienceRepository;
+import cn.forever24.tutor.infrastructure.experience.JdbcExperienceRepository;
+import cn.forever24.tutor.infrastructure.experience.RepositoryBackedExperienceReferenceResolver;
 import cn.forever24.tutor.infrastructure.admin.InMemoryAdminRepository;
 import cn.forever24.tutor.infrastructure.admin.JdbcAdminRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentAnswerRepository;
@@ -281,6 +287,41 @@ public class InfrastructureConfiguration {
             ResourceCatalogRepository resourceCatalogRepository
     ) {
         return new ResourceCatalogApplicationService(resourceCatalogRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ExperienceRepository.class)
+    public ExperienceRepository experienceRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            Clock clock
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryExperienceRepository();
+        }
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        return new JdbcExperienceRepository(jdbcTemplate, objectMapper, clock);
+    }
+
+    @Bean
+    public ExperienceCatalogApplicationService experienceCatalogApplicationService(
+            ExperienceRepository experienceRepository,
+            ExperienceReferenceResolver experienceReferenceResolver
+    ) {
+        return new ExperienceCatalogApplicationService(
+                experienceRepository,
+                experienceReferenceResolver);
+    }
+
+    @Bean
+    public ExperienceReferenceResolver experienceReferenceResolver(
+            CurriculumRepository curriculumRepository,
+            ResourceCatalogRepository resourceCatalogRepository
+    ) {
+        return new RepositoryBackedExperienceReferenceResolver(
+                curriculumRepository,
+                resourceCatalogRepository);
     }
 
     @Bean
