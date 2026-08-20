@@ -9,6 +9,8 @@ import cn.forever24.tutor.application.admin.AdminApplicationService;
 import cn.forever24.tutor.application.admin.AdminRepository;
 import cn.forever24.tutor.application.conversation.ConversationApplicationService;
 import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
+import cn.forever24.tutor.application.curriculum.CurriculumApplicationService;
+import cn.forever24.tutor.application.curriculum.CurriculumRepository;
 import cn.forever24.tutor.application.assessment.SelfAssessmentRepository;
 import cn.forever24.tutor.application.auth.AccessTokenIssuer;
 import cn.forever24.tutor.application.auth.AuthApplicationService;
@@ -35,6 +37,8 @@ import cn.forever24.tutor.infrastructure.auth.InMemoryUserAccountRepository;
 import cn.forever24.tutor.infrastructure.auth.JdbcRefreshSessionRepository;
 import cn.forever24.tutor.infrastructure.auth.JdbcUserAccountRepository;
 import cn.forever24.tutor.infrastructure.auth.Sha256RefreshTokenService;
+import cn.forever24.tutor.infrastructure.curriculum.InMemoryCurriculumRepository;
+import cn.forever24.tutor.infrastructure.curriculum.JdbcCurriculumRepository;
 import cn.forever24.tutor.infrastructure.admin.InMemoryAdminRepository;
 import cn.forever24.tutor.infrastructure.admin.JdbcAdminRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentAnswerRepository;
@@ -231,6 +235,26 @@ public class InfrastructureConfiguration {
         }
         ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JdbcLearningPlanRepository(jdbcTemplate, clock, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CurriculumRepository.class)
+    public CurriculumRepository curriculumRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            Clock clock
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryCurriculumRepository();
+        }
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        return new JdbcCurriculumRepository(jdbcTemplate, objectMapper, clock);
+    }
+
+    @Bean
+    public CurriculumApplicationService curriculumApplicationService(CurriculumRepository curriculumRepository) {
+        return new CurriculumApplicationService(curriculumRepository);
     }
 
     @Bean
