@@ -5,10 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers(disabledWithoutDocker = true)
 class FlywayMysqlContainerSmokeTest {
@@ -31,6 +34,33 @@ class FlywayMysqlContainerSmokeTest {
 
         assertTrue(Arrays.stream(flyway.info().applied())
                 .anyMatch(migration -> migration.getVersion() != null
-                        && "21".equals(migration.getVersion().getVersion())));
+                        && "22".equals(migration.getVersion().getVersion())));
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(new DriverManagerDataSource(
+                MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword()));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'user_collection_entitlement'",
+                Integer.class));
+        assertEquals(7, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM app_permission
+                WHERE code IN (
+                    'RESOURCE_READ', 'RESOURCE_MANAGE', 'RESOURCE_PUBLISH',
+                    'COLLECTION_READ', 'COLLECTION_MANAGE',
+                    'ENTITLEMENT_READ', 'ENTITLEMENT_MANAGE'
+                )
+                """, Integer.class));
+        assertEquals(7, jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM app_role_permission rp
+                JOIN app_role r ON r.id = rp.role_id
+                JOIN app_permission p ON p.id = rp.permission_id
+                WHERE r.code = 'ADMIN'
+                  AND p.code IN (
+                    'RESOURCE_READ', 'RESOURCE_MANAGE', 'RESOURCE_PUBLISH',
+                    'COLLECTION_READ', 'COLLECTION_MANAGE',
+                    'ENTITLEMENT_READ', 'ENTITLEMENT_MANAGE'
+                  )
+                """, Integer.class));
     }
 }

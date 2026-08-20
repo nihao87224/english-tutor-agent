@@ -14,6 +14,12 @@ import cn.forever24.tutor.application.curriculum.CurriculumRepository;
 import cn.forever24.tutor.application.experience.ExperienceCatalogApplicationService;
 import cn.forever24.tutor.application.experience.ExperienceReferenceResolver;
 import cn.forever24.tutor.application.experience.ExperienceRepository;
+import cn.forever24.tutor.application.entitlement.AccessBeforeRankingFilter;
+import cn.forever24.tutor.application.entitlement.AccessDecisionCache;
+import cn.forever24.tutor.application.entitlement.EntitlementApplicationService;
+import cn.forever24.tutor.application.entitlement.EntitlementAuditPort;
+import cn.forever24.tutor.application.entitlement.EntitlementKeyGenerator;
+import cn.forever24.tutor.application.entitlement.EntitlementTransactionOperations;
 import cn.forever24.tutor.application.assessment.SelfAssessmentRepository;
 import cn.forever24.tutor.application.auth.AccessTokenIssuer;
 import cn.forever24.tutor.application.auth.AuthApplicationService;
@@ -35,6 +41,7 @@ import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
 import cn.forever24.tutor.application.training.TrainingSessionRepository;
+import cn.forever24.tutor.entitlement.AccessPolicy;
 import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
 import cn.forever24.tutor.infrastructure.auth.HmacJwtAccessTokenService;
 import cn.forever24.tutor.infrastructure.auth.InMemoryRefreshSessionRepository;
@@ -47,6 +54,15 @@ import cn.forever24.tutor.infrastructure.curriculum.JdbcCurriculumRepository;
 import cn.forever24.tutor.infrastructure.experience.InMemoryExperienceRepository;
 import cn.forever24.tutor.infrastructure.experience.JdbcExperienceRepository;
 import cn.forever24.tutor.infrastructure.experience.RepositoryBackedExperienceReferenceResolver;
+import cn.forever24.tutor.infrastructure.entitlement.DirectEntitlementTransactionOperations;
+import cn.forever24.tutor.infrastructure.entitlement.EntitlementStoreAdapter;
+import cn.forever24.tutor.infrastructure.entitlement.InMemoryAccessDecisionCache;
+import cn.forever24.tutor.infrastructure.entitlement.InMemoryEntitlementAuditPort;
+import cn.forever24.tutor.infrastructure.entitlement.InMemoryEntitlementRepository;
+import cn.forever24.tutor.infrastructure.entitlement.JdbcEntitlementAuditPort;
+import cn.forever24.tutor.infrastructure.entitlement.JdbcEntitlementRepository;
+import cn.forever24.tutor.infrastructure.entitlement.RedisAccessDecisionCache;
+import cn.forever24.tutor.infrastructure.entitlement.SpringEntitlementTransactionOperations;
 import cn.forever24.tutor.infrastructure.admin.InMemoryAdminRepository;
 import cn.forever24.tutor.infrastructure.admin.JdbcAdminRepository;
 import cn.forever24.tutor.infrastructure.assessment.InMemoryAssessmentAnswerRepository;
@@ -79,12 +95,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.UUID;
 
 @Configuration
 public class InfrastructureConfiguration {
@@ -287,6 +307,95 @@ public class InfrastructureConfiguration {
             ResourceCatalogRepository resourceCatalogRepository
     ) {
         return new ResourceCatalogApplicationService(resourceCatalogRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(EntitlementStoreAdapter.class)
+    public EntitlementStoreAdapter entitlementStoreAdapter(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryEntitlementRepository();
+        }
+        return new JdbcEntitlementRepository(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(EntitlementAuditPort.class)
+    public EntitlementAuditPort entitlementAuditPort(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryEntitlementAuditPort();
+        }
+        return new JdbcEntitlementAuditPort(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(EntitlementTransactionOperations.class)
+    public EntitlementTransactionOperations entitlementTransactionOperations(
+            ObjectProvider<PlatformTransactionManager> transactionManagerProvider
+    ) {
+        PlatformTransactionManager transactionManager = transactionManagerProvider.getIfAvailable();
+        if (transactionManager == null) {
+            return new DirectEntitlementTransactionOperations();
+        }
+        return new SpringEntitlementTransactionOperations(new TransactionTemplate(transactionManager));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AccessDecisionCache.class)
+    public AccessDecisionCache accessDecisionCache(
+            ObjectProvider<StringRedisTemplate> redisTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            Clock clock
+    ) {
+        StringRedisTemplate redisTemplate = redisTemplateProvider.getIfAvailable();
+        if (redisTemplate == null) {
+            return new InMemoryAccessDecisionCache(clock);
+        }
+        return new RedisAccessDecisionCache(
+                redisTemplate,
+                objectMapperProvider.getIfAvailable(ObjectMapper::new));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(EntitlementKeyGenerator.class)
+    public EntitlementKeyGenerator entitlementKeyGenerator() {
+        return () -> "ent_" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    @Bean
+    public EntitlementApplicationService entitlementApplicationService(
+            EntitlementStoreAdapter storeAdapter,
+            EntitlementAuditPort auditPort,
+            EntitlementTransactionOperations transactionOperations,
+            AccessDecisionCache decisionCache,
+            EntitlementKeyGenerator keyGenerator,
+            Environment environment,
+            Clock clock
+    ) {
+        Duration cacheTtl = environment.getProperty(
+                "tutor.entitlement.decision-cache-ttl", Duration.class, Duration.ofSeconds(30));
+        return new EntitlementApplicationService(
+                storeAdapter,
+                storeAdapter,
+                auditPort,
+                transactionOperations,
+                decisionCache,
+                keyGenerator,
+                new AccessPolicy(),
+                clock,
+                cacheTtl);
+    }
+
+    @Bean
+    public AccessBeforeRankingFilter accessBeforeRankingFilter(
+            EntitlementApplicationService entitlementApplicationService
+    ) {
+        return new AccessBeforeRankingFilter(entitlementApplicationService);
     }
 
     @Bean

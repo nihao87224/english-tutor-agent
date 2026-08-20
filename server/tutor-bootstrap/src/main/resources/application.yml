@@ -43,6 +43,8 @@ tutor:
   quota:
     default-daily-limit: ${TUTOR_QUOTA_DEFAULT_DAILY_LIMIT:50}
     reset-timezone: ${TUTOR_QUOTA_RESET_TIMEZONE:Asia/Shanghai}
+  entitlement:
+    decision-cache-ttl: ${TUTOR_ENTITLEMENT_DECISION_CACHE_TTL:30s}
   secret:
     encryption-key: ${TUTOR_SECRET_ENCRYPTION_KEY}
     encryption-key-version: ${TUTOR_SECRET_ENCRYPTION_KEY_VERSION:v1}

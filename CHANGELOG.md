@@ -31,6 +31,9 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the V2.0 Entitlement/Access Filter vertical slice with V22 RBAC and
+  entitlement tables, deterministic access reasons, transactional grant/revoke/expire
+  audit, authoritative start-time locking, and short-TTL Redis decisions with active invalidation.
 - Added the V2.0 Experience Graph/Episode Mapping vertical slice with V21 tables, deterministic learner-fit resolution, same-variant fallback, Season 1 EP002/EP006/EP009 fixtures, and transactional in-memory/JDBC repositories.
 - Added the V2.0 Resource Catalog/Asset vertical slice with V20 tables, immutable resource versions and assets, task-hero/media metadata validation, published-candidate queries, and transactional in-memory/JDBC repositories.
 - Added the V2.0 Curriculum/Skill Graph vertical slice with V19 tables, deterministic graph/import validation, active-variant queries and transactional in-memory/JDBC repositories.
