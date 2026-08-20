@@ -32,6 +32,7 @@ class FlywayMysqlContainerSmokeTest {
                 "spring.data.redis.host", "localhost",
                 "spring.data.redis.port", "6379",
                 "spring.flyway.clean-disabled", "true",
+                "TUTOR_JWT_SIGNING_SECRET", "test-only-jwt-signing-secret-change-me-32",
                 "TUTOR_SECRET_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef"
         ));
         application.addInitializers(context -> context.getEnvironment().getPropertySources().addFirst(
