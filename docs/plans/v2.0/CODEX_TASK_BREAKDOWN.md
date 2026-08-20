@@ -54,7 +54,7 @@ Codex 每次任务必须：
 | V2-T06 | Catalog learner/admin API | T03,T05 | DONE |
 | V2-T07 | Pedagogical Policy 基线 | T02 | DONE |
 | V2-T08 | Daily Prescription 后端 | T04,T05,T07 | DONE |
-| V2-T09 | Web 今日处方 | T08 | TODO |
+| V2-T09 | Web 今日处方 | T08 | DONE |
 | V2-T10 | Scenario Lesson Session 基线 | T06,T08 | TODO |
 | V2-T11 | Web 场景引导与媒体输入 | T10 | TODO |
 | V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | TODO |
@@ -255,6 +255,8 @@ Codex 每次任务必须：
 测试：component/model tests、API error、replayed regeneration、task hero alt/crop、keyboard、mobile width。
 
 验收：不同后端 prescription 能直观显示不同教学目标和 Lin Muen 场景。
+
+完成记录（2026-08-20）：Web 已接入 V2 Daily Prescription API，展示 priority goal、可验证推荐原因、版本化 blocks、预计时间和 scene-specific Lin Muen task hero；支持难度、时间、主题三类反馈的幂等重新组合，并覆盖 loading/content/empty/error/stale/fallback 与媒体兜底。响应式裁切使用服务端 `focalPoint`，认证、quota、zh-CN/en 和原 AI 对话入口均保留。单元/组件/API 测试覆盖无候选与过期状态、重放 regeneration、alt/crop；Playwright 覆盖键盘反馈、390px 移动宽度、不同处方的教学目标/场景变化及既有 Web 回归。Scenario Lesson 启动行为留给 V2-T10。
 
 ---
 

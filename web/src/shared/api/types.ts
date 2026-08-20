@@ -279,6 +279,86 @@ export interface PlanAdjustmentRequest {
   textOnly?: boolean;
 }
 
+export type PrescriptionStatus = "ACTIVE" | "SUPERSEDED";
+export type PrescriptionBlockType = "ACQUISITION" | "OUTPUT" | "REVIEW" | "TRANSFER";
+export type PrescriptionTrainingType = "COMPREHENSION" | "GUIDED_SPEAKING" | "ROLE_PLAY" | "REVIEW" | "TRANSFER";
+export type PrescriptionBlockStatus = "READY" | "SKIPPED";
+export type PrescriptionRegenerationReason =
+  | "TOO_HARD"
+  | "TOO_EASY"
+  | "TIME_INSUFFICIENT"
+  | "TOPIC_REJECTED"
+  | "TEMPORARY_GOAL";
+
+export interface PrescriptionGoal {
+  code: string;
+  label: string;
+}
+
+export interface PrescriptionExperience {
+  seasonId: string;
+  episodeId: string;
+  sceneId: string;
+  title: string;
+}
+
+export interface PrescriptionResourceReference {
+  resourceId: string;
+  resourceVersion: string;
+}
+
+export interface PrescriptionTaskHero {
+  assetId: string;
+  url?: string | null;
+  aspectRatio: string;
+  focalPoint: { x: number; y: number };
+  altText: string;
+}
+
+export interface PrescriptionBlock {
+  blockId: string;
+  sequence: number;
+  type: PrescriptionBlockType;
+  title: string;
+  skillUnitVariantId: string;
+  resource: PrescriptionResourceReference;
+  episodeMappingId: string;
+  difficulty: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+  scaffolding: "HIGH" | "MEDIUM" | "LOW" | "NONE";
+  trainingType: PrescriptionTrainingType;
+  estimatedMinutes: number;
+  expectedEvidence: string[];
+  fallbackResource?: PrescriptionResourceReference | null;
+  recommendationFactors: Record<string, number>;
+  taskHero: PrescriptionTaskHero;
+  status: PrescriptionBlockStatus;
+}
+
+export interface DailyLearningPrescription {
+  prescriptionId: string;
+  version: number;
+  learningDate: string;
+  timezone: string;
+  status: PrescriptionStatus;
+  priorityGoal: PrescriptionGoal;
+  rationale: string;
+  reasonCodes: string[];
+  estimatedMinutes: number;
+  experience: PrescriptionExperience;
+  blocks: PrescriptionBlock[];
+  generatedAt: string;
+  expiresAt: string;
+}
+
+export interface PrescriptionRegenerationRequest {
+  currentPrescriptionId: string;
+  currentVersion: number;
+  reason: PrescriptionRegenerationReason;
+  availableMinutes?: number | null;
+  temporaryGoal?: string | null;
+  note?: string | null;
+}
+
 export interface TrainingSession {
   sessionId: string;
   planId: string;
@@ -402,4 +482,5 @@ export interface ProblemResponse {
   used?: number;
   remaining?: number;
   resetAt?: string;
+  fallbackAvailable?: boolean;
 }

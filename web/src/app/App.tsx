@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { createApiClient, type AuthResponse, type QuotaStatus, type TrainingSessionCompletion, type UserLearningProgress } from "../shared/api";
 import { CoachWorkspace } from "../features/coach/CoachWorkspace";
 import { TodayCoachHome, type CoachSelection } from "../features/coach/TodayCoachHome";
+import { TodayPrescriptionPage } from "../features/prescription/TodayPrescriptionPage";
 import { SummaryView } from "../features/summary/SummaryView";
 import { OnboardingPanel } from "../features/onboarding/OnboardingPanel";
 import { InitialAssessmentPanel } from "../features/onboarding/InitialAssessmentPanel";
@@ -19,7 +20,7 @@ import { I18nProvider, normalizeLocale, useI18n, type Locale } from "../shared/i
 import { loadPracticeHistory, savePracticeCompletion, type PracticeHistoryItem } from "../shared/history/practiceHistory";
 import { resolveLearnerScreen } from "./userFlow";
 
-type AppView = "today" | "history" | "account";
+type AppView = "today" | "coach" | "history" | "account";
 type QuotaLoadState = { status: "idle" | "loading" | "error"; quota: QuotaStatus | null };
 type ProgressLoadState = { status: "loading" | "ready" | "error"; progress: UserLearningProgress | null };
 
@@ -281,6 +282,9 @@ function LearnerApp({
           <button className={view === "today" ? "selected" : ""} type="button" onClick={() => setView("today")}>
             {t("app.nav.today")}
           </button>
+          <button className={view === "coach" ? "selected" : ""} type="button" onClick={() => setView("coach")}>
+            {t("app.nav.coach")}
+          </button>
           <button className={view === "history" ? "selected" : ""} type="button" onClick={() => setView("history")}>
             {t("app.nav.history")}
           </button>
@@ -301,7 +305,7 @@ function LearnerApp({
         <AccountPage user={authSession.user} quotaState={quotaState} onRefreshQuota={loadQuota} />
       ) : view === "history" ? (
         <HistoryPage history={practiceHistory} />
-      ) : (
+      ) : view === "coach" ? (
         <TodayCoachHome
           apiClient={apiClient}
           quota={quotaState.quota}
@@ -310,6 +314,15 @@ function LearnerApp({
           onOpenAccount={() => setView("account")}
           onProgressInvalid={loadLearningProgress}
           onStart={setCoachSelection}
+        />
+      ) : (
+        <TodayPrescriptionPage
+          apiClient={apiClient}
+          quota={quotaState.quota}
+          quotaLoading={quotaState.status === "loading"}
+          timezone={authSession.user.timezone}
+          onRefreshQuota={loadQuota}
+          onOpenAccount={() => setView("account")}
         />
       )}
     </main>

@@ -42,6 +42,53 @@ describe("createApiClient", () => {
     expect(headers.get("Idempotency-Key")).toBeNull();
   });
 
+  it("loads today's prescription with an encoded learner timezone", async () => {
+    const fetchFn = vi.fn(async () => jsonResponse({ prescriptionId: "prx-1", blocks: [] }));
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "access-token", fetchFn });
+
+    await client.getTodayPrescription({ timezone: "Asia/Shanghai" });
+
+    const [url, init] = lastFetchCall(fetchFn);
+    expect(String(url)).toBe("http://api.test/api/v1/prescriptions/today?timezone=Asia%2FShanghai");
+    expect(init.method).toBe("GET");
+    expect((init.headers as Headers).get("Idempotency-Key")).toBeNull();
+  });
+
+  it("uses the same explicit idempotency key when a regeneration response is replayed", async () => {
+    const response = { prescriptionId: "prx-2", version: 2, blocks: [] };
+    const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => jsonResponse(response));
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "access-token", fetchFn });
+    const request = { currentPrescriptionId: "prx-1", currentVersion: 1, reason: "TIME_INSUFFICIENT" as const, availableMinutes: 10 };
+
+    const first = await client.regenerateTodayPrescription(request, { idempotencyKey: "regen-replay-key" });
+    const replayed = await client.regenerateTodayPrescription(request, { idempotencyKey: "regen-replay-key" });
+
+    expect(first).toEqual(replayed);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    for (const call of fetchFn.mock.calls) {
+      const init = call[1] as RequestInit;
+      expect((init.headers as Headers).get("Idempotency-Key")).toBe("regen-replay-key");
+      expect(JSON.parse(init.body as string)).toEqual(request);
+    }
+  });
+
+  it("preserves prescription fallback details from API errors", async () => {
+    const fetchFn = vi.fn(async () => jsonResponse({
+      type: "about:blank",
+      title: "Conflict",
+      status: 409,
+      detail: "no eligible prescription candidate",
+      code: "PRESCRIPTION_NO_CANDIDATE",
+      fallbackAvailable: true,
+    }, 409));
+    const client = createApiClient({ baseUrl: "http://api.test", fetchFn });
+
+    await expect(client.getTodayPrescription()).rejects.toMatchObject({
+      status: 409,
+      problem: { code: "PRESCRIPTION_NO_CANDIDATE", fallbackAvailable: true },
+    });
+  });
+
   it("throws ApiError with problem details for failed responses", async () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({ type: "about:blank", title: "Bad Request", status: 400, detail: "invalid plan" }, 400),

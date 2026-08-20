@@ -14,6 +14,7 @@ test("registers, practices, consumes quota, logs out and logs back in", async ({
   await expect(page.getByRole("heading", { name: "Set up your expression coach." })).toBeVisible();
   await page.getByRole("button", { name: "Enter today's coach" }).click();
 
+  await page.getByRole("button", { name: "AI coach" }).click();
   await expect(page.getByRole("heading", { name: "Improve one sentence" })).toBeVisible();
   await expect(page.getByText("50 left")).toBeVisible();
   await page.getByRole("button", { name: "Start practice" }).click();
@@ -51,6 +52,7 @@ test("registers, practices, consumes quota, logs out and logs back in", async ({
   await page.getByLabel("Password").fill("learner-password");
   await page.getByRole("button", { name: "Log in" }).last().click();
 
+  await page.getByRole("button", { name: "AI coach" }).click();
   await expect(page.getByRole("heading", { name: "Improve one sentence" })).toBeVisible();
   await expect(page.getByText("48 left")).toBeVisible();
   await page.getByRole("button", { name: "History" }).click();
@@ -109,6 +111,17 @@ async function mockBackend(page: Page) {
     });
   });
 
+  await page.route("http://localhost:8080/api/v1/users/me/progress", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        nextStep: onboardingCompleted ? "READY_FOR_PLAN" : "ONBOARDING_REQUIRED",
+        onboardingStep: onboardingCompleted ? "COMPLETE" : "GOAL",
+      }),
+    });
+  });
+
   await page.route("http://localhost:8080/api/v1/me/quota", async (route) => {
     await route.fulfill({
       status: 200,
@@ -162,6 +175,50 @@ async function mockBackend(page: Page) {
             reason: "Turn a direct sentence into natural English.",
           },
         ],
+      }),
+    });
+  });
+
+  await page.route("http://localhost:8080/api/v1/prescriptions/today?**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        prescriptionId: "prx-expression",
+        version: 1,
+        learningDate: "2026-08-10",
+        timezone: "UTC",
+        status: "ACTIVE",
+        priorityGoal: { code: "EXPRESSION", label: "Build natural expression" },
+        rationale: "Direct translation is your next expression bottleneck.",
+        reasonCodes: ["ERROR_MATCH"],
+        estimatedMinutes: 10,
+        experience: { seasonId: "S01", episodeId: "EP001", sceneId: "daily_expression", title: "Daily Expression" },
+        blocks: [{
+          blockId: "block-expression",
+          sequence: 1,
+          type: "OUTPUT",
+          title: "Improve one sentence",
+          skillUnitVariantId: "expression.natural.a2",
+          resource: { resourceId: "expression.resource", resourceVersion: "1.0.0" },
+          episodeMappingId: "mapping-expression",
+          difficulty: "A2",
+          scaffolding: "HIGH",
+          trainingType: "GUIDED_SPEAKING",
+          estimatedMinutes: 10,
+          expectedEvidence: ["natural_expression"],
+          recommendationFactors: { errorMatch: 1 },
+          taskHero: {
+            assetId: "expression-hero",
+            url: null,
+            aspectRatio: "16:9",
+            focalPoint: { x: 0.5, y: 0.5 },
+            altText: "Lin Muen practices a natural daily expression with the learner.",
+          },
+          status: "READY",
+        }],
+        generatedAt: "2026-08-10T00:00:00Z",
+        expiresAt: "2026-08-11T00:00:00Z",
       }),
     });
   });

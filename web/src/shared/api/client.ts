@@ -24,6 +24,7 @@ import type {
   AiProviderUpdateRequest,
   ConversationMessageRequest,
   CurrentTrainingTask,
+  DailyLearningPrescription,
   LearningPlan,
   OnboardingProgress,
   SelfAssessmentRequest,
@@ -32,6 +33,7 @@ import type {
   PreferenceRequest,
   PrimaryGoal,
   PrivacySettings,
+  PrescriptionRegenerationRequest,
   ProblemResponse,
   ProfileSummary,
   QuotaStatus,
@@ -89,6 +91,14 @@ export interface ApiClient {
   completeAssessment(assessmentId: string, options?: RequestOptions): Promise<unknown>;
   getTodayPlan(options?: RequestOptions): Promise<LearningPlan>;
   adjustTodayPlan(request: PlanAdjustmentRequest, options?: RequestOptions): Promise<LearningPlan>;
+  getTodayPrescription(
+    query?: { date?: string; timezone?: string },
+    options?: RequestOptions,
+  ): Promise<DailyLearningPrescription>;
+  regenerateTodayPrescription(
+    request: PrescriptionRegenerationRequest,
+    options?: RequestOptions,
+  ): Promise<DailyLearningPrescription>;
   startTrainingSession(request: StartTrainingSessionRequest, options?: RequestOptions): Promise<TrainingSession>;
   getTrainingSession(sessionId: string, options?: RequestOptions): Promise<TrainingSession>;
   pauseTrainingSession(sessionId: string, options?: RequestOptions): Promise<TrainingSession>;
@@ -341,6 +351,20 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
     adjustTodayPlan(request, requestOptions) {
       return requestJson<LearningPlan>("/api/v1/plans/today/adjustments", {
+        ...mutationOptions(requestOptions),
+        method: "POST",
+        body: request,
+      });
+    },
+    getTodayPrescription(query = {}, requestOptions) {
+      const params = new URLSearchParams();
+      if (query.date) params.set("date", query.date);
+      if (query.timezone) params.set("timezone", query.timezone);
+      const suffix = params.size > 0 ? `?${params.toString()}` : "";
+      return requestJson<DailyLearningPrescription>(`/api/v1/prescriptions/today${suffix}`, requestOptions);
+    },
+    regenerateTodayPrescription(request, requestOptions) {
+      return requestJson<DailyLearningPrescription>("/api/v1/prescriptions/today/regenerations", {
         ...mutationOptions(requestOptions),
         method: "POST",
         body: request,
