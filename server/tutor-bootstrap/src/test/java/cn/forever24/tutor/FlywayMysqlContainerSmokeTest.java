@@ -31,7 +31,8 @@ class FlywayMysqlContainerSmokeTest {
                 "spring.data.redis.repositories.enabled", "false",
                 "spring.data.redis.host", "localhost",
                 "spring.data.redis.port", "6379",
-                "spring.flyway.clean-disabled", "true"
+                "spring.flyway.clean-disabled", "true",
+                "TUTOR_SECRET_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef"
         ));
         application.addInitializers(context -> context.getEnvironment().getPropertySources().addFirst(
                 new MapPropertySource("testcontainers-mysql", Map.of(
