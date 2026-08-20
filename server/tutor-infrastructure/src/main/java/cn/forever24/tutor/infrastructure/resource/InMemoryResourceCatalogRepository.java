@@ -113,6 +113,26 @@ public class InMemoryResourceCatalogRepository implements ResourceCatalogReposit
     }
 
     @Override
+    public synchronized List<ResourceCatalogEntry> findAllResourceVersions() {
+        return versions.keySet().stream()
+                .map(key -> findExactVersion(key.resourceKey(), key.semanticVersion()).orElseThrow())
+                .toList();
+    }
+
+    @Override
+    public synchronized List<ResourceCatalogEntry> findResourceVersions(String resourceKey) {
+        return versions.keySet().stream()
+                .filter(key -> key.resourceKey().equals(resourceKey))
+                .map(key -> findExactVersion(key.resourceKey(), key.semanticVersion()).orElseThrow())
+                .toList();
+    }
+
+    @Override
+    public synchronized List<ResourceCollection> findCollections() {
+        return List.copyOf(collections.values());
+    }
+
+    @Override
     public synchronized Optional<ContentProvider> findProvider(String providerCode) {
         return Optional.ofNullable(providers.get(providerCode));
     }
@@ -140,6 +160,8 @@ public class InMemoryResourceCatalogRepository implements ResourceCatalogReposit
                 && stored.resourceVersion().status() == ResourceVersionStatus.PUBLISHED
                 && collection.status() == CollectionStatus.ACTIVE
                 && collection.accessScope() != AccessScope.DISABLED
+                && (query.resourceType() == null || query.resourceType() == resource.type())
+                && (query.collectionKey() == null || query.collectionKey().equals(resource.collectionKey()))
                 && (query.level() == null || query.level() == resource.level())
                 && (query.skillUnitVariantKey() == null
                     || stored.resourceVersion().skillUnitVariantKeys().contains(query.skillUnitVariantKey()))

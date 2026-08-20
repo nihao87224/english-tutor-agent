@@ -20,6 +20,8 @@ tags:
   - name: IELTS
   - name: Privacy
   - name: Quota
+  - name: Learning Resources
+  - name: Admin Catalog
   - name: Admin
   - name: Admin AI Providers
 
@@ -120,6 +122,161 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
         '401':
           $ref: '#/components/responses/Problem'
+
+  /api/v1/learning-resources:
+    get:
+      tags: [Learning Resources]
+      summary: List published resources accessible to the current learner
+      operationId: listLearningResources
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: type, in: query, schema: {type: string, enum: [SCENARIO_LESSON]}}
+        - {name: collectionId, in: query, schema: {type: string}}
+        - {name: topic, in: query, schema: {type: string}}
+        - {name: scene, in: query, schema: {type: string}}
+        - {name: level, in: query, schema: {type: string, enum: [A1, A2, B1, B2, C1, C2]}}
+        - {name: skillId, in: query, schema: {type: string}}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Access-filtered page; filtering is applied before pagination
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LearningResourcePage'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '401': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/learning-resources/{resourceId}:
+    get:
+      tags: [Learning Resources]
+      summary: Get the active published version visible to the current learner
+      operationId: getLearningResource
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Learner-safe detail without private object keys or generation prompts
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LearningResourceDetail'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/learning-resources/{resourceId}/versions/{version}:
+    get:
+      tags: [Learning Resources]
+      summary: Restore a version referenced by the learner's session or evidence
+      operationId: getLearningResourceVersion
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/ResourceVersion'
+      responses:
+        '200':
+          description: Learner-safe historical resource detail
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LearningResourceDetail'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/learning-resources/{resourceId}/media-access:
+    post:
+      tags: [Learning Resources]
+      summary: Resolve public media or issue short-lived private media access
+      operationId: createLearningResourceMediaAccess
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MediaAccessRequest'}
+      responses:
+        '200':
+          description: Public or short-lived private media URL
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MediaAccessResponse'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/admin/learning-resources:
+    get:
+      tags: [Admin Catalog]
+      summary: List resource catalog entries for administration
+      operationId: listAdminLearningResources
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Administrative resource page without private object keys
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LearningResourcePage'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/admin/learning-resources/{resourceId}:
+    get:
+      tags: [Admin Catalog]
+      summary: Get all catalog versions for a resource
+      operationId: getAdminLearningResource
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Administrative resource detail
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminLearningResourceDetail'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/admin/collections:
+    get:
+      tags: [Admin Catalog]
+      summary: List resource collections for administration
+      operationId: listAdminCollections
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Administrative collection page
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCollectionPage'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/admin/collections/{collectionId}:
+    get:
+      tags: [Admin Catalog]
+      summary: Get a resource collection for administration
+      operationId: getAdminCollection
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/CollectionId'
+      responses:
+        '200':
+          description: Administrative collection detail
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCollection'}
+        '401': {$ref: '#/components/responses/Problem'}
+        '403': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
 
   /api/v1/admin/dashboard:
     get:
@@ -1151,6 +1308,31 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: {type: string}
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    ResourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 180}
+    ResourceVersion:
+      name: version
+      in: path
+      required: true
+      schema: {type: string, pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'}
+    CollectionId:
+      name: collectionId
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
     AssessmentId:
       name: assessmentId
       in: path
@@ -1186,6 +1368,156 @@ components:
             $ref: '#/components/schemas/Problem'
 
   schemas:
+    LearningResourcePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/LearningResourceSummary'}
+        nextCursor: {type: [string, 'null']}
+
+    LearningResourceSummary:
+      type: object
+      additionalProperties: false
+      required: [resourceId, resourceVersion, collectionId, type, title, level, topic, scene, communicationGoal, accessScope, publishStatus, estimatedMinutes, skillUnitVariantIds, taskHero, audioAssets]
+      properties:
+        resourceId: {type: string}
+        resourceVersion: {type: string}
+        collectionId: {type: string}
+        type: {type: string, enum: [SCENARIO_LESSON]}
+        title: {type: string}
+        level: {type: string, enum: [A1, A2, B1, B2, C1, C2]}
+        topic: {type: string}
+        scene: {type: string}
+        communicationGoal: {type: string}
+        accessScope: {type: string, enum: [PUBLIC, ADMIN_GRANTED, ADMIN_ONLY, DISABLED]}
+        publishStatus: {type: string, enum: [DRAFT, PUBLISHED, UNPUBLISHED, DISABLED]}
+        estimatedMinutes: {type: integer, minimum: 1}
+        skillUnitVariantIds:
+          type: array
+          items: {type: string}
+          uniqueItems: true
+        taskHero:
+          oneOf:
+            - {$ref: '#/components/schemas/CatalogAsset'}
+            - {type: 'null'}
+        audioAssets:
+          type: array
+          items: {$ref: '#/components/schemas/CatalogAsset'}
+
+    LearningResourceDetail:
+      type: object
+      additionalProperties: false
+      required: [resourceId, resourceVersion, collectionId, providerCode, type, title, description, language, level, topic, scene, communicationGoal, accessScope, publishStatus, estimatedMinutes, skillUnitVariantIds, taskHero, audioAssets, learnerFit, content, assets]
+      properties:
+        resourceId: {type: string}
+        resourceVersion: {type: string}
+        collectionId: {type: string}
+        providerCode: {type: string}
+        type: {type: string, enum: [SCENARIO_LESSON]}
+        title: {type: string}
+        description: {type: [string, 'null']}
+        language: {type: string}
+        level: {type: string, enum: [A1, A2, B1, B2, C1, C2]}
+        topic: {type: string}
+        scene: {type: string}
+        communicationGoal: {type: string}
+        accessScope: {type: string, enum: [PUBLIC, ADMIN_GRANTED, ADMIN_ONLY, DISABLED]}
+        publishStatus: {type: string, enum: [DRAFT, PUBLISHED, UNPUBLISHED, DISABLED]}
+        estimatedMinutes: {type: integer, minimum: 1}
+        skillUnitVariantIds:
+          type: array
+          items: {type: string}
+          uniqueItems: true
+        taskHero:
+          oneOf:
+            - {$ref: '#/components/schemas/CatalogAsset'}
+            - {type: 'null'}
+        audioAssets:
+          type: array
+          items: {$ref: '#/components/schemas/CatalogAsset'}
+        learnerFit: {type: object}
+        content: {type: object}
+        assets:
+          type: array
+          items: {$ref: '#/components/schemas/CatalogAsset'}
+        publishedAt: {type: [string, 'null'], format: date-time}
+
+    CatalogAsset:
+      type: object
+      additionalProperties: false
+      required: [assetId, assetVersion, mediaType, purpose, accessScope, mimeType, contentHash, byteLength, metadata]
+      properties:
+        assetId: {type: string}
+        assetVersion: {type: string}
+        mediaType: {type: string, enum: [IMAGE, AUDIO]}
+        purpose: {type: string}
+        accessScope: {type: string, enum: [PUBLIC, ADMIN_GRANTED, ADMIN_ONLY, DISABLED]}
+        mimeType: {type: string}
+        contentHash: {type: string}
+        byteLength: {type: integer, format: int64, minimum: 1}
+        metadata:
+          type: object
+          description: Presentation metadata with generation prompts and object keys removed.
+
+    MediaAccessRequest:
+      type: object
+      additionalProperties: false
+      required: [assetId, purpose]
+      properties:
+        assetId: {type: string}
+        purpose: {type: string, enum: [DISPLAY, PLAYBACK]}
+
+    MediaAccessResponse:
+      type: object
+      additionalProperties: false
+      required: [assetId, url, mimeType, contentHash]
+      properties:
+        assetId: {type: string}
+        url: {type: string, format: uri}
+        expiresAt: {type: [string, 'null'], format: date-time}
+        mimeType: {type: string}
+        contentHash: {type: string}
+
+    AdminLearningResourceDetail:
+      type: object
+      additionalProperties: false
+      required: [resourceId, versions]
+      properties:
+        resourceId: {type: string}
+        activeVersion: {type: [string, 'null']}
+        versions:
+          type: array
+          items: {$ref: '#/components/schemas/LearningResourceDetail'}
+
+    AdminCollectionPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/AdminCollection'}
+        nextCursor: {type: [string, 'null']}
+
+    AdminCollection:
+      type: object
+      additionalProperties: false
+      required: [collectionId, providerCode, title, accessScope, status, ownershipType, allowedAudience]
+      properties:
+        collectionId: {type: string}
+        providerCode: {type: string}
+        title: {type: string}
+        accessScope: {type: string, enum: [PUBLIC, ADMIN_GRANTED, ADMIN_ONLY, DISABLED]}
+        status: {type: string, enum: [ACTIVE, DISABLED]}
+        sourceUrl: {type: [string, 'null'], format: uri}
+        ownershipType: {type: string}
+        licenseNote: {type: [string, 'null']}
+        allowedAudience: {type: string}
+        adminNote: {type: [string, 'null']}
+
     AuthRequest:
       type: object
       additionalProperties: false

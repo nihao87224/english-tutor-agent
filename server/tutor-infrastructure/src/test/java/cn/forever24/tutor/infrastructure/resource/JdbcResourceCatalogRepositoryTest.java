@@ -7,6 +7,7 @@ import cn.forever24.tutor.curriculum.CefrLevel;
 import cn.forever24.tutor.resource.AssetStatus;
 import cn.forever24.tutor.resource.CollectionStatus;
 import cn.forever24.tutor.resource.PublishStatus;
+import cn.forever24.tutor.resource.ResourceType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,6 +96,24 @@ class JdbcResourceCatalogRepositoryTest {
         assertTrue(repository.findExactVersion(
                 disabled.resource().resourceKey(), disabled.resourceVersion().semanticVersion()).isPresent());
         assertTrue(repository.findPublishedCandidates(ResourceCandidateQuery.allPublished()).isEmpty());
+        assertEquals(1, repository.findAllResourceVersions().size());
+        assertEquals(1, repository.findResourceVersions(disabled.resource().resourceKey()).size());
+        assertEquals(1, repository.findCollections().size());
+    }
+
+    @Test
+    void filtersPublishedCandidatesByTypeAndCollectionInSql() {
+        var entry = ResourceCatalogTestFixture.publishedEntry();
+        transactionTemplate.executeWithoutResult(ignored -> repository.saveExactVersion(entry));
+
+        assertEquals(1, repository.findPublishedCandidates(new ResourceCandidateQuery(
+                ResourceType.SCENARIO_LESSON,
+                entry.collection().collectionKey(),
+                null, null, null, null, null)).size());
+        assertTrue(repository.findPublishedCandidates(new ResourceCandidateQuery(
+                ResourceType.SCENARIO_LESSON,
+                "missing-collection",
+                null, null, null, null, null)).isEmpty());
     }
 
     @Test

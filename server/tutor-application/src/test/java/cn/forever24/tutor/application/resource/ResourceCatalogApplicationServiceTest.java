@@ -52,6 +52,21 @@ class ResourceCatalogApplicationServiceTest {
         }
 
         @Override
+        public List<ResourceCatalogEntry> findAllResourceVersions() {
+            return List.of();
+        }
+
+        @Override
+        public List<ResourceCatalogEntry> findResourceVersions(String resourceKey) {
+            return List.of();
+        }
+
+        @Override
+        public List<ResourceCollection> findCollections() {
+            return List.of();
+        }
+
+        @Override
         public Optional<ContentProvider> findProvider(String providerCode) {
             return Optional.empty();
         }

@@ -171,6 +171,14 @@ public class JdbcResourceCatalogRepository implements ResourceCatalogRepository 
                   )
                 """);
         List<Object> arguments = new ArrayList<>();
+        if (query.resourceType() != null) {
+            sql.append(" AND r.resource_type = ?");
+            arguments.add(query.resourceType().name());
+        }
+        if (query.collectionKey() != null) {
+            sql.append(" AND c.collection_key = ?");
+            arguments.add(query.collectionKey());
+        }
         if (query.level() != null) {
             sql.append(" AND r.level = ?");
             arguments.add(query.level().name());
@@ -209,6 +217,49 @@ public class JdbcResourceCatalogRepository implements ResourceCatalogRepository 
                 .map(key -> findExactVersion(key.resourceKey(), key.semanticVersion()).orElseThrow())
                 .map(JdbcResourceCatalogRepository::toCandidate)
                 .toList();
+    }
+
+    @Override
+    public List<ResourceCatalogEntry> findAllResourceVersions() {
+        return jdbcTemplate.query("""
+                        SELECT r.resource_key, rv.semantic_version
+                        FROM learning_resource r
+                        JOIN learning_resource_version rv ON rv.resource_id = r.id
+                        ORDER BY r.resource_key, rv.created_at_utc DESC
+                        """,
+                (resultSet, rowNumber) -> new VersionKey(
+                        resultSet.getString("resource_key"), resultSet.getString("semantic_version")))
+                .stream()
+                .map(key -> findExactVersion(key.resourceKey(), key.semanticVersion()).orElseThrow())
+                .toList();
+    }
+
+    @Override
+    public List<ResourceCatalogEntry> findResourceVersions(String resourceKey) {
+        return jdbcTemplate.query("""
+                        SELECT r.resource_key, rv.semantic_version
+                        FROM learning_resource r
+                        JOIN learning_resource_version rv ON rv.resource_id = r.id
+                        WHERE r.resource_key = ?
+                        ORDER BY rv.created_at_utc DESC
+                        """,
+                (resultSet, rowNumber) -> new VersionKey(
+                        resultSet.getString("resource_key"), resultSet.getString("semantic_version")),
+                resourceKey).stream()
+                .map(key -> findExactVersion(key.resourceKey(), key.semanticVersion()).orElseThrow())
+                .toList();
+    }
+
+    @Override
+    public List<ResourceCollection> findCollections() {
+        return jdbcTemplate.query("""
+                        SELECT collection_key, provider_code, title AS collection_title,
+                               access_scope AS collection_access_scope, status AS collection_status,
+                               source_url, ownership_type, license_note, allowed_audience, admin_note
+                        FROM resource_collection
+                        ORDER BY collection_key
+                        """,
+                (resultSet, rowNumber) -> mapCollection(resultSet));
     }
 
     @Override

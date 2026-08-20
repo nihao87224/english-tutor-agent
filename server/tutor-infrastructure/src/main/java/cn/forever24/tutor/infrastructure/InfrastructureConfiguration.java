@@ -37,6 +37,9 @@ import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
 import cn.forever24.tutor.application.resource.ResourceCatalogApplicationService;
 import cn.forever24.tutor.application.resource.ResourceCatalogRepository;
+import cn.forever24.tutor.application.resource.CatalogQueryApplicationService;
+import cn.forever24.tutor.application.resource.HistoricalResourceAccessRepository;
+import cn.forever24.tutor.application.resource.MediaAccessUrlIssuer;
 import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
@@ -84,6 +87,8 @@ import cn.forever24.tutor.infrastructure.quota.InMemoryDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.quota.JdbcDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.resource.InMemoryResourceCatalogRepository;
 import cn.forever24.tutor.infrastructure.resource.JdbcResourceCatalogRepository;
+import cn.forever24.tutor.infrastructure.resource.DenyHistoricalResourceAccessRepository;
+import cn.forever24.tutor.infrastructure.resource.HmacMediaAccessUrlIssuer;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -104,6 +109,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.net.URI;
 import java.util.UUID;
 
 @Configuration
@@ -396,6 +402,45 @@ public class InfrastructureConfiguration {
             EntitlementApplicationService entitlementApplicationService
     ) {
         return new AccessBeforeRankingFilter(entitlementApplicationService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(HistoricalResourceAccessRepository.class)
+    public HistoricalResourceAccessRepository historicalResourceAccessRepository() {
+        return new DenyHistoricalResourceAccessRepository();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(MediaAccessUrlIssuer.class)
+    public MediaAccessUrlIssuer mediaAccessUrlIssuer(Environment environment) {
+        return new HmacMediaAccessUrlIssuer(
+                URI.create(environment.getProperty(
+                        "tutor.media.public-base-url", "https://cdn.example.invalid/learning-content")),
+                URI.create(environment.getProperty(
+                        "tutor.media.private-gateway-base-url", "https://media.example.invalid/access")),
+                environment.getProperty(
+                        "tutor.media.access-signing-secret",
+                        "test-only-media-access-signing-secret-change-me"));
+    }
+
+    @Bean
+    public CatalogQueryApplicationService catalogQueryApplicationService(
+            ResourceCatalogRepository resourceCatalogRepository,
+            EntitlementApplicationService entitlementApplicationService,
+            HistoricalResourceAccessRepository historicalResourceAccessRepository,
+            MediaAccessUrlIssuer mediaAccessUrlIssuer,
+            Environment environment,
+            Clock clock
+    ) {
+        Duration ttl = environment.getProperty(
+                "tutor.media.access-ttl", Duration.class, Duration.ofMinutes(10));
+        return new CatalogQueryApplicationService(
+                resourceCatalogRepository,
+                entitlementApplicationService,
+                historicalResourceAccessRepository,
+                mediaAccessUrlIssuer,
+                clock,
+                ttl);
     }
 
     @Bean

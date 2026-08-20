@@ -31,6 +31,9 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the V2.0 canonical Catalog learner/admin API with access-filtered cursor
+  pagination, learner-safe resource/version DTOs, protected resource and collection
+  reads, and short-lived actor-scoped media access URLs that do not expose private object keys.
 - Added the V2.0 Entitlement/Access Filter vertical slice with V22 RBAC and
   entitlement tables, deterministic access reasons, transactional grant/revoke/expire
   audit, authoritative start-time locking, and short-TTL Redis decisions with active invalidation.

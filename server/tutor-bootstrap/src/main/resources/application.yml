@@ -45,6 +45,11 @@ tutor:
     reset-timezone: ${TUTOR_QUOTA_RESET_TIMEZONE:Asia/Shanghai}
   entitlement:
     decision-cache-ttl: ${TUTOR_ENTITLEMENT_DECISION_CACHE_TTL:30s}
+  media:
+    public-base-url: ${TUTOR_MEDIA_PUBLIC_BASE_URL:https://cdn.example.invalid/learning-content}
+    private-gateway-base-url: ${TUTOR_MEDIA_PRIVATE_GATEWAY_BASE_URL:https://media.example.invalid/access}
+    access-signing-secret: ${TUTOR_MEDIA_ACCESS_SIGNING_SECRET:test-only-media-access-signing-secret-change-me}
+    access-ttl: ${TUTOR_MEDIA_ACCESS_TTL:10m}
   secret:
     encryption-key: ${TUTOR_SECRET_ENCRYPTION_KEY}
     encryption-key-version: ${TUTOR_SECRET_ENCRYPTION_KEY_VERSION:v1}
