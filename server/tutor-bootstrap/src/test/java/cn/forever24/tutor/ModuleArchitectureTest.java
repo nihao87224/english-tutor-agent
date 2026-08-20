@@ -22,7 +22,8 @@ class ModuleArchitectureTest {
             "cn.forever24.tutor.training..",
             "cn.forever24.tutor.learner..",
             "cn.forever24.tutor.reporting..",
-            "cn.forever24.tutor.curriculum.."
+            "cn.forever24.tutor.curriculum..",
+            "cn.forever24.tutor.resource.."
     };
     private static final String AGENT_PACKAGE = "cn.forever24.tutor.ai..";
     private static final String INFRASTRUCTURE_PACKAGE = "cn.forever24.tutor.infrastructure..";

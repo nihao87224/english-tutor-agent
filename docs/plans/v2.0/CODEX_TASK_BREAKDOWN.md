@@ -48,7 +48,7 @@ Codex 每次任务必须：
 |---|---|---|---|
 | V2-T01 | 课程与资源机器 Schema | 无 | DONE |
 | V2-T02 | Curriculum / Skill Graph 纵向切片 | T01 | DONE |
-| V2-T03 | Resource Catalog / Asset 纵向切片 | T01 | TODO |
+| V2-T03 | Resource Catalog / Asset 纵向切片 | T01 | DONE |
 | V2-T04 | Experience Graph / Episode Mapping | T02,T03 | TODO |
 | V2-T05 | Entitlement / Access Filter | T03 | TODO |
 | V2-T06 | Catalog learner/admin API | T03,T05 | TODO |

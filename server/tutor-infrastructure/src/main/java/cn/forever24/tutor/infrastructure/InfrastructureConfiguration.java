@@ -26,6 +26,8 @@ import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicatio
 import cn.forever24.tutor.application.provider.AiProviderConnectionTestResult;
 import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
+import cn.forever24.tutor.application.resource.ResourceCatalogApplicationService;
+import cn.forever24.tutor.application.resource.ResourceCatalogRepository;
 import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
@@ -58,6 +60,8 @@ import cn.forever24.tutor.infrastructure.provider.InMemoryAiProviderConfiguratio
 import cn.forever24.tutor.infrastructure.provider.JdbcAiProviderConfigurationRepository;
 import cn.forever24.tutor.infrastructure.quota.InMemoryDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.quota.JdbcDailyQuotaRepository;
+import cn.forever24.tutor.infrastructure.resource.InMemoryResourceCatalogRepository;
+import cn.forever24.tutor.infrastructure.resource.JdbcResourceCatalogRepository;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -255,6 +259,28 @@ public class InfrastructureConfiguration {
     @Bean
     public CurriculumApplicationService curriculumApplicationService(CurriculumRepository curriculumRepository) {
         return new CurriculumApplicationService(curriculumRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ResourceCatalogRepository.class)
+    public ResourceCatalogRepository resourceCatalogRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            Clock clock
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryResourceCatalogRepository();
+        }
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        return new JdbcResourceCatalogRepository(jdbcTemplate, objectMapper, clock);
+    }
+
+    @Bean
+    public ResourceCatalogApplicationService resourceCatalogApplicationService(
+            ResourceCatalogRepository resourceCatalogRepository
+    ) {
+        return new ResourceCatalogApplicationService(resourceCatalogRepository);
     }
 
     @Bean
