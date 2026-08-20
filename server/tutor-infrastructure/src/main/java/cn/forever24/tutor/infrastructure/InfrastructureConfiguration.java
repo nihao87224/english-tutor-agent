@@ -31,6 +31,12 @@ import cn.forever24.tutor.application.onboarding.OnboardingApplicationService;
 import cn.forever24.tutor.application.onboarding.UserProfileRepository;
 import cn.forever24.tutor.application.planning.LearningPlanApplicationService;
 import cn.forever24.tutor.application.planning.LearningPlanRepository;
+import cn.forever24.tutor.application.planning.EntitlementPrescriptionCandidateAccessFilter;
+import cn.forever24.tutor.application.planning.LearnerSnapshotLoader;
+import cn.forever24.tutor.application.planning.PrescriptionApplicationService;
+import cn.forever24.tutor.application.planning.PrescriptionCandidateAccessFilter;
+import cn.forever24.tutor.application.planning.PrescriptionKeyGenerator;
+import cn.forever24.tutor.application.planning.PrescriptionRepository;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicationService;
 import cn.forever24.tutor.application.provider.AiProviderConnectionTestResult;
 import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
@@ -78,7 +84,11 @@ import cn.forever24.tutor.infrastructure.assessment.JdbcSelfAssessmentRepository
 import cn.forever24.tutor.infrastructure.profile.InMemoryUserProfileRepository;
 import cn.forever24.tutor.infrastructure.profile.JdbcUserProfileRepository;
 import cn.forever24.tutor.infrastructure.planning.InMemoryLearningPlanRepository;
+import cn.forever24.tutor.infrastructure.planning.InMemoryLearnerSnapshotLoader;
+import cn.forever24.tutor.infrastructure.planning.InMemoryPrescriptionRepository;
 import cn.forever24.tutor.infrastructure.planning.JdbcLearningPlanRepository;
+import cn.forever24.tutor.infrastructure.planning.JdbcLearnerSnapshotLoader;
+import cn.forever24.tutor.infrastructure.planning.JdbcPrescriptionRepository;
 import cn.forever24.tutor.infrastructure.provider.AesGcmSecretCipher;
 import cn.forever24.tutor.infrastructure.provider.AiProviderStartupCheck;
 import cn.forever24.tutor.infrastructure.provider.InMemoryAiProviderConfigurationRepository;
@@ -274,6 +284,32 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(LearnerSnapshotLoader.class)
+    public LearnerSnapshotLoader learnerSnapshotLoader(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null
+                ? new InMemoryLearnerSnapshotLoader()
+                : new JdbcLearnerSnapshotLoader(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(PrescriptionRepository.class)
+    public PrescriptionRepository prescriptionRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            Clock clock
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryPrescriptionRepository();
+        }
+        return new JdbcPrescriptionRepository(
+                jdbcTemplate,
+                objectMapperProvider.getIfAvailable(ObjectMapper::new),
+                clock);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(CurriculumRepository.class)
     public CurriculumRepository curriculumRepository(
             ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
@@ -402,6 +438,13 @@ public class InfrastructureConfiguration {
             EntitlementApplicationService entitlementApplicationService
     ) {
         return new AccessBeforeRankingFilter(entitlementApplicationService);
+    }
+
+    @Bean
+    public PrescriptionCandidateAccessFilter prescriptionCandidateAccessFilter(
+            AccessBeforeRankingFilter accessBeforeRankingFilter
+    ) {
+        return new EntitlementPrescriptionCandidateAccessFilter(accessBeforeRankingFilter);
     }
 
     @Bean
@@ -586,6 +629,45 @@ public class InfrastructureConfiguration {
             Clock clock
     ) {
         return new LearningPlanApplicationService(userProfileRepository, learningPlanRepository, clock);
+    }
+
+    @Bean
+    public PrescriptionKeyGenerator prescriptionKeyGenerator() {
+        return new PrescriptionKeyGenerator() {
+            @Override
+            public String nextPrescriptionKey() {
+                return "prescription-" + UUID.randomUUID();
+            }
+
+            @Override
+            public String nextBlockKey() {
+                return "block-" + UUID.randomUUID();
+            }
+        };
+    }
+
+    @Bean
+    public PrescriptionApplicationService prescriptionApplicationService(
+            LearnerSnapshotLoader learnerSnapshotLoader,
+            CurriculumRepository curriculumRepository,
+            ResourceCatalogRepository resourceCatalogRepository,
+            PrescriptionCandidateAccessFilter prescriptionCandidateAccessFilter,
+            ExperienceRepository experienceRepository,
+            PrescriptionRepository prescriptionRepository,
+            MediaAccessUrlIssuer mediaAccessUrlIssuer,
+            PrescriptionKeyGenerator prescriptionKeyGenerator,
+            Clock clock
+    ) {
+        return new PrescriptionApplicationService(
+                learnerSnapshotLoader,
+                curriculumRepository,
+                resourceCatalogRepository,
+                prescriptionCandidateAccessFilter,
+                experienceRepository,
+                prescriptionRepository,
+                mediaAccessUrlIssuer,
+                prescriptionKeyGenerator,
+                clock);
     }
 
     @Bean

@@ -27,6 +27,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
+                        .requestMatchers("/api/v1/prescriptions/**").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasAnyAuthority(
                                 "DASHBOARD_READ",
                                 "USER_READ",

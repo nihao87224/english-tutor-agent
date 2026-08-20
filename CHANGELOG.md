@@ -31,6 +31,10 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added the V2.0 deterministic Daily Prescription backend with V23 persistence,
+  learner snapshots, access-before-ranking composition, exact resource/Episode Mapping
+  references, Lin Muen task heroes, ACTIVE/SUPERSEDED versions, idempotent feedback,
+  regeneration/skip APIs and rollback/concurrency coverage.
 - Added the versioned V2-P0-1 deterministic pedagogical policy baseline for
   prerequisite/mastery eligibility, spacing, difficulty/scaffolding, transfer,
   retry, completion, normalized prescription ranking and time-bounded interleaving.

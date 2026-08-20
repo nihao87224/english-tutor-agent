@@ -53,7 +53,7 @@ Codex 每次任务必须：
 | V2-T05 | Entitlement / Access Filter | T03 | DONE |
 | V2-T06 | Catalog learner/admin API | T03,T05 | DONE |
 | V2-T07 | Pedagogical Policy 基线 | T02 | DONE |
-| V2-T08 | Daily Prescription 后端 | T04,T05,T07 | TODO |
+| V2-T08 | Daily Prescription 后端 | T04,T05,T07 | DONE |
 | V2-T09 | Web 今日处方 | T08 | TODO |
 | V2-T10 | Scenario Lesson Session 基线 | T06,T08 | TODO |
 | V2-T11 | Web 场景引导与媒体输入 | T10 | TODO |
@@ -236,6 +236,8 @@ Codex 每次任务必须：
 测试：不同 Skill State 不同计划、同输入可重放、无候选、权限过滤、temporary goal、time feedback、concurrent generation、rollback。
 
 验收：首屏读取持久化处方，不调用 LLM；每个 block 有 resourceVersion 和 expected Evidence。
+
+完成记录（2026-08-20）：V23 已扩展 `learning_plan`/`learning_task` 并增加反馈幂等表；已实现 Learner Snapshot、候选→权限→排序→编排→Episode Mapping、ACTIVE/SUPERSEDED、反馈重排/skip、JDBC/内存仓储、OpenAPI/DTO/Controller。测试覆盖不同 Skill State、同输入重放、无候选、权限过滤、temporary goal、time feedback、并发首次生成、资源版本/Expected Evidence 持久化和事务回滚；处方生成不调用 LLM。
 
 ### V2-T09 Web 今日处方
 

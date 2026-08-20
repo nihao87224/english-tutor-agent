@@ -75,6 +75,7 @@ public class JdbcLearningPlanRepository implements LearningPlanRepository {
                             WHERE u.user_key = ?
                               AND u.status = 'ACTIVE'
                               AND lp.plan_key = ?
+                              AND lp.plan_type = 'DAILY'
                             """,
                     (resultSet, rowNum) -> new PlanRow(
                             resultSet.getLong("id"),
@@ -204,6 +205,7 @@ public class JdbcLearningPlanRepository implements LearningPlanRepository {
                             FROM learning_plan
                             WHERE user_id = ?
                               AND plan_date = ?
+                              AND plan_type = 'DAILY'
                               AND profile_version = ?
                               AND adjustment_version = ?
                               AND status = 'READY'

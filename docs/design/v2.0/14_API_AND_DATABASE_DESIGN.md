@@ -675,10 +675,10 @@ RBAC migration 同时 seed 新权限，并通过现有 ADMIN role 绑定。
 
 ### `learning_plan` 新增
 
-- `prescription_version BIGINT NOT NULL DEFAULT 1`；
+- `prescription_version BIGINT NULL`；旧 V1 行保持 `NULL`，V2 写入必须非空；
 - `learner_timezone VARCHAR(64)`；
-- `priority_goal VARCHAR(64)`；
-- `policy_version VARCHAR(64)`；
+- `priority_goal VARCHAR(128)`；
+- `policy_version VARCHAR(32)`；
 - `input_snapshot_json JSON`；
 - `reason_codes_json JSON`；
 - `expires_at_utc DATETIME(3)`；
@@ -699,6 +699,16 @@ RBAC migration 同时 seed 新权限，并通过现有 ADMIN role 绑定。
 - `recommendation_factors_json JSON`。
 
 Index `(plan_id,status,sequence_no)`、`(resource_version_id,status)`。
+
+### `prescription_feedback`
+
+V23 同步新增处方反馈与幂等记录表，字段包括 actor、原处方、响应处方、block、operation、feedback type、时间/临时目标/note、`idempotency_key`、`request_hash` 和 UTC 创建时间。
+
+- Unique `(user_id, operation, idempotency_key)`；
+- 相同 key + 相同 hash 返回原 `response_plan_id`；
+- 相同 key + 不同 hash 返回 409 `IDEMPOTENCY_CONFLICT`；
+- regeneration 的 ACTIVE → SUPERSEDED、新版本写入和反馈记录必须在同一事务；
+- skip 状态和反馈记录必须在同一事务。
 
 ## 18. V24 Session、Attempt、Evidence
 
