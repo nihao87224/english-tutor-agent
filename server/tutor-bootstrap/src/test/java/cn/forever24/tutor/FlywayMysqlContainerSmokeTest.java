@@ -1,17 +1,14 @@
 package cn.forever24.tutor;
 
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.env.MapPropertySource;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.Map;
+import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
 class FlywayMysqlContainerSmokeTest {
@@ -24,27 +21,16 @@ class FlywayMysqlContainerSmokeTest {
 
     @Test
     void cleanMysqlStartsWithFlywayMigration() {
-        SpringApplication application = new SpringApplication(TutorApplication.class);
-        application.setWebApplicationType(WebApplicationType.NONE);
-        application.setDefaultProperties(Map.of(
-                "spring.profiles.active", "container-smoke",
-                "spring.data.redis.repositories.enabled", "false",
-                "spring.data.redis.host", "localhost",
-                "spring.data.redis.port", "6379",
-                "spring.flyway.clean-disabled", "true",
-                "TUTOR_JWT_SIGNING_SECRET", "test-only-jwt-signing-secret-change-me-32",
-                "TUTOR_SECRET_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef"
-        ));
-        application.addInitializers(context -> context.getEnvironment().getPropertySources().addFirst(
-                new MapPropertySource("testcontainers-mysql", Map.of(
-                        "spring.datasource.url", MYSQL.getJdbcUrl(),
-                        "spring.datasource.username", MYSQL.getUsername(),
-                        "spring.datasource.password", MYSQL.getPassword()
-                ))
-        ));
+        Flyway flyway = Flyway.configure()
+                .dataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword())
+                .locations("classpath:db/migration")
+                .cleanDisabled(true)
+                .load();
 
-        try (ConfigurableApplicationContext context = application.run()) {
-            assertNotNull(context.getBean("flyway"));
-        }
+        flyway.migrate();
+
+        assertTrue(Arrays.stream(flyway.info().applied())
+                .anyMatch(migration -> migration.getVersion() != null
+                        && "19".equals(migration.getVersion().getVersion())));
     }
 }
