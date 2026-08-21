@@ -411,8 +411,9 @@ export interface LessonAttemptProgress {
 
 export interface SubmitLessonAttemptRequest {
   taskId: string;
-  inputType: "TEXT";
-  text: string;
+  inputType: "TEXT" | "AUDIO";
+  text?: string | null;
+  audioAssetId?: string | null;
   retryOfAttemptId?: string | null;
   clientStartedAt?: string | null;
   clientDurationMs?: number | null;
@@ -428,8 +429,29 @@ export interface LessonAttemptReceipt {
   submittedAt: string;
   pollAfterMs?: number | null;
   objectiveResult?: { correct: boolean; expectedAnswer: string; explanation: string } | null;
+  transcript?: { text: string; confidence?: number | null; confirmationRequired: boolean } | null;
   stepProgress: LessonAttemptProgress;
   version: number;
+}
+
+export interface AudioUploadRequest {
+  file: Blob;
+  durationMs: number;
+  purpose?: "LESSON_ATTEMPT" | "ASSESSMENT" | "TRAINING" | "IELTS";
+  sha256?: string;
+}
+
+export interface AudioUploadResponse {
+  audioAssetId: string;
+  uploadStatus: "READY";
+  mimeType: string;
+  durationMs: number;
+  contentHash: string;
+}
+
+export interface TranscriptConfirmationRequest {
+  decision: "CONFIRM" | "CORRECT" | "RE_RECORD";
+  correctedText?: string | null;
 }
 
 export interface CatalogAsset {

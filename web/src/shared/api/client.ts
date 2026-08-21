@@ -22,6 +22,8 @@ import type {
   AiProviderConnectionTestResult,
   AiProviderSecretRequest,
   AiProviderUpdateRequest,
+  AudioUploadRequest,
+  AudioUploadResponse,
   ConversationMessageRequest,
   CurrentTrainingTask,
   DailyLearningPrescription,
@@ -50,6 +52,7 @@ import type {
   TaskAttemptRequest,
   TrainingSession,
   TrainingSessionCompletion,
+  TranscriptConfirmationRequest,
 } from "./types";
 
 const DEFAULT_BASE_URL = "http://localhost:8080";
@@ -113,6 +116,13 @@ export interface ApiClient {
   resumeLessonSession(sessionId: string, options?: RequestOptions): Promise<LessonSession>;
   completeLessonStep(sessionId: string, stepId: LessonStep, options?: RequestOptions): Promise<LessonSession>;
   submitLessonAttempt(sessionId: string, request: SubmitLessonAttemptRequest, options?: RequestOptions): Promise<LessonAttemptReceipt>;
+  uploadAudio(request: AudioUploadRequest, options?: RequestOptions): Promise<AudioUploadResponse>;
+  confirmLessonAttemptTranscript(
+    sessionId: string,
+    attemptId: string,
+    request: TranscriptConfirmationRequest,
+    options?: RequestOptions,
+  ): Promise<LessonAttemptReceipt>;
   getLessonAttempt(sessionId: string, attemptId: string, options?: RequestOptions): Promise<LessonAttemptReceipt>;
   getLearningResourceVersion(resourceId: string, version: string, options?: RequestOptions): Promise<LearningResourceDetail>;
   createLearningResourceMediaAccess(
@@ -190,6 +200,21 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
 
     const text = await response.text();
     return (text ? JSON.parse(text) : undefined) as T;
+  }
+
+  async function requestForm<T>(path: string, form: FormData, requestOptions: RequestOptions = {}): Promise<T> {
+    const resolved = mutationOptions(requestOptions);
+    const send = () => fetchFn(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: buildHeaders(options, resolved, "POST"),
+      body: form,
+      signal: resolved.signal,
+      credentials: "include",
+    });
+    let response = await send();
+    if (response.status === 401 && options.onUnauthorized && await options.onUnauthorized()) response = await send();
+    if (!response.ok) throw await toApiError(response);
+    return JSON.parse(await response.text()) as T;
   }
 
   function fetchJson(path: string, method: string, requestOptions: JsonRequestOptions): Promise<Response> {
@@ -422,6 +447,20 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     submitLessonAttempt(sessionId, request, requestOptions) {
       return requestJson<LessonAttemptReceipt>(
         `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/attempts`,
+        { ...mutationOptions(requestOptions), method: "POST", body: request },
+      );
+    },
+    uploadAudio(request, requestOptions) {
+      const form = new FormData();
+      form.append("file", request.file, `recording.${request.file.type.includes("ogg") ? "ogg" : "webm"}`);
+      form.append("durationMs", String(request.durationMs));
+      form.append("purpose", request.purpose ?? "LESSON_ATTEMPT");
+      if (request.sha256) form.append("sha256", request.sha256);
+      return requestForm<AudioUploadResponse>("/api/v1/audio/uploads", form, requestOptions);
+    },
+    confirmLessonAttemptTranscript(sessionId, attemptId, request, requestOptions) {
+      return requestJson<LessonAttemptReceipt>(
+        `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/attempts/${encodeURIComponent(attemptId)}/transcript-confirmations`,
         { ...mutationOptions(requestOptions), method: "POST", body: request },
       );
     },

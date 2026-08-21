@@ -1,6 +1,12 @@
 package cn.forever24.tutor.infrastructure;
 
 import cn.forever24.tutor.application.assessment.AssessmentApplicationService;
+import cn.forever24.tutor.application.audio.AudioAssetKeyGenerator;
+import cn.forever24.tutor.application.audio.AudioAssetRepository;
+import cn.forever24.tutor.application.audio.AudioTranscriber;
+import cn.forever24.tutor.application.audio.AudioUploadApplicationService;
+import cn.forever24.tutor.application.audio.AudioRetentionApplicationService;
+import cn.forever24.tutor.application.audio.PrivateAudioObjectStorage;
 import cn.forever24.tutor.application.assessment.AssessmentAnswerRepository;
 import cn.forever24.tutor.application.assessment.AssessmentResultRepository;
 import cn.forever24.tutor.application.assessment.AssessmentSessionRepository;
@@ -60,6 +66,10 @@ import cn.forever24.tutor.application.training.LessonAttemptRepository;
 import cn.forever24.tutor.application.training.LessonContentReader;
 import cn.forever24.tutor.entitlement.AccessPolicy;
 import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
+import cn.forever24.tutor.infrastructure.audio.FileSystemPrivateAudioObjectStorage;
+import cn.forever24.tutor.infrastructure.audio.InMemoryAudioAssetRepository;
+import cn.forever24.tutor.infrastructure.audio.JdbcAudioAssetRepository;
+import cn.forever24.tutor.infrastructure.audio.AudioRetentionScheduler;
 import cn.forever24.tutor.infrastructure.auth.HmacJwtAccessTokenService;
 import cn.forever24.tutor.infrastructure.auth.InMemoryRefreshSessionRepository;
 import cn.forever24.tutor.infrastructure.auth.InMemoryUserAccountRepository;
@@ -132,14 +142,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.UUID;
 
 @Configuration
+@EnableScheduling
 public class InfrastructureConfiguration {
 
     @Bean
@@ -607,6 +620,43 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(AudioAssetRepository.class)
+    public AudioAssetRepository audioAssetRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null ? new InMemoryAudioAssetRepository() : new JdbcAudioAssetRepository(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(PrivateAudioObjectStorage.class)
+    public PrivateAudioObjectStorage privateAudioObjectStorage(Environment environment) {
+        return new FileSystemPrivateAudioObjectStorage(Path.of(environment.getProperty(
+                "tutor.audio.private-storage-root", "var/private/audio")));
+    }
+
+    @Bean
+    public AudioAssetKeyGenerator audioAssetKeyGenerator() {
+        return () -> UUID.randomUUID().toString().replace("-", "");
+    }
+
+    @Bean
+    public AudioUploadApplicationService audioUploadApplicationService(
+            AudioAssetRepository repository, PrivateAudioObjectStorage storage,
+            UserProfileRepository profiles, AudioAssetKeyGenerator keys, Clock clock) {
+        return new AudioUploadApplicationService(repository, storage, profiles, keys, clock);
+    }
+
+    @Bean
+    public AudioRetentionApplicationService audioRetentionApplicationService(
+            AudioAssetRepository repository, PrivateAudioObjectStorage storage, Clock clock) {
+        return new AudioRetentionApplicationService(repository, storage, clock);
+    }
+
+    @Bean
+    public AudioRetentionScheduler audioRetentionScheduler(AudioRetentionApplicationService service) {
+        return new AudioRetentionScheduler(service);
+    }
+
+    @Bean
     public LessonContentReader lessonContentReader(
             ResourceCatalogRepository resourceCatalogRepository,
             ObjectProvider<ObjectMapper> objectMapperProvider
@@ -795,6 +845,10 @@ public class InfrastructureConfiguration {
             LessonContentReader lessonContentReader,
             LessonSessionTransactionOperations lessonSessionTransactionOperations,
             LessonAttemptKeyGenerator lessonAttemptKeyGenerator,
+            AudioAssetRepository audioAssetRepository,
+            PrivateAudioObjectStorage privateAudioObjectStorage,
+            AudioTranscriber audioTranscriber,
+            Environment environment,
             Clock clock
     ) {
         return new LessonAttemptApplicationService(
@@ -804,6 +858,11 @@ public class InfrastructureConfiguration {
                 lessonSessionTransactionOperations,
                 lessonAttemptKeyGenerator,
                 new ObjectiveAnswerScorer(),
+                audioAssetRepository,
+                privateAudioObjectStorage,
+                audioTranscriber,
+                environment.getProperty("tutor.audio.asr-confirmation-threshold", Double.class,
+                        LessonAttemptApplicationService.defaultAsrConfirmationThreshold()),
                 clock);
     }
 

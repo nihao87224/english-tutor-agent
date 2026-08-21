@@ -45,4 +45,14 @@ public final class LessonSessionApplicationException extends RuntimeException {
         return new LessonSessionApplicationException(
                 "IDEMPOTENCY_CONFLICT", 409, "Idempotency-Key was already used for another " + operation);
     }
+
+    public static LessonSessionApplicationException audioAssetNotFound() {
+        return new LessonSessionApplicationException(
+                "AUDIO_ASSET_NOT_FOUND", 404, "owned ready audio asset was not found");
+    }
+
+    public static LessonSessionApplicationException transcriptConfirmationRequired() {
+        return new LessonSessionApplicationException(
+                "ASR_CONFIRMATION_REQUIRED", 409, "the transcript must be confirmed, corrected or re-recorded");
+    }
 }

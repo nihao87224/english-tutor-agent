@@ -1,6 +1,10 @@
 package cn.forever24.tutor.application.training;
 
+import cn.forever24.tutor.application.audio.*;
+import cn.forever24.tutor.audio.AudioAssetStatus;
+import cn.forever24.tutor.audio.UserAudioAsset;
 import cn.forever24.tutor.curriculum.TrainingType;
+import cn.forever24.tutor.profile.RawContentRetention;
 import cn.forever24.tutor.profile.UserKey;
 import cn.forever24.tutor.training.LessonAttemptStatus;
 import cn.forever24.tutor.training.LessonInputMode;
@@ -19,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,12 +38,7 @@ class LessonAttemptApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        AtomicInteger sequence = new AtomicInteger();
-        service = new LessonAttemptApplicationService(
-                sessions, attempts, (resource, version) -> content(),
-                new DirectTransactions(),
-                () -> "lat-" + sequence.incrementAndGet(), new ObjectiveAnswerScorer(),
-                Clock.fixed(Instant.parse("2026-08-21T01:00:00Z"), ZoneOffset.UTC));
+        service = audioService(new FakeAudioRepository(), request -> new AudioTranscription("unused", 1.0));
     }
 
     @Test
@@ -85,6 +83,74 @@ class LessonAttemptApplicationServiceTest {
                 () -> service.get("usr-2", "lsn-1", result.attempt().attemptId())).code());
     }
 
+    @Test
+    void lowConfidenceAudioRequiresConfirmationBeforeAdvancing() {
+        seed(guidedSession());
+        FakeAudioRepository audio = new FakeAudioRepository();
+        audio.asset = audioAsset();
+        service = audioService(audio, request -> new AudioTranscription("Gate twenty four", 0.42));
+
+        var received = service.submit("usr-1", "lsn-1", audioCommand(), "audio-attempt");
+        assertEquals(LessonAttemptStatus.RECEIVED, received.attempt().status());
+        assertFalse(received.attempt().transcriptConfirmed());
+        assertEquals(LessonStep.GUIDED_SPEAKING, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+
+        var confirmed = service.confirmTranscript("usr-1", "lsn-1", received.attempt().attemptId(),
+                new ConfirmTranscriptCommand(TranscriptConfirmationDecision.CORRECT, "Gate 24"), "confirm-1");
+        assertTrue(confirmed.attempt().transcriptConfirmed());
+        assertEquals("Gate 24", confirmed.attempt().transcript());
+        assertEquals(LessonStep.ROLE_PLAY, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+        assertTrue(service.confirmTranscript("usr-1", "lsn-1", received.attempt().attemptId(),
+                new ConfirmTranscriptCommand(TranscriptConfirmationDecision.CORRECT, "Gate 24"), "confirm-1").replayed());
+    }
+
+    @Test
+    void providerTimeoutIsRetryableAndRerecordDoesNotAdvance() {
+        seed(guidedSession());
+        FakeAudioRepository audio = new FakeAudioRepository();
+        audio.asset = audioAsset();
+        service = audioService(audio, request -> { throw new AudioTranscriptionException(true, "timeout", null); });
+        var timedOut = service.submit("usr-1", "lsn-1", audioCommand(), "timeout");
+        assertEquals(LessonAttemptStatus.TRANSCRIPTION_RETRYABLE, timedOut.attempt().status());
+        assertEquals(LessonStep.GUIDED_SPEAKING, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+
+        service = audioService(audio, request -> new AudioTranscription("Gate twenty four", 0.20));
+        var low = service.submit("usr-1", "lsn-1", audioCommand(), "low");
+        var rerecord = service.confirmTranscript("usr-1", "lsn-1", low.attempt().attemptId(),
+                new ConfirmTranscriptCommand(TranscriptConfirmationDecision.RE_RECORD, null), "rerecord");
+        assertEquals(LessonAttemptStatus.RETRY_REQUIRED, rerecord.attempt().status());
+        assertEquals(LessonStep.GUIDED_SPEAKING, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+    }
+
+    @Test
+    void rejectsAudioAssetOwnedByAnotherUser() {
+        seed(guidedSession());
+        service = audioService(new FakeAudioRepository(), request -> new AudioTranscription("hello", 0.9));
+        assertEquals("AUDIO_ASSET_NOT_FOUND", assertThrows(LessonSessionApplicationException.class,
+                () -> service.submit("usr-1", "lsn-1", audioCommand(), "foreign")).code());
+    }
+
+    private LessonAttemptApplicationService audioService(AudioAssetRepository audio, AudioTranscriber transcriber) {
+        return new LessonAttemptApplicationService(sessions, attempts, (resource, version) -> content(),
+                new DirectTransactions(), () -> "lat-" + (attempts.values.size() + 1), new ObjectiveAnswerScorer(),
+                audio, new PrivateAudioObjectStorage() {
+                    public void put(String key, byte[] content) { }
+                    public byte[] read(String key) { return new byte[]{1, 2, 3}; }
+                    public void delete(String key) { }
+                }, transcriber, 0.8, Clock.fixed(Instant.parse("2026-08-21T01:00:00Z"), ZoneOffset.UTC));
+    }
+
+    private static SubmitLessonAttemptCommand audioCommand() {
+        return new SubmitLessonAttemptCommand(
+                "guided-1", TaskAttemptInputType.AUDIO, null, "usr_audio_1", null, null, 1_000);
+    }
+
+    private static UserAudioAsset audioAsset() {
+        return new UserAudioAsset("usr_audio_1", "private/1.webm", "LESSON_ATTEMPT", "audio/webm",
+                3, 1_000, "sha256:abc", AudioAssetStatus.READY, RawContentRetention.STORE, null,
+                Instant.parse("2026-08-21T00:00:00Z"));
+    }
+
     private void seed(LessonSession session) {
         sessions.insert(USER, session, "start", "hash");
     }
@@ -113,7 +179,7 @@ class LessonAttemptApplicationServiceTest {
     }
 
     private static SubmitLessonAttemptCommand command(String taskId, String text) {
-        return new SubmitLessonAttemptCommand(taskId, TaskAttemptInputType.TEXT, text, null, null, null);
+        return new SubmitLessonAttemptCommand(taskId, TaskAttemptInputType.TEXT, text, null, null, null, null);
     }
 
     private static final class DirectTransactions implements LessonSessionTransactionOperations {
@@ -158,6 +224,7 @@ class LessonAttemptApplicationServiceTest {
     private static final class FakeAttemptRepository implements LessonAttemptRepository {
         private final List<cn.forever24.tutor.training.LessonAttempt> values = new ArrayList<>();
         private final Map<String, LessonAttemptStoreRecord> idempotency = new HashMap<>();
+        private final Map<String, LessonAttemptStoreRecord> confirmations = new HashMap<>();
 
         @Override
         public Optional<LessonAttemptStoreRecord> findByIdempotencyKey(UserKey userKey, String sessionId, String key) {
@@ -169,6 +236,12 @@ class LessonAttemptApplicationServiceTest {
             if (!USER.equals(userKey)) return Optional.empty();
             return values.stream().filter(value -> value.sessionId().equals(sessionId)
                     && value.attemptId().equals(attemptId)).findFirst();
+        }
+
+        @Override
+        public Optional<LessonAttemptStoreRecord> findByTranscriptConfirmationKey(
+                UserKey userKey, String sessionId, String attemptId, String key) {
+            return Optional.ofNullable(confirmations.get(userKey.value() + sessionId + attemptId + key));
         }
 
         @Override
@@ -184,5 +257,38 @@ class LessonAttemptApplicationServiceTest {
             idempotency.put(userKey.value() + attempt.sessionId() + idempotencyKey,
                     new LessonAttemptStoreRecord(requestHash, attempt));
         }
+
+        @Override
+        public void updateTranscription(UserKey userKey, cn.forever24.tutor.training.LessonAttempt attempt, long expectedVersion) {
+            replace(attempt, expectedVersion);
+        }
+
+        @Override
+        public void updateTranscriptConfirmation(UserKey userKey, cn.forever24.tutor.training.LessonAttempt attempt,
+                                                 long expectedVersion, String key, String hash) {
+            replace(attempt, expectedVersion);
+            confirmations.put(userKey.value() + attempt.sessionId() + attempt.attemptId() + key,
+                    new LessonAttemptStoreRecord(hash, attempt));
+        }
+
+        private void replace(cn.forever24.tutor.training.LessonAttempt attempt, long expectedVersion) {
+            var current = values.stream().filter(value -> value.attemptId().equals(attempt.attemptId())).findFirst().orElseThrow();
+            assertEquals(expectedVersion, current.version());
+            values.remove(current);
+            values.add(attempt);
+            idempotency.replaceAll((key, record) -> record.attempt().attemptId().equals(attempt.attemptId())
+                    ? new LessonAttemptStoreRecord(record.requestHash(), attempt) : record);
+        }
+    }
+
+    private static final class FakeAudioRepository implements AudioAssetRepository {
+        private UserAudioAsset asset;
+        public Optional<AudioAssetStoreRecord> findByIdempotencyKey(UserKey userKey, String key) { return Optional.empty(); }
+        public Optional<UserAudioAsset> findById(UserKey userKey, String id) {
+            return USER.equals(userKey) && asset != null && asset.audioAssetId().equals(id) ? Optional.of(asset) : Optional.empty();
+        }
+        public void insert(UserKey userKey, UserAudioAsset value, String key, String hash) { asset = value; }
+        public void markDeleted(UserKey userKey, String id) { }
+        public List<OwnedAudioAsset> findExpired(Instant now, int limit) { return List.of(); }
     }
 }

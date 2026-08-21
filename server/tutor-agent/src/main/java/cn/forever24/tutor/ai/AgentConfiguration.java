@@ -1,6 +1,7 @@
 package cn.forever24.tutor.ai;
 
 import cn.forever24.tutor.ai.conversation.ProviderConversationReplyStreamer;
+import cn.forever24.tutor.ai.audio.ProviderAudioTranscriber;
 import cn.forever24.tutor.ai.conversation.ProviderLayeredCorrectionAnalyzer;
 import cn.forever24.tutor.ai.openai.OpenAiOpenAnswerEvaluator;
 import cn.forever24.tutor.ai.runtime.RuntimeOpenAiChatProvider;
@@ -8,6 +9,7 @@ import cn.forever24.tutor.ai.runtime.RuntimeAiProviderConnectionTester;
 import cn.forever24.tutor.ai.runtime.RuntimeOpenAiSpeechToTextProvider;
 import cn.forever24.tutor.ai.runtime.RuntimeOpenAiTextToSpeechProvider;
 import cn.forever24.tutor.application.assessment.OpenAnswerEvaluator;
+import cn.forever24.tutor.application.audio.AudioTranscriber;
 import cn.forever24.tutor.application.conversation.ConversationReplyStreamer;
 import cn.forever24.tutor.application.conversation.CorrectionAnalyzer;
 import cn.forever24.tutor.ai.provider.ChatProvider;
@@ -46,6 +48,12 @@ public class AgentConfiguration {
     @ConditionalOnMissingBean(SpeechToTextProvider.class)
     SpeechToTextProvider openAiSpeechToTextProvider(AiProviderConfigurationApplicationService configurationService, ObjectMapper objectMapper) {
         return new RuntimeOpenAiSpeechToTextProvider(configurationService, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AudioTranscriber.class)
+    AudioTranscriber audioTranscriber(SpeechToTextProvider provider) {
+        return new ProviderAudioTranscriber(provider);
     }
 
     @Bean

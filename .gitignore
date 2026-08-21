@@ -35,6 +35,7 @@ captures/
 logs/
 *.log
 tmp/
+var/
 .cache/
 
 # Test and coverage

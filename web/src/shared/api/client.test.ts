@@ -112,6 +112,29 @@ describe("createApiClient", () => {
     expect(JSON.parse(media.body as string)).toEqual({ assetId: "hero-1", purpose: "DISPLAY" });
   });
 
+  it("uploads audio as multipart and confirms a low-confidence transcript", async () => {
+    const fetchFn = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => String(input).endsWith("/audio/uploads")
+      ? jsonResponse({ audioAssetId: "usr_audio_1", uploadStatus: "READY", mimeType: "audio/webm", durationMs: 900,
+        contentHash: `sha256:${"0".repeat(64)}` })
+      : jsonResponse({ attemptId: "lat-1", taskId: "guided-1", inputType: "AUDIO", status: "ANALYSIS_PENDING" }));
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      accessToken: "access-token",
+      fetchFn,
+      idempotencyKeyFactory: () => "audio-key",
+    });
+
+    await client.uploadAudio({ file: new Blob(["voice"], { type: "audio/webm" }), durationMs: 900 });
+    await client.confirmLessonAttemptTranscript("lesson/1", "lat/1", { decision: "CORRECT", correctedText: "Gate 24" });
+
+    const upload = fetchFn.mock.calls[0][1] as RequestInit;
+    expect(upload.body).toBeInstanceOf(FormData);
+    expect((upload.headers as Headers).get("Content-Type")).toBeNull();
+    expect((upload.headers as Headers).get("Idempotency-Key")).toBe("audio-key");
+    expect(String(fetchFn.mock.calls[1][0])).toContain("lesson%2F1/attempts/lat%2F1/transcript-confirmations");
+    expect(JSON.parse(fetchFn.mock.calls[1][1]?.body as string)).toEqual({ decision: "CORRECT", correctedText: "Gate 24" });
+  });
+
   it("preserves prescription fallback details from API errors", async () => {
     const fetchFn = vi.fn(async () => jsonResponse({
       type: "about:blank",

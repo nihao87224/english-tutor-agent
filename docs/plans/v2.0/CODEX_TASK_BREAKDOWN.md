@@ -58,7 +58,7 @@ Codex 每次任务必须：
 | V2-T10 | Scenario Lesson Session 基线 | T06,T08 | DONE |
 | V2-T11 | Web 场景引导与媒体输入 | T10 | DONE |
 | V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | DONE |
-| V2-T13 | Audio Upload / ASR 确认 | T10 | TODO |
+| V2-T13 | Audio Upload / ASR 确认 | T10 | DONE |
 | V2-T14 | Role Play SSE | T12,T13 | TODO |
 | V2-T15 | Correction / Retry / Attempt 状态 | T12,T14 | TODO |
 | V2-T16 | Evidence / Skill State 原子更新 | T15 | TODO |
@@ -313,6 +313,8 @@ Codex 每次任务必须：
 测试：格式/大小/时长、other-user asset、provider timeout、low confidence、confirm/correct/re-record、privacy retention、object failure。
 
 验收：低置信度转写未经用户确认不进入评价或 Evidence。
+
+完成记录（2026-08-21）：Web Guided Speaking 已接入半双工 Push-to-Talk，并保留文本输入作为浏览器不支持录音或用户拒绝麦克风时的降级路径。`POST /audio/uploads` 采用受保护 multipart 直传，服务端验证 Owner、MIME、50 MB 大小、10 分钟时长和 SHA-256，以幂等方式返回 `READY` 音频资产；对象键和私有存储路径不通过 API 暴露。V24.1 新增用户音频元数据、保留模式和到期删除时间，定时清理器持续删除到期对象；`PROCESS_ONLY` 最迟 24 小时删除且成功识别后尽力立即删除。ASR 通过 Application Port 接入现有 Provider，调用位于 Session 事务之外；Provider 未返回真实 confidence 时保守按低置信度处理，超时保留 `TRANSCRIPTION_RETRYABLE` Attempt。低置信度只进入 `RECEIVED`，确认/纠正后才进入 `ANALYSIS_PENDING` 并推进步骤，重录进入 `RETRY_REQUIRED` 且不产生 Evidence。OpenAPI、ADR-0017、领域/应用/API/JDBC/私有存储/Web 测试已覆盖格式、大小、时长、哈希、对象失败、其他用户资产、Provider 超时、低置信度、确认/纠正/重录、幂等和隐私保留。
 
 ### V2-T14 Role Play SSE
 

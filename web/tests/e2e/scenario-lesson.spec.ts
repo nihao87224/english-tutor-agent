@@ -53,6 +53,44 @@ test("starts and resumes the responsive Lin Muen airport scenario with hidden-fi
   expect(consoleErrors).toEqual([]);
 });
 
+test("records half-duplex audio and blocks low-confidence ASR until correction", async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
+  await seedAuthenticatedLearner(page);
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", { value: {
+      getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }),
+    } });
+    (window as any).MediaRecorder = class {
+      static isTypeSupported() { return true; }
+      state = "inactive";
+      mimeType = "audio/webm;codecs=opus";
+      ondataavailable?: (event: { data: Blob }) => void;
+      onstop?: () => void;
+      start() { this.state = "recording"; }
+      stop() {
+        this.state = "inactive";
+        this.ondataavailable?.({ data: new Blob(["voice"], { type: this.mimeType }) });
+        this.onstop?.();
+      }
+    };
+  });
+  let session = lessonSession("GUIDED_SPEAKING");
+  await mockBackend(page, () => session, (next) => { session = next; });
+
+  await page.goto("/lesson-sessions/lesson-session-ep006");
+  await page.getByRole("button", { name: "开始录音" }).click();
+  await expect(page.getByText("正在录音…说完后点击停止")).toBeVisible();
+  await page.getByRole("button", { name: "停止并提交" }).click();
+  await expect(page.getByText("请确认识别内容后再继续")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "把关键信息说给 Lin Muen" })).toBeVisible();
+  await page.getByLabel("识别到的英文").fill("Your flight leaves from Gate 24.");
+  await page.getByRole("button", { name: "修改后确认" }).click();
+  await expect(page.getByText(/AI 私教正在分析/)).toBeVisible();
+  await expect(page.locator("vite-error-overlay, #webpack-dev-server-client-overlay, [data-nextjs-dialog]")).toHaveCount(0);
+  expect(consoleErrors).toEqual([]);
+});
+
 async function seedAuthenticatedLearner(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("englishTutor.web.locale", "zh-CN");
@@ -112,9 +150,37 @@ async function mockBackend(
       await json(route, attemptReceipt("lat-q2", "gate-q2", "ANALYZED", next, true), 200);
       return;
     }
+    if (request.inputType === "AUDIO") {
+      await json(route, {
+        attemptId: "lat-audio", taskId: "gate-guided-1", inputType: "AUDIO", status: "RECEIVED",
+        submittedAt: "2026-08-21T01:00:00Z", pollAfterMs: null,
+        transcript: { text: "Your flight leaves from gate twenty four.", confidence: 0.42, confirmationRequired: true },
+        stepProgress: current().attemptProgress, version: 2,
+      });
+      return;
+    }
     const next = lessonSession("ROLE_PLAY", [], [], "lat-guided");
     update(next);
     await json(route, attemptReceipt("lat-guided", "gate-guided-1", "ANALYSIS_PENDING", next), 202);
+  });
+  await page.route("**/api/v1/audio/uploads", async (route) => {
+    expect(route.request().headers()["idempotency-key"]).toBeTruthy();
+    expect(route.request().headers()["content-type"]).toContain("multipart/form-data");
+    await json(route, { audioAssetId: "usr_audio_1", uploadStatus: "READY", mimeType: "audio/webm",
+      durationMs: 100, contentHash: `sha256:${"0".repeat(64)}` }, 201);
+  });
+  await page.route("**/api/v1/lesson-sessions/lesson-session-ep006/attempts/lat-audio/transcript-confirmations", async (route) => {
+    expect(await route.request().postDataJSON()).toEqual({
+      decision: "CORRECT", correctedText: "Your flight leaves from Gate 24.",
+    });
+    const next = lessonSession("ROLE_PLAY", [], [], "lat-audio");
+    update(next);
+    await json(route, {
+      attemptId: "lat-audio", taskId: "gate-guided-1", inputType: "AUDIO", status: "ANALYSIS_PENDING",
+      submittedAt: "2026-08-21T01:00:00Z", pollAfterMs: 1000,
+      transcript: { text: "Your flight leaves from Gate 24.", confidence: 0.42, confirmationRequired: false },
+      stepProgress: next.attemptProgress, version: 3,
+    });
   });
   await page.route("**/api/v1/learning-resources/season1.ep006.gate_change.b1/versions/1.0.0", (route) => json(route, learningResource()));
   await page.route("**/api/v1/learning-resources/season1.ep006.gate_change.b1/media-access", async (route) => {

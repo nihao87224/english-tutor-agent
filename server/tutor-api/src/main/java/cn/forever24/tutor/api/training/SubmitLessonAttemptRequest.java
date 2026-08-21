@@ -15,10 +15,7 @@ public record SubmitLessonAttemptRequest(
         Integer clientDurationMs
 ) {
     SubmitLessonAttemptCommand toCommand() {
-        if (audioAssetId != null && !audioAssetId.isBlank()) {
-            throw new IllegalArgumentException("audioAssetId is not supported until V2-T13");
-        }
         return new SubmitLessonAttemptCommand(
-                taskId, inputType, text, retryOfAttemptId, clientStartedAt, clientDurationMs);
+                taskId, inputType, text, audioAssetId, retryOfAttemptId, clientStartedAt, clientDurationMs);
     }
 }

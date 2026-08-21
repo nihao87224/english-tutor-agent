@@ -49,6 +49,19 @@ describe("ScenarioLessonContent", () => {
     expect(html).toContain("提交口语文本");
   });
 
+  it("renders half-duplex recording with a text fallback", () => {
+    const value = lessonLoaded(fixtureLessonSession("GUIDED_SPEAKING"), fixtureLearningResource(), {
+      imageUrl: "https://cdn.test/hero.webp",
+      audioUrl: "https://cdn.test/dialogue.mp3",
+    });
+    const html = renderValue(value, true);
+
+    expect(html).toContain("按住节奏，说给 Lin Muen 听");
+    expect(html).toContain("开始录音");
+    expect(html).toContain("提交口语文本");
+    expect(html).toContain("录音仅用于本次学习");
+  });
+
   it("renders the first server-owned remaining comprehension question", () => {
     const html = render("COMPREHENSION");
 
@@ -78,7 +91,7 @@ function render(step: Parameters<typeof fixtureLessonSession>[0]): string {
   }));
 }
 
-function renderValue(value: ReturnType<typeof lessonLoaded>): string {
+function renderValue(value: ReturnType<typeof lessonLoaded>, withVoice = false): string {
   return renderToStaticMarkup(createElement(I18nProvider, {
     initialLocale: "zh-CN",
     children: createElement(ScenarioLessonContent, {
@@ -90,6 +103,8 @@ function renderValue(value: ReturnType<typeof lessonLoaded>): string {
       onResume: vi.fn(),
       onCompleteStep: vi.fn(),
       onSubmitAttempt: vi.fn(),
+      onSubmitAudioAttempt: withVoice ? vi.fn() : undefined,
+      onConfirmTranscript: withVoice ? vi.fn() : undefined,
     }),
   }));
 }

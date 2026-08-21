@@ -39,9 +39,25 @@ public final class OpenAiSpeechToTextProvider implements SpeechToTextProvider {
                 input.contentType());
         return new AsrResult(
                 response.path("text").asText(),
-                0.90,
+                confidence(response),
                 new ProviderTrace(input.traceId(), OpenAiProviderProperties.PROVIDER_ID, properties.asrModel(), "openai-asr-v1", "openai-transcription-json-v1"),
                 new ProviderUsage(0, 0, input.duration().toMillis(), 0, BigDecimal.ZERO));
+    }
+
+    static double confidence(JsonNode response) {
+        JsonNode value = response.path("confidence");
+        if (!value.isNumber()) {
+            // The standard JSON response does not guarantee a confidence score.
+            // Treat unknown as low confidence so user speech cannot bypass confirmation.
+            return 0.0;
+        }
+        double confidence = value.asDouble();
+        if (!Double.isFinite(confidence) || confidence < 0 || confidence > 1) {
+            throw new cn.forever24.tutor.ai.provider.AiProviderException(
+                    cn.forever24.tutor.ai.provider.AiProviderErrorType.INVALID_OUTPUT,
+                    "ASR confidence must be between 0 and 1");
+        }
+        return confidence;
     }
 
     @Override

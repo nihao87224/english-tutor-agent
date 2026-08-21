@@ -50,4 +50,17 @@ public class LessonAttemptController {
         return LessonAttemptResponse.from(service.get(
                 currentUserKeyResolver.resolve(), sessionId, attemptId));
     }
+
+    @PostMapping("/{attemptId}/transcript-confirmations")
+    public ResponseEntity<LessonAttemptResponse> confirmTranscript(
+            @PathVariable String sessionId,
+            @PathVariable String attemptId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestBody TranscriptConfirmationRequest request
+    ) {
+        var result = service.confirmTranscript(currentUserKeyResolver.resolve(), sessionId, attemptId,
+                request.toCommand(), idempotencyKey);
+        return ResponseEntity.ok().header("Idempotency-Replayed", Boolean.toString(result.replayed()))
+                .body(LessonAttemptResponse.from(result));
+    }
 }

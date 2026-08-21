@@ -31,6 +31,10 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added V2-T13 protected multipart audio upload, owner-scoped audio assets and
+  privacy retention metadata, half-duplex Web Push-to-Talk, ASR use-case/provider
+  separation, low-confidence transcript confirmation/correction/re-record gates,
+  and upload/state/JDBC/API/Web regression coverage.
 - Added V2-T12 comprehension and text Guided Speaking attempts with deterministic
   objective scoring, idempotent owner-scoped persistence, server-owned step gates,
   resumable attempt progress, pending-analysis receipts, Web question/speaking states,

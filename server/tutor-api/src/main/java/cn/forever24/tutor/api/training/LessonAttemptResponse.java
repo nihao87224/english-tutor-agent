@@ -11,6 +11,7 @@ public record LessonAttemptResponse(
         String status,
         Instant submittedAt,
         Integer pollAfterMs,
+        Transcript transcript,
         ObjectiveResult objectiveResult,
         LessonSessionResponse.AttemptProgress stepProgress,
         long version
@@ -20,6 +21,8 @@ public record LessonAttemptResponse(
         return new LessonAttemptResponse(
                 attempt.attemptId(), attempt.taskId(), attempt.inputType().name(), attempt.status().name(),
                 attempt.submittedAt(), attempt.status().name().endsWith("PENDING") ? 1000 : null,
+                attempt.transcript() == null ? null : new Transcript(
+                        attempt.transcript(), attempt.asrConfidence(), !attempt.transcriptConfirmed()),
                 attempt.objectiveResult() == null ? null : new ObjectiveResult(
                         attempt.objectiveResult().correct(), attempt.objectiveResult().expectedAnswer(),
                         attempt.objectiveResult().explanation()),
@@ -28,4 +31,6 @@ public record LessonAttemptResponse(
 
     public record ObjectiveResult(boolean correct, String expectedAnswer, String explanation) {
     }
+
+    public record Transcript(String text, Double confidence, boolean confirmationRequired) { }
 }

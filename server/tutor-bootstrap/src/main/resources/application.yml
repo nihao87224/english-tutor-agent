@@ -17,6 +17,10 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: ${REDIS_TIMEOUT:2s}
+  servlet:
+    multipart:
+      max-file-size: ${TUTOR_AUDIO_MAX_FILE_SIZE:50MB}
+      max-request-size: ${TUTOR_AUDIO_MAX_REQUEST_SIZE:51MB}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -50,6 +54,11 @@ tutor:
     private-gateway-base-url: ${TUTOR_MEDIA_PRIVATE_GATEWAY_BASE_URL:https://media.example.invalid/access}
     access-signing-secret: ${TUTOR_MEDIA_ACCESS_SIGNING_SECRET:test-only-media-access-signing-secret-change-me}
     access-ttl: ${TUTOR_MEDIA_ACCESS_TTL:10m}
+  audio:
+    private-storage-root: ${TUTOR_AUDIO_PRIVATE_STORAGE_ROOT:var/private/audio}
+    asr-confirmation-threshold: ${TUTOR_AUDIO_ASR_CONFIRMATION_THRESHOLD:0.80}
+    retention-initial-delay: ${TUTOR_AUDIO_RETENTION_INITIAL_DELAY:PT5M}
+    retention-sweep-delay: ${TUTOR_AUDIO_RETENTION_SWEEP_DELAY:PT15M}
   secret:
     encryption-key: ${TUTOR_SECRET_ENCRYPTION_KEY}
     encryption-key-version: ${TUTOR_SECRET_ENCRYPTION_KEY_VERSION:v1}

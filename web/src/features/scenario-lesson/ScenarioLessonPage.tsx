@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { ApiClient, LessonAttemptReceipt, LessonSession, LessonStep } from "../../shared/api";
 import { useI18n } from "../../shared/i18n";
 import {
@@ -105,6 +105,38 @@ export function ScenarioLessonPage({
     return receipt;
   }
 
+  async function submitAudioAttempt(taskId: string, file: Blob, durationMs: number): Promise<LessonAttemptReceipt> {
+    if (state.status !== "content") throw new Error(t("lesson.error.desc"));
+    const current = state.value;
+    const asset = await apiClient.uploadAudio({ file, durationMs, purpose: "LESSON_ATTEMPT" });
+    const receipt = await apiClient.submitLessonAttempt(current.session.sessionId, {
+      taskId,
+      inputType: "AUDIO",
+      audioAssetId: asset.audioAssetId,
+      clientStartedAt: new Date(Date.now() - durationMs).toISOString(),
+      clientDurationMs: durationMs,
+    });
+    const session = await apiClient.getLessonSession(current.session.sessionId);
+    setState({ status: "content", value: { ...current, session } });
+    return receipt;
+  }
+
+  async function confirmTranscript(
+    attemptId: string,
+    decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
+    correctedText?: string,
+  ): Promise<LessonAttemptReceipt> {
+    if (state.status !== "content") throw new Error(t("lesson.error.desc"));
+    const current = state.value;
+    const receipt = await apiClient.confirmLessonAttemptTranscript(current.session.sessionId, attemptId, {
+      decision,
+      correctedText,
+    });
+    const session = await apiClient.getLessonSession(current.session.sessionId);
+    setState({ status: "content", value: { ...current, session } });
+    return receipt;
+  }
+
   return (
     <ScenarioLessonContent
       value={state.value}
@@ -119,6 +151,8 @@ export function ScenarioLessonPage({
       onResume={() => updateSession((session) => apiClient.resumeLessonSession(session.sessionId))}
       onCompleteStep={(step) => updateSession((session) => apiClient.completeLessonStep(session.sessionId, step))}
       onSubmitAttempt={submitAttempt}
+      onSubmitAudioAttempt={submitAudioAttempt}
+      onConfirmTranscript={confirmTranscript}
     />
   );
 }
@@ -132,6 +166,8 @@ export function ScenarioLessonContent({
   onResume,
   onCompleteStep,
   onSubmitAttempt,
+  onSubmitAudioAttempt,
+  onConfirmTranscript,
 }: {
   value: ScenarioLessonLoadedState;
   onBack: () => void;
@@ -141,6 +177,12 @@ export function ScenarioLessonContent({
   onResume: () => void;
   onCompleteStep: (step: LessonStep) => void;
   onSubmitAttempt: (taskId: string, text: string) => Promise<LessonAttemptReceipt>;
+  onSubmitAudioAttempt?: (taskId: string, file: Blob, durationMs: number) => Promise<LessonAttemptReceipt>;
+  onConfirmTranscript?: (
+    attemptId: string,
+    decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
+    correctedText?: string,
+  ) => Promise<LessonAttemptReceipt>;
 }) {
   const { t } = useI18n();
   const [transcriptVisible, setTranscriptVisible] = useState(false);
@@ -230,7 +272,8 @@ export function ScenarioLessonContent({
           <StepContent value={value} transcriptVisible={transcriptVisible} setTranscriptVisible={setTranscriptVisible}
             onAudioError={onAudioError} attemptText={attemptText} setAttemptText={setAttemptText}
             attemptSubmitting={attemptSubmitting} attemptError={attemptError} objectiveResult={objectiveResult}
-            activeQuestion={activeQuestion} onSubmitAttempt={submitCurrentAttempt} />
+            activeQuestion={activeQuestion} onSubmitAttempt={submitCurrentAttempt}
+            onSubmitAudioAttempt={onSubmitAudioAttempt} onConfirmTranscript={onConfirmTranscript} />
           {session.step.clientCompletable ? (
             <button className="scenario-primary-action" type="button" disabled={isPaused || advancing} onClick={completeStep}>
               {advancing ? t("lesson.advancing") : t(`lesson.continue.${session.currentStep}`)}
@@ -256,6 +299,8 @@ function StepContent({
   objectiveResult,
   activeQuestion,
   onSubmitAttempt,
+  onSubmitAudioAttempt,
+  onConfirmTranscript,
 }: {
   value: ScenarioLessonLoadedState;
   transcriptVisible: boolean;
@@ -268,11 +313,101 @@ function StepContent({
   objectiveResult?: LessonAttemptReceipt["objectiveResult"];
   activeQuestion?: ScenarioLessonLoadedState["lesson"]["questions"][number];
   onSubmitAttempt: () => void;
+  onSubmitAudioAttempt?: (taskId: string, file: Blob, durationMs: number) => Promise<LessonAttemptReceipt>;
+  onConfirmTranscript?: (
+    attemptId: string,
+    decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
+    correctedText?: string,
+  ) => Promise<LessonAttemptReceipt>;
 }) {
   const { t } = useI18n();
+  const recorder = useRef<MediaRecorder | null>(null);
+  const activeStream = useRef<MediaStream | null>(null);
+  const recordingTimeout = useRef<number | null>(null);
+  const chunks = useRef<Blob[]>([]);
+  const recordingStartedAt = useRef(0);
+  const [voiceState, setVoiceState] = useState<"idle" | "recording" | "uploading" | "confirming">("idle");
+  const [voiceReceipt, setVoiceReceipt] = useState<LessonAttemptReceipt>();
+  const [correctedTranscript, setCorrectedTranscript] = useState("");
+  const [voiceError, setVoiceError] = useState<string>();
   const { lesson, session } = value;
   const showListening = session.currentStep === "FIRST_LISTEN";
   const showLanguage = session.currentStep === "TRANSCRIPT_EXPRESSIONS" || showListening || value.audioUnavailable;
+
+  useEffect(() => () => {
+    if (recordingTimeout.current !== null) window.clearTimeout(recordingTimeout.current);
+    if (recorder.current?.state === "recording") {
+      recorder.current.onstop = null;
+      recorder.current.stop();
+    }
+    activeStream.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  async function startRecording() {
+    if (!onSubmitAudioAttempt || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setVoiceError(t("lesson.voice.unsupported"));
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      activeStream.current = stream;
+      const next = new MediaRecorder(stream, MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? { mimeType: "audio/webm;codecs=opus" } : undefined);
+      chunks.current = [];
+      next.ondataavailable = (event) => { if (event.data.size > 0) chunks.current.push(event.data); };
+      next.onstop = () => {
+        if (recordingTimeout.current !== null) window.clearTimeout(recordingTimeout.current);
+        const durationMs = Math.max(100, Date.now() - recordingStartedAt.current);
+        const blob = new Blob(chunks.current, { type: next.mimeType || "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        activeStream.current = null;
+        setVoiceState("uploading");
+        void onSubmitAudioAttempt(lesson.guidedSpeaking!.taskId, blob, durationMs)
+          .then((receipt) => {
+            setVoiceReceipt(receipt);
+            setCorrectedTranscript(receipt.transcript?.text ?? "");
+            setVoiceState("idle");
+          })
+          .catch((error) => {
+            setVoiceError(error instanceof Error ? error.message : t("lesson.attempt.error"));
+            setVoiceState("idle");
+          });
+      };
+      recorder.current = next;
+      recordingStartedAt.current = Date.now();
+      setVoiceError(undefined);
+      setVoiceReceipt(undefined);
+      setVoiceState("recording");
+      next.start();
+      recordingTimeout.current = window.setTimeout(() => {
+        if (next.state === "recording") next.stop();
+      }, 600_000);
+    } catch (error) {
+      setVoiceError(error instanceof Error ? error.message : t("lesson.attempt.error"));
+    }
+  }
+
+  function stopRecording() {
+    if (recorder.current?.state === "recording") recorder.current.stop();
+  }
+
+  async function decideTranscript(decision: "CONFIRM" | "CORRECT" | "RE_RECORD") {
+    if (!voiceReceipt || !onConfirmTranscript || voiceState === "confirming") return;
+    setVoiceState("confirming");
+    setVoiceError(undefined);
+    try {
+      const receipt = await onConfirmTranscript(
+        voiceReceipt.attemptId,
+        decision,
+        decision === "CORRECT" ? correctedTranscript.trim() : undefined,
+      );
+      setVoiceReceipt(decision === "RE_RECORD" ? undefined : receipt);
+    } catch (error) {
+      setVoiceError(error instanceof Error ? error.message : t("lesson.attempt.error"));
+    } finally {
+      setVoiceState("idle");
+    }
+  }
 
   if (session.currentStep === "SCENE_CONTEXT") {
     return (
@@ -321,6 +456,39 @@ function StepContent({
         <ul className="scenario-expressions">
           {lesson.guidedSpeaking.scaffolding.map((hint) => <li key={hint}><span>{hint}</span></li>)}
         </ul>
+        {onSubmitAudioAttempt ? (
+          <section className="lesson-voice-control" aria-live="polite">
+            <strong>{t("lesson.voice.title")}</strong>
+            <p>{voiceState === "recording" ? t("lesson.voice.recording")
+              : voiceState === "uploading" ? t("lesson.voice.processing") : t("lesson.voice.hint")}</p>
+            {voiceState === "recording" ? (
+              <button className="voice-record-button is-recording" type="button" onClick={stopRecording}>
+                {t("lesson.voice.stop")}
+              </button>
+            ) : (
+              <button className="voice-record-button" type="button" disabled={voiceState !== "idle" || session.status === "PAUSED"}
+                onClick={() => void startRecording()}>{t("lesson.voice.start")}</button>
+            )}
+            {voiceReceipt?.transcript?.confirmationRequired ? (
+              <div className="transcript-confirmation" role="alert">
+                <strong>{t("lesson.voice.confirmTitle")}</strong>
+                <textarea aria-label={t("lesson.voice.transcript")} rows={3} value={correctedTranscript}
+                  onChange={(event) => setCorrectedTranscript(event.target.value)} />
+                <div>
+                  <button type="button" disabled={voiceState !== "idle"} onClick={() => void decideTranscript("CONFIRM")}>
+                    {t("lesson.voice.confirm")}
+                  </button>
+                  <button type="button" disabled={!correctedTranscript.trim() || voiceState !== "idle"}
+                    onClick={() => void decideTranscript("CORRECT")}>{t("lesson.voice.correct")}</button>
+                  <button type="button" disabled={voiceState !== "idle"} onClick={() => void decideTranscript("RE_RECORD")}>
+                    {t("lesson.voice.rerecord")}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {voiceError ? <p className="lesson-attempt-error" role="alert">{voiceError}</p> : null}
+          </section>
+        ) : null}
         <label className="lesson-attempt-field">
           <span>{t("lesson.guided.response")}</span>
           <textarea rows={5} value={attemptText} onChange={(event) => setAttemptText(event.target.value)}

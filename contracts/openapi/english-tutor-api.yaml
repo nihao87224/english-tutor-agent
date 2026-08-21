@@ -1128,7 +1128,7 @@ paths:
     post:
       tags: [Training]
       summary: Submit a comprehension or guided-speaking attempt for the current lesson step
-      description: Comprehension is scored deterministically. Text guided speaking is durably accepted for asynchronous analysis.
+      description: Comprehension is scored deterministically. Guided speaking accepts text or an owned READY audio asset; low-confidence ASR never advances before confirmation.
       operationId: submitLessonAttempt
       security: [{bearerAuth: []}]
       parameters:
@@ -1174,6 +1174,33 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/LessonAttemptResponse'}
         '404': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}/attempts/{attemptId}/transcript-confirmations:
+    post:
+      tags: [Training]
+      summary: Confirm, correct or reject a low-confidence ASR transcript
+      operationId: confirmLessonAttemptTranscript
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: attemptId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TranscriptConfirmationRequest'}
+      responses:
+        '200':
+          description: Transcript decision persisted; RE_RECORD does not advance the lesson
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonAttemptResponse'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
 
   /api/v1/plans/today/adjustments:
     post:
@@ -1382,39 +1409,41 @@ paths:
   /api/v1/audio/uploads:
     post:
       tags: [Audio]
-      summary: Create a presigned upload for user audio
-      operationId: createAudioUpload
+      summary: Upload a protected user recording and create a READY audio asset
+      description: The object remains private. The server validates owner, format, size, duration and SHA-256 before it can be referenced by an Attempt.
+      operationId: uploadUserAudio
+      security: [{bearerAuth: []}]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
-              required: [contentType, sizeBytes, durationMs, purpose]
+              required: [file, durationMs, purpose]
               properties:
-                contentType:
-                  type: string
-                  enum: [audio/wav, audio/m4a, audio/mp4, audio/ogg]
-                sizeBytes:
-                  type: integer
-                  minimum: 1
-                  maximum: 52428800
+                file: {type: string, format: binary}
                 durationMs:
                   type: integer
                   minimum: 100
                   maximum: 600000
                 purpose:
                   type: string
-                  enum: [ASSESSMENT, TRAINING, IELTS]
+                  enum: [LESSON_ATTEMPT, ASSESSMENT, TRAINING, IELTS]
+                sha256: {type: [string, 'null'], pattern: '^(sha256:)?[a-fA-F0-9]{64}$'}
       responses:
         '201':
-          description: Upload reservation
+          description: Protected audio asset is READY
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean}}
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AudioUploadReservation'
+                $ref: '#/components/schemas/AudioUploadResponse'
+        '400': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '503': {$ref: '#/components/responses/Problem'}
 
   /api/v1/profile/learner-summary:
     get:
@@ -2227,12 +2256,12 @@ components:
     SubmitLessonAttemptRequest:
       type: object
       additionalProperties: false
-      required: [taskId, inputType, text]
+      required: [taskId, inputType]
       properties:
         taskId: {type: string, minLength: 1, maxLength: 128}
-        inputType: {type: string, enum: [TEXT]}
-        text: {type: string, minLength: 1, maxLength: 4000}
-        audioAssetId: {type: [string, 'null'], description: Reserved for V2-T13}
+        inputType: {type: string, enum: [TEXT, AUDIO]}
+        text: {type: [string, 'null'], minLength: 1, maxLength: 4000}
+        audioAssetId: {type: [string, 'null'], maxLength: 96}
         retryOfAttemptId: {type: [string, 'null'], maxLength: 64}
         clientStartedAt: {type: [string, 'null'], format: date-time}
         clientDurationMs: {type: [integer, 'null'], minimum: 0}
@@ -2258,6 +2287,14 @@ components:
             correct: {type: boolean}
             expectedAnswer: {type: string}
             explanation: {type: string}
+        transcript:
+          type: [object, 'null']
+          additionalProperties: false
+          required: [text, confidence, confirmationRequired]
+          properties:
+            text: {type: string, minLength: 1, maxLength: 4000}
+            confidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+            confirmationRequired: {type: boolean}
         stepProgress: {$ref: '#/components/schemas/LessonAttemptProgress'}
         version: {type: integer, format: int64, minimum: 1}
 
@@ -2480,22 +2517,24 @@ components:
         taskId:
           type: [string, 'null']
 
-    AudioUploadReservation:
+    TranscriptConfirmationRequest:
       type: object
-      required: [uploadId, uploadUrl, expiresAt]
+      additionalProperties: false
+      required: [decision]
       properties:
-        uploadId:
-          type: string
-        uploadUrl:
-          type: string
-          format: uri
-        requiredHeaders:
-          type: object
-          additionalProperties:
-            type: string
-        expiresAt:
-          type: string
-          format: date-time
+        decision: {type: string, enum: [CONFIRM, CORRECT, RE_RECORD]}
+        correctedText: {type: [string, 'null'], minLength: 1, maxLength: 4000}
+
+    AudioUploadResponse:
+      type: object
+      additionalProperties: false
+      required: [audioAssetId, uploadStatus, mimeType, durationMs, contentHash]
+      properties:
+        audioAssetId: {type: string, maxLength: 96}
+        uploadStatus: {type: string, enum: [READY]}
+        mimeType: {type: string}
+        durationMs: {type: integer, minimum: 100, maximum: 600000}
+        contentHash: {type: string, pattern: '^sha256:[a-f0-9]{64}$'}
 
     LearnerSummary:
       type: object

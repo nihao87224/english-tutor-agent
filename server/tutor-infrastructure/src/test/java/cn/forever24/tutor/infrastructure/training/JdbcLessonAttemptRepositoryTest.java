@@ -71,7 +71,8 @@ class JdbcLessonAttemptRepositoryTest {
     private static LessonAttempt objectiveAttempt() {
         return new LessonAttempt(
                 "lat-1", "lsn-1", "q1", TaskAttemptInputType.TEXT, "Gate 24",
-                LessonAttemptStatus.ANALYZED, new LessonObjectiveResult(true, "Gate 24", "Answer confirmed."),
+                null, null, null, false, LessonAttemptStatus.ANALYZED,
+                new LessonObjectiveResult(true, "Gate 24", "Answer confirmed."),
                 NOW, 1);
     }
 

@@ -2071,6 +2071,43 @@ legend {
   background: #edf7f3;
 }
 
+.lesson-voice-control {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid rgba(98, 75, 53, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 250, 241, 0.9);
+}
+
+.lesson-voice-control p { margin: 0; }
+
+.voice-record-button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: #8c3c2d;
+  color: white;
+  font-weight: 700;
+}
+
+.voice-record-button.is-recording {
+  background: #b42318;
+  box-shadow: 0 0 0 7px rgba(180, 35, 24, 0.12);
+}
+
+.transcript-confirmation {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: #fff3d6;
+}
+
+.transcript-confirmation textarea { width: 100%; box-sizing: border-box; }
+.transcript-confirmation div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
 .lesson-attempt-error {
   border-left-color: #b64d3d;
   background: #fff1ee;

@@ -21,3 +21,4 @@
 | ADR-0014 | SaaS Foundation is the next product platform increment | Accepted for implementation planning |
 | ADR-0015 | Multi-provider LLM protocols with DeepSeek as the default | Superseded in configuration source by ADR-0016 |
 | ADR-0016 | Database is the single runtime source for AI provider configuration | Accepted |
+| ADR-0017 | V2 Web recording uses protected direct upload | Accepted |

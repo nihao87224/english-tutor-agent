@@ -9,6 +9,17 @@ import java.util.Optional;
 public interface LessonAttemptRepository {
     Optional<LessonAttemptStoreRecord> findByIdempotencyKey(UserKey userKey, String sessionId, String idempotencyKey);
     Optional<LessonAttempt> findById(UserKey userKey, String sessionId, String attemptId);
+    default Optional<LessonAttemptStoreRecord> findByTranscriptConfirmationKey(
+            UserKey userKey, String sessionId, String attemptId, String idempotencyKey) {
+        return Optional.empty();
+    }
     List<LessonAttempt> findBySession(UserKey userKey, String sessionId);
     void insert(UserKey userKey, LessonAttempt attempt, String idempotencyKey, String requestHash);
+    default void updateTranscription(UserKey userKey, LessonAttempt attempt, long expectedVersion) {
+        throw new UnsupportedOperationException("transcription updates are not supported");
+    }
+    default void updateTranscriptConfirmation(
+            UserKey userKey, LessonAttempt attempt, long expectedVersion, String idempotencyKey, String requestHash) {
+        throw new UnsupportedOperationException("transcript confirmations are not supported");
+    }
 }

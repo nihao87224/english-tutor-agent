@@ -59,6 +59,19 @@ public final class JdbcLessonAttemptRepository implements LessonAttemptRepositor
     }
 
     @Override
+    public Optional<LessonAttemptStoreRecord> findByTranscriptConfirmationKey(
+            UserKey userKey, String sessionId, String attemptId, String idempotencyKey) {
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(
+                    select() + " AND ts.session_key = ? AND ta.attempt_key = ?"
+                            + " AND JSON_UNQUOTE(JSON_EXTRACT(ta.answer_json, '$.confirmationKey')) = ?",
+                    (resultSet, rowNum) -> new LessonAttemptStoreRecord(
+                            metadata(resultSet).confirmationHash(), map(resultSet)),
+                    userKey.value(), sessionId, attemptId, idempotencyKey));
+        } catch (EmptyResultDataAccessException exception) { return Optional.empty(); }
+    }
+
+    @Override
     public List<LessonAttempt> findBySession(UserKey userKey, String sessionId) {
         return jdbcTemplate.query(
                 select() + " AND ts.session_key = ? ORDER BY ta.submitted_at_utc, ta.id",
@@ -82,6 +95,9 @@ public final class JdbcLessonAttemptRepository implements LessonAttemptRepositor
                         resultSet.getLong("user_id"), resultSet.getInt("next_attempt_no")),
                 userKey.value(), attempt.sessionId());
         LocalDateTime submitted = utc(attempt.submittedAt());
+        Long audioAssetId = attempt.audioAssetId() == null ? null : jdbcTemplate.queryForObject(
+                "SELECT id FROM user_audio_asset WHERE asset_key = ? AND user_id = ? AND status = 'READY'",
+                Long.class, attempt.audioAssetId(), rows.userId());
         jdbcTemplate.update(
                 """
                         INSERT INTO task_attempt
@@ -89,23 +105,58 @@ public final class JdbcLessonAttemptRepository implements LessonAttemptRepositor
                              input_type, input_text, audio_asset_id, answer_json, hint_level, result,
                              attempt_status, retry_of_attempt_id, evaluation_json, submitted_at_utc,
                              created_at_utc, updated_at_utc, version)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 0, ?, ?, NULL, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, NULL, ?, ?, ?, ?, ?)
                         """,
                 attempt.attemptId(), idempotencyKey, rows.sessionId(), rows.taskId(), rows.userId(),
-                rows.attemptNo(), attempt.inputType().name(), attempt.text(),
+                rows.attemptNo(), attempt.inputType().name(), attempt.text(), audioAssetId,
                 json(Map.of("taskId", attempt.taskId(), "requestHash", requestHash)),
                 result(attempt), attempt.status().name(),
                 attempt.objectiveResult() == null ? null : json(attempt.objectiveResult()),
                 submitted, submitted, submitted, attempt.version());
     }
 
+    @Override
+    public void updateTranscription(UserKey userKey, LessonAttempt attempt, long expectedVersion) {
+        int changed = jdbcTemplate.update("""
+                UPDATE task_attempt ta
+                JOIN training_session ts ON ts.id = ta.session_id
+                JOIN app_user u ON u.id = ta.user_id
+                SET ta.asr_transcript = ?, ta.asr_confidence = ?, ta.transcript_confirmed = ?,
+                    ta.attempt_status = ?, ta.updated_at_utc = UTC_TIMESTAMP(6), ta.version = ?
+                WHERE u.user_key = ? AND ts.session_key = ? AND ta.attempt_key = ? AND ta.version = ?
+                """, attempt.transcript(), attempt.asrConfidence(), attempt.transcriptConfirmed(),
+                attempt.status().name(), attempt.version(), userKey.value(), attempt.sessionId(),
+                attempt.attemptId(), expectedVersion);
+        if (changed != 1) throw new IllegalStateException("lesson attempt version conflict");
+    }
+
+    @Override
+    public void updateTranscriptConfirmation(
+            UserKey userKey, LessonAttempt attempt, long expectedVersion, String idempotencyKey, String requestHash) {
+        int changed = jdbcTemplate.update("""
+                UPDATE task_attempt ta
+                JOIN training_session ts ON ts.id = ta.session_id
+                JOIN app_user u ON u.id = ta.user_id
+                SET ta.asr_transcript = ?, ta.transcript_confirmed = ?, ta.attempt_status = ?,
+                    ta.answer_json = JSON_SET(ta.answer_json, '$.confirmationKey', ?, '$.confirmationHash', ?),
+                    ta.updated_at_utc = UTC_TIMESTAMP(6), ta.version = ?
+                WHERE u.user_key = ? AND ts.session_key = ? AND ta.attempt_key = ? AND ta.version = ?
+                """, attempt.transcript(), attempt.transcriptConfirmed(), attempt.status().name(),
+                idempotencyKey, requestHash, attempt.version(), userKey.value(), attempt.sessionId(),
+                attempt.attemptId(), expectedVersion);
+        if (changed != 1) throw new IllegalStateException("lesson attempt version conflict");
+    }
+
     private String select() {
         return """
                 SELECT ta.attempt_key, ts.session_key, ta.input_type, ta.input_text, ta.answer_json,
-                       ta.attempt_status, ta.evaluation_json, ta.submitted_at_utc, ta.version
+                       ua.asset_key AS audio_asset_key, ta.asr_transcript, ta.asr_confidence,
+                       ta.transcript_confirmed, ta.attempt_status, ta.evaluation_json,
+                       ta.submitted_at_utc, ta.version
                 FROM task_attempt ta
                 JOIN training_session ts ON ts.id = ta.session_id
                 JOIN app_user u ON u.id = ta.user_id
+                LEFT JOIN user_audio_asset ua ON ua.id = ta.audio_asset_id
                 WHERE u.user_key = ? AND u.status = 'ACTIVE' AND ts.type = 'SCENARIO_LESSON'
                 """;
     }
@@ -125,6 +176,9 @@ public final class JdbcLessonAttemptRepository implements LessonAttemptRepositor
         return new LessonAttempt(
                 resultSet.getString("attempt_key"), resultSet.getString("session_key"), metadata.taskId(),
                 TaskAttemptInputType.valueOf(resultSet.getString("input_type")), resultSet.getString("input_text"),
+                resultSet.getString("audio_asset_key"), resultSet.getString("asr_transcript"),
+                resultSet.getObject("asr_confidence") == null ? null : resultSet.getDouble("asr_confidence"),
+                resultSet.getBoolean("transcript_confirmed"),
                 LessonAttemptStatus.valueOf(resultSet.getString("attempt_status")), objective,
                 instant(resultSet.getTimestamp("submitted_at_utc")), resultSet.getLong("version"));
     }
@@ -133,7 +187,8 @@ public final class JdbcLessonAttemptRepository implements LessonAttemptRepositor
         try {
             var node = objectMapper.readTree(resultSet.getString("answer_json"));
             if (node.isTextual()) node = objectMapper.readTree(node.asText());
-            return new Metadata(node.path("taskId").asText(), node.path("requestHash").asText());
+            return new Metadata(node.path("taskId").asText(), node.path("requestHash").asText(),
+                    node.path("confirmationHash").asText());
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("lesson attempt metadata is invalid", exception);
         }
@@ -160,7 +215,7 @@ public final class JdbcLessonAttemptRepository implements LessonAttemptRepositor
         return timestamp.toInstant();
     }
 
-    private record Metadata(String taskId, String requestHash) {
+    private record Metadata(String taskId, String requestHash, String confirmationHash) {
     }
 
     private record AttemptRows(long sessionId, long taskId, long userId, int attemptNo) {
