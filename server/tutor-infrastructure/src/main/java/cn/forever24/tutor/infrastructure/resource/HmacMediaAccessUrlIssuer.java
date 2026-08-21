@@ -12,12 +12,15 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class HmacMediaAccessUrlIssuer implements MediaAccessUrlIssuer {
 
     private final URI publicBaseUrl;
     private final URI privateGatewayBaseUrl;
     private final byte[] signingSecret;
+    private final Map<String, Long> revocationVersions = new ConcurrentHashMap<>();
 
     public HmacMediaAccessUrlIssuer(URI publicBaseUrl, URI privateGatewayBaseUrl, String signingSecret) {
         this.publicBaseUrl = requireBaseUrl(publicBaseUrl, "publicBaseUrl");
@@ -42,12 +45,27 @@ public final class HmacMediaAccessUrlIssuer implements MediaAccessUrlIssuer {
             Instant expiresAt
     ) {
         String expires = Long.toString(expiresAt.getEpochSecond());
-        String payload = userKey.value() + "\n" + asset.assetKey() + "\n" + expires;
+        long version = revocationVersions.getOrDefault(asset.assetKey(), 0L);
+        String payload = userKey.value() + "\n" + asset.assetKey() + "\n" + expires + "\n" + version;
         String signature = sign(payload);
         String opaqueAsset = encode(asset.assetKey());
         URI url = URI.create(trimTrailingSlash(privateGatewayBaseUrl.toString()) + "/" + opaqueAsset
-                + "?expires=" + expires + "&signature=" + encode(signature));
+                + "?expires=" + expires + "&version=" + version + "&signature=" + encode(signature));
         return new MediaAccessGrant(url, expiresAt);
+    }
+
+    @Override
+    public void revokePrivate(String assetKey) {
+        if (assetKey == null || assetKey.isBlank()) throw new IllegalArgumentException("assetKey is required");
+        revocationVersions.merge(assetKey.strip(), 1L, Long::sum);
+    }
+
+    /** Gateway-facing verification rejects expired, altered, owner-mismatched and revoked grants. */
+    public boolean verifiesPrivateGrant(UserKey userKey, String assetKey, Instant expiresAt, long version, String signature, Instant now) {
+        if (userKey == null || assetKey == null || expiresAt == null || signature == null || now == null || !now.isBefore(expiresAt)) return false;
+        if (version != revocationVersions.getOrDefault(assetKey, 0L)) return false;
+        String payload = userKey.value() + "\n" + assetKey + "\n" + expiresAt.getEpochSecond() + "\n" + version;
+        return java.security.MessageDigest.isEqual(sign(payload).getBytes(StandardCharsets.UTF_8), signature.getBytes(StandardCharsets.UTF_8));
     }
 
     private String sign(String value) {

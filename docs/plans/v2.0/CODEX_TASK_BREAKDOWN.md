@@ -66,7 +66,7 @@ Codex 每次任务必须：
 | V2-T18 | Error / Expression Memory / Review | T16 | DONE |
 | V2-T19 | 处方反馈、迁移与闭环 | T18 | DONE |
 | V2-T20 | 内容 Import / Validation Pipeline | T01,T03,T04,T15 | DONE |
-| V2-T21 | 媒体发布与受保护访问 | T05,T20 | TODO |
+| V2-T21 | 媒体发布与受保护访问 | T05,T20 | DONE |
 | V2-T22 | 内容管理 API / Script | T20,T21 | TODO |
 | V2-T23 | B1 24 个资源发布验证 | T19,T22 | TODO |
 | V2-T24 | 完整 72 个资源发布 | T23 | TODO |
@@ -417,6 +417,8 @@ Codex 每次任务必须：
 测试：upload failure、hash mismatch、metadata transaction failure、private URL、revoke/cache invalidation、cleanup reference protection。
 
 验收：DB 不引用不存在资产，私有 URL 不能长期绕过 revoke。
+
+完成记录（2026-08-21）：新增通用 Content Object Storage staging/finalize/discard/delete 边界与文件系统适配器。对象先逐个 SHA-256 校验并 finalize，随后才写资源目录；任何 staging/hash/目录写入失败均清理 staging 和已 finalize 对象，避免目录引用缺失对象。公开资产继续使用 CDN URL；私有 HMAC URL 绑定用户、资产、过期时间和撤销版本，网关校验可拒绝过期、签名篡改、owner 不符或 revoke 前签发的 URL。清理服务仅删除 staging 或不在目录引用集合中的对象，保护仍被版本引用的媒体。完整后端回归及 hash mismatch、撤销、清理引用保护测试通过。
 
 ### V2-T22 内容管理 API / Script
 

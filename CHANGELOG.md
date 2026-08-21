@@ -5,6 +5,8 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Completed V2-T21: added hash-verified content-object staging/finalization, metadata-failure compensation,
+  revocable private media grants and referenced-object-safe cleanup.
 - Completed V2-T20: added V27 idempotent content-import batches, structured validation issues and draft-only catalog ingestion.
 - Completed V2-T19: learner evidence, due review and memory now invalidate and deterministically
   recompose today’s prescription, with error/review/transfer explanations and cross-episode transfer routing.

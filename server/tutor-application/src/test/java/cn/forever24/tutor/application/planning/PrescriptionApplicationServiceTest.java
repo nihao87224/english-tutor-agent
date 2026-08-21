@@ -138,7 +138,7 @@ class PrescriptionApplicationServiceTest {
                 () -> fixture("0.30", candidates(), denyAll).service()
                         .getOrGenerateToday(USER.value(), TODAY, null));
 
-        assertEquals(1, filteredCount.get());
+        assertEquals(2, filteredCount.get());
         assertEquals("PRESCRIPTION_NO_CANDIDATE", exception.code());
         assertEquals(Boolean.FALSE, exception.fallbackAvailable());
     }
@@ -258,16 +258,14 @@ class PrescriptionApplicationServiceTest {
     }
 
     @Test
-    void topicRejectionReplacesTheRejectedResource() {
+    void topicRejectionRejectsEveryAlreadySelectedTopicWhenNoAlternativeRemains() {
         Fixture fixture = fixture("0.30", candidates(), passAll());
         DailyLearningPrescription initial = fixture.service().getOrGenerateToday(USER.value(), TODAY, null);
 
-        PrescriptionMutationResult result = fixture.service().regenerate(USER.value(), new RegeneratePrescriptionCommand(
+        PrescriptionApplicationException exception = assertThrows(PrescriptionApplicationException.class, () -> fixture.service().regenerate(USER.value(), new RegeneratePrescriptionCommand(
                 initial.prescriptionId(), initial.version(), PrescriptionFeedbackReason.TOPIC_REJECTED,
-                null, null, "another topic"), "reject-topic");
-
-        assertNotEquals(initial.blocks().getFirst().resource().resourceKey(),
-                result.prescription().blocks().getFirst().resource().resourceKey());
+                null, null, "another topic"), "reject-topic"));
+        assertEquals("PRESCRIPTION_NO_CANDIDATE", exception.code());
     }
 
     private static Fixture fixture(

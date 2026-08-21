@@ -16,4 +16,9 @@ public interface MediaAccessUrlIssuer {
             String idempotencyKey,
             Instant expiresAt
     );
+
+    /** Invalidates previously issued private grants for this asset. */
+    default void revokePrivate(String assetKey) {
+        throw new UnsupportedOperationException("private media revocation is not supported");
+    }
 }
