@@ -64,7 +64,7 @@ Codex 每次任务必须：
 | V2-T16 | Evidence / Skill State 原子更新 | T15 | DONE |
 | V2-T17 | Web Feedback / Retry / Completion | T15,T16 | DONE |
 | V2-T18 | Error / Expression Memory / Review | T16 | DONE |
-| V2-T19 | 处方反馈、迁移与闭环 | T18 | TODO |
+| V2-T19 | 处方反馈、迁移与闭环 | T18 | DONE |
 | V2-T20 | 内容 Import / Validation Pipeline | T01,T03,T04,T15 | TODO |
 | V2-T21 | 媒体发布与受保护访问 | T05,T20 | TODO |
 | V2-T22 | 内容管理 API / Script | T20,T21 | TODO |
@@ -389,6 +389,8 @@ Codex 每次任务必须：
 测试：Retry 改善、失败降支架、轻松完成升复杂度、跨 Episode 迁移、到期复习、topic rejection、不重复疲劳。
 
 验收：同一用户前后 Evidence 能造成可解释的处方变化；剧情不强迫重复已掌握基础任务。
+
+完成记录（2026-08-21）：处方快照新增确定性 `learningSignal`；当 Skill Evidence、错误/表达记忆或到期复习发生变化时，`GET today` 以稳定信号自动原子替换仍有效的当日处方，并保留可安全重放的历史版本。候选评分现以目标技能匹配的 due review、error tag/严重度、独立表达可迁移性和最近资源降权驱动；错误记忆在高分且无 correction 的后续 Evidence 中标记为 resolved，避免成功 retry 被旧失败永久拖低。高频 critical 弱点提高脚手架，到期复习与错误/跨场景迁移会进入 recommendation factors、reason codes 和用户可读 rationale。Transfer block 通过 Episode resolver 强制落在不同 Episode，剧情 continuity 只能在相同教学分数时作为次级偏好。保留并验证 topic rejection、idempotent regenerate、访问先过滤和输出任务门禁。领域/应用/全后端回归覆盖自动重组、失败降脚手架、retry 改善、到期 review、topic rejection 与跨 Episode transfer。
 
 ---
 

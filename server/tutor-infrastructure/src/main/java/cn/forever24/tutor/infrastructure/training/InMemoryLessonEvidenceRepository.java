@@ -65,6 +65,9 @@ public final class InMemoryLessonEvidenceRepository implements LessonEvidenceRep
                         : new Error(tag, current.frequency() + 1,
                         "HIGH".equals(current.severity()) || correction.critical() ? "HIGH" : "MEDIUM", attempt.submittedAt()));
             }
+            if (attempt.analysis().corrections().isEmpty() && score.compareTo(new BigDecimal("0.90000")) >= 0) {
+                errors.clear();
+            }
             updateReview("SKILL", "speaking", new BigDecimal("0.65000"), score, attempt.submittedAt());
             for (String source : attempt.analysis().naturalExpressions().stream().distinct().toList()) {
                 String normalized = LearningMemoryPolicy.normalizeExpression(source);

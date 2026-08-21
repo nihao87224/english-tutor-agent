@@ -6,5 +6,6 @@ public enum PrescriptionFeedbackReason {
     TIME_INSUFFICIENT,
     TOPIC_REJECTED,
     TEMPORARY_GOAL,
-    BLOCK_SKIPPED
+    BLOCK_SKIPPED,
+    LEARNING_SIGNAL
 }

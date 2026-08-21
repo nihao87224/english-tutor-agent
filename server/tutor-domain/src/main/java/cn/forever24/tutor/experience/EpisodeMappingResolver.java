@@ -56,6 +56,33 @@ public final class EpisodeMappingResolver {
                 .orElseGet(() -> ExperienceResolution.noMapping("NO_ELIGIBLE_MAPPING"));
     }
 
+    /** A transfer must demonstrate the target outside the episode in which it was last practised. */
+    public ExperienceResolution resolveInDifferentEpisode(
+            ExperienceCatalog catalog, ExperienceResolutionRequest request, String excludedEpisodeKey
+    ) {
+        if (catalog == null || request == null) {
+            throw new IllegalArgumentException("catalog and request are required");
+        }
+        if (excludedEpisodeKey == null || excludedEpisodeKey.isBlank()) {
+            return resolve(catalog, request);
+        }
+        return catalog.mappings().stream()
+                .filter(mapping -> mapping.skillUnitVariantKey().equals(request.skillUnitVariantKey()))
+                .filter(mapping -> !excludedEpisodeKey.equals(mapping.episodeKey()))
+                .filter(mapping -> isEligible(mapping, request))
+                .map(mapping -> new ScoredMapping(mapping, learnerFitScore(mapping, request), 0))
+                .sorted(Comparator.comparingInt(ScoredMapping::learnerFitScore).reversed()
+                        .thenComparing(scored -> scored.mapping().mappingKey()))
+                .findFirst()
+                .map(scored -> new ExperienceResolution(
+                        ExperienceResolutionStatus.MATCHED,
+                        Optional.of(scored.mapping()),
+                        scored.learnerFitScore(),
+                        scored.storyScore(),
+                        "TRANSFER_DIFFERENT_EPISODE"))
+                .orElseGet(() -> ExperienceResolution.noMapping("NO_TRANSFER_MAPPING_IN_DIFFERENT_EPISODE"));
+    }
+
     private static Optional<EpisodeMapping> firstEligibleFallback(
             EpisodeMapping start,
             Map<String, EpisodeMapping> mappingsByKey,

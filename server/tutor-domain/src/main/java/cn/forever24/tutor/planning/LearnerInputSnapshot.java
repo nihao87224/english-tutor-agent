@@ -8,7 +8,8 @@ public record LearnerInputSnapshot(
         int availableMinutes,
         String primaryGoal,
         String temporaryGoal,
-        List<PrescriptionSkillState> skillStates
+        List<PrescriptionSkillState> skillStates,
+        String learningSignal
 ) {
 
     public LearnerInputSnapshot {
@@ -34,5 +35,14 @@ public record LearnerInputSnapshot(
         skillStates = skillStates.stream()
                 .sorted(Comparator.comparing(PrescriptionSkillState::skillKey))
                 .toList();
+        if (learningSignal != null && (learningSignal.isBlank() || learningSignal.strip().length() > 128)) {
+            throw new IllegalArgumentException("learningSignal is invalid");
+        }
+        learningSignal = learningSignal == null ? null : learningSignal.strip();
+    }
+
+    public LearnerInputSnapshot(long profileVersion, int availableMinutes, String primaryGoal, String temporaryGoal,
+                                List<PrescriptionSkillState> skillStates) {
+        this(profileVersion, availableMinutes, primaryGoal, temporaryGoal, skillStates, null);
     }
 }

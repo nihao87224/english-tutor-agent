@@ -16,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InMemoryLessonEvidenceRepositoryMemoryTest {
 
@@ -27,12 +28,13 @@ class InMemoryLessonEvidenceRepositoryMemoryTest {
         UserKey user = new UserKey("usr-memory");
         repository.record(user, null, attempt("att-1", false));
         repository.record(user, null, attempt("att-1", false));
+        var beforeRetry = repository.learnerMemory(user, NOW);
+        assertEquals(1, beforeRetry.weakPoints().size());
+        assertEquals(1, beforeRetry.weakPoints().getFirst().frequency());
         repository.record(user, null, attempt("att-2", true));
 
         var memory = repository.learnerMemory(user, NOW);
-        assertEquals(1, memory.weakPoints().size());
-        assertEquals(1, memory.weakPoints().getFirst().frequency());
-        assertEquals("HIGH", memory.weakPoints().getFirst().severity());
+        assertTrue(memory.weakPoints().isEmpty());
         assertEquals("independent", memory.expressions().getFirst().state().name().toLowerCase());
         String serializedProjection = memory.toString();
         assertFalse(serializedProjection.contains("I has a booking"));

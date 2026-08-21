@@ -113,15 +113,24 @@ public final class PrescriptionApplicationService {
                     "PRESCRIPTION_DATE_NOT_TODAY", 400, "P0 only supports the learner's current local date");
         }
         validateTimezone(requestedTimezone, learner.timezone());
-        return prescriptionRepository.findActive(userKey, learningDate)
+        DailyLearningPrescription active = prescriptionRepository.findActive(userKey, learningDate)
                 .filter(existing -> existing.expiresAt().isAfter(clock.instant()))
-                .orElseGet(() -> prescriptionRepository.saveInitialIfAbsent(generate(
-                        learner,
-                        learningDate,
-                        1,
-                        null,
-                        null,
-                        learner.dailyMinutes())));
+                .orElse(null);
+        if (active == null) {
+            return prescriptionRepository.saveInitialIfAbsent(generate(
+                    learner, learningDate, 1, null, null, learner.dailyMinutes()));
+        }
+        String signal = learningSignal(learner);
+        if (signal.equals(active.inputSnapshot().learningSignal())) {
+            return active;
+        }
+        PrescriptionFeedback signalFeedback = new PrescriptionFeedback(
+                PrescriptionFeedbackReason.LEARNING_SIGNAL, null, null, null, null);
+        DailyLearningPrescription replacement = generate(
+                learner, learningDate, active.version() + 1, active, signalFeedback,
+                active.inputSnapshot().availableMinutes());
+        return prescriptionRepository.replaceActive(active, replacement, signalFeedback,
+                "signal-" + signal, requestHash("LEARNING_SIGNAL", active.prescriptionId() + "|" + signal)).prescription();
     }
 
     public DailyLearningPrescription getPrescription(String userKeyValue, String prescriptionId) {
@@ -280,7 +289,7 @@ public final class PrescriptionApplicationService {
                 String candidateKey = resource.resourceKey() + "@" + resource.semanticVersion()
                         + "#" + variant.variantKey();
                 PrescriptionRankingPolicy.Factors factors = factors(
-                        learner, variant, resource, skillStates, availableMinutes, feedback);
+                        learner, variant, resource, skillStates, availableMinutes, feedback, superseded);
                 PrescriptionRankingPolicy.Candidate candidate = new PrescriptionRankingPolicy.Candidate(
                         candidateKey,
                         variant.targetSkillKeys().stream().sorted().findFirst().orElse(variant.variantKey()),
@@ -289,7 +298,7 @@ public final class PrescriptionApplicationService {
                         factors,
                         BigDecimal.ZERO);
                 rankingCandidates.add(candidate);
-                contexts.put(candidateKey, new CandidateContext(resource, variant, trainingType, factors));
+                contexts.put(candidateKey, new CandidateContext(resource, variant, trainingType, blockType, factors));
             }
         }
         PrescriptionRankingPolicy.RankingResult ranked = rankingPolicy.rank(rankingCandidates);
@@ -306,17 +315,15 @@ public final class PrescriptionApplicationService {
         int sequence = 1;
         for (PrescriptionRankingPolicy.ScoredCandidate scored : composition.blocks()) {
             CandidateContext context = contexts.get(scored.candidate().candidateKey());
-            ExperienceResolution resolution = mappingResolver.resolve(
+            ExperienceResolutionRequest request = new ExperienceResolutionRequest(
+                    context.variant().variantKey(), targetLevel, goalTags(learner.primaryGoal(), feedback),
+                    topicTags(context.resource()), Set.of(interactionTag(context.trainingType())), Set.of(),
+                    continuityEpisode(superseded), null);
+            ExperienceResolution resolution = context.blockType() == BlockType.TRANSFER
+                    ? mappingResolver.resolveInDifferentEpisode(experienceCatalog, request, continuityEpisode(superseded))
+                    : mappingResolver.resolve(
                     experienceCatalog,
-                    new ExperienceResolutionRequest(
-                            context.variant().variantKey(),
-                            targetLevel,
-                            goalTags(learner.primaryGoal(), feedback),
-                            topicTags(context.resource()),
-                            Set.of(interactionTag(context.trainingType())),
-                            Set.of(),
-                            continuityEpisode(superseded),
-                            null));
+                    request);
             if (resolution.mapping().isEmpty()) {
                 continue;
             }
@@ -345,7 +352,7 @@ public final class PrescriptionApplicationService {
                 availableMinutes,
                 learner.primaryGoal().name(),
                 temporaryGoal,
-                learner.skillStates());
+                learner.skillStates(), learningSignal(learner));
         PrescriptionGoal goal = goal(learner.primaryGoal(), temporaryGoal);
         return new DailyLearningPrescription(
                 keyGenerator.nextPrescriptionKey(),
@@ -356,8 +363,8 @@ public final class PrescriptionApplicationService {
                 PrescriptionStatus.ACTIVE,
                 goal,
                 blocks,
-                rationale(goal, blocks, feedback),
-                reasonCodes(blocks, feedback),
+                rationale(goal, blocks, learner, feedback),
+                reasonCodes(blocks, learner, feedback),
                 PedagogicalPolicyVersion.V2_P0_1,
                 inputSnapshot,
                 generatedAt,
@@ -400,7 +407,8 @@ public final class PrescriptionApplicationService {
             int sequence
     ) {
         DifficultyPolicy.Decision difficulty = difficultyPolicy.evaluate(
-                new DifficultyPolicy.Input(context.variant().level(), 0, 0));
+                new DifficultyPolicy.Input(context.variant().level(), failureSignals(learner, context.variant()),
+                        easyCompletionSignals(learner, context.variant())));
         ScaffoldingLevel scaffolding = context.variant().scaffoldingLevels().contains(difficulty.scaffolding())
                 ? difficulty.scaffolding()
                 : context.variant().scaffoldingLevels().stream().sorted().findFirst().orElseThrow();
@@ -455,18 +463,17 @@ public final class PrescriptionApplicationService {
             PublishedResourceCandidate resource,
             Map<String, PrescriptionSkillState> skillStates,
             int availableMinutes,
-            PrescriptionFeedback feedback
+            PrescriptionFeedback feedback,
+            DailyLearningPrescription superseded
     ) {
         BigDecimal goalMatch = goalMatch(learner.primaryGoal(), resource, feedback);
         BigDecimal skillGap = BigDecimal.ONE.subtract(averageMastery(variant, skillStates));
-        BigDecimal reviewUrgency = variant.trainingTypes().contains(TrainingType.REVIEW)
-                ? new BigDecimal("0.7000") : BigDecimal.ZERO;
-        BigDecimal errorMatch = variant.commonErrorTags().isEmpty() ? BigDecimal.ZERO : new BigDecimal("0.5000");
+        BigDecimal reviewUrgency = reviewUrgency(learner, variant);
+        BigDecimal errorMatch = errorMatch(learner, variant);
         BigDecimal difficultyFit = variant.level() == learner.currentLevel()
                 ? BigDecimal.ONE : new BigDecimal("0.7000");
-        BigDecimal transferValue = variant.trainingTypes().contains(TrainingType.TRANSFER)
-                ? new BigDecimal("0.8000") : BigDecimal.ZERO;
-        BigDecimal freshness = freshness(variant, skillStates);
+        BigDecimal transferValue = transferValue(learner, variant);
+        BigDecimal freshness = freshness(variant, skillStates, resource, superseded);
         int minutes = Math.min(resource.estimatedMinutes(), variant.duration().maximumMinutes());
         BigDecimal timeFit = minutes <= availableMinutes
                 ? BigDecimal.ONE
@@ -491,15 +498,77 @@ public final class PrescriptionApplicationService {
 
     private static BigDecimal freshness(
             SkillUnitVariant variant,
-            Map<String, PrescriptionSkillState> skillStates
+            Map<String, PrescriptionSkillState> skillStates,
+            PublishedResourceCandidate resource,
+            DailyLearningPrescription superseded
     ) {
         int evidence = variant.targetSkillKeys().stream()
                 .map(skillStates::get)
                 .filter(java.util.Objects::nonNull)
                 .mapToInt(PrescriptionSkillState::evidenceCount)
                 .sum();
-        return evidence == 0 ? BigDecimal.ONE
+        BigDecimal baseline = evidence == 0 ? BigDecimal.ONE
                 : BigDecimal.ONE.divide(BigDecimal.valueOf(Math.min(evidence + 1L, 10L)), 4, RoundingMode.HALF_UP);
+        boolean recentlyUsed = superseded != null && superseded.blocks().stream().anyMatch(block ->
+                block.resource().resourceKey().equals(resource.resourceKey()));
+        return recentlyUsed ? baseline.multiply(new BigDecimal("0.2500")).setScale(4, RoundingMode.HALF_UP) : baseline;
+    }
+
+    private static BigDecimal reviewUrgency(LearnerPlanningSnapshot learner, SkillUnitVariant variant) {
+        if (!variant.trainingTypes().contains(TrainingType.REVIEW)) {
+            return BigDecimal.ZERO;
+        }
+        return learner.learnerMemory().dueReviews().stream()
+                .filter(review -> "SKILL".equals(review.targetType()))
+                .filter(review -> variant.targetSkillKeys().contains(review.targetKey()))
+                .map(LearnerMemory.DueReview::forgettingRisk)
+                .max(BigDecimal::compareTo)
+                .orElseGet(() -> learner.learnerMemory().dueReviews().stream()
+                        .anyMatch(review -> "EXPRESSION".equals(review.targetType()))
+                        ? new BigDecimal("0.7000") : new BigDecimal("0.1000"));
+    }
+
+    private static BigDecimal errorMatch(LearnerPlanningSnapshot learner, SkillUnitVariant variant) {
+        return learner.learnerMemory().weakPoints().stream()
+                .filter(point -> variant.targetSkillKeys().contains(point.skillKey()))
+                .filter(point -> variant.commonErrorTags().contains(point.errorTag()))
+                .map(point -> switch (point.severity()) {
+                    case "HIGH" -> BigDecimal.ONE;
+                    case "MEDIUM" -> new BigDecimal("0.7000");
+                    default -> new BigDecimal("0.4000");
+                })
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+    }
+
+    private static BigDecimal transferValue(LearnerPlanningSnapshot learner, SkillUnitVariant variant) {
+        if (!variant.trainingTypes().contains(TrainingType.TRANSFER)) {
+            return BigDecimal.ZERO;
+        }
+        return learner.learnerMemory().expressions().stream()
+                .anyMatch(expression -> expression.state() == cn.forever24.tutor.training.LearningMemoryPolicy.ExpressionState.INDEPENDENT
+                        || expression.state() == cn.forever24.tutor.training.LearningMemoryPolicy.ExpressionState.TRANSFERRED)
+                ? new BigDecimal("0.9500") : BigDecimal.ZERO;
+    }
+
+    private static int failureSignals(LearnerPlanningSnapshot learner, SkillUnitVariant variant) {
+        int count = learner.learnerMemory().weakPoints().stream()
+                .filter(point -> "HIGH".equals(point.severity()))
+                .filter(point -> variant.targetSkillKeys().contains(point.skillKey()))
+                .mapToInt(LearnerMemory.WeakPoint::frequency)
+                .sum();
+        return Math.min(3, count);
+    }
+
+    private static int easyCompletionSignals(LearnerPlanningSnapshot learner, SkillUnitVariant variant) {
+        if (failureSignals(learner, variant) > 0) {
+            return 0;
+        }
+        long independent = learner.learnerMemory().expressions().stream()
+                .filter(expression -> expression.state() == cn.forever24.tutor.training.LearningMemoryPolicy.ExpressionState.INDEPENDENT
+                        || expression.state() == cn.forever24.tutor.training.LearningMemoryPolicy.ExpressionState.TRANSFERRED)
+                .count();
+        return independent >= 3 ? 3 : 0;
     }
 
     private static BigDecimal goalMatch(
@@ -614,25 +683,56 @@ public final class PrescriptionApplicationService {
     private static String rationale(
             PrescriptionGoal goal,
             List<PrescriptionBlock> blocks,
+            LearnerPlanningSnapshot learner,
             PrescriptionFeedback feedback
     ) {
-        String adjustment = feedback == null ? ""
+        String adjustment = feedback == null || feedback.reason() == PrescriptionFeedbackReason.LEARNING_SIGNAL ? ""
                 : "，并已根据你的“" + feedback.reason().name() + "”反馈重新调整";
+        String memoryReason = learner.learnerMemory().dueReviews().isEmpty() ? ""
+                : "，并优先安排到期复习";
+        String errorReason = learner.learnerMemory().weakPoints().isEmpty() ? ""
+                : "，同时针对近期错误类型";
         return "今天优先训练“" + goal.label() + "”，从当前能力缺口中选择了“"
-                + blocks.getFirst().title() + "”" + adjustment + "。";
+                + blocks.getFirst().title() + "”" + memoryReason + errorReason + adjustment + "。";
     }
 
-    private static List<String> reasonCodes(List<PrescriptionBlock> blocks, PrescriptionFeedback feedback) {
+    private static List<String> reasonCodes(List<PrescriptionBlock> blocks, LearnerPlanningSnapshot learner,
+                                            PrescriptionFeedback feedback) {
         LinkedHashSet<String> reasons = new LinkedHashSet<>();
         reasons.add("GOAL_MATCH");
         reasons.add("SKILL_GAP");
-        if (blocks.stream().anyMatch(block -> block.type() == BlockType.REVIEW)) {
+        if (!learner.learnerMemory().dueReviews().isEmpty()) {
             reasons.add("REVIEW_DUE");
         }
-        if (feedback != null) {
+        if (!learner.learnerMemory().weakPoints().isEmpty()) {
+            reasons.add("ERROR_MEMORY");
+        }
+        if (blocks.stream().anyMatch(block -> block.type() == BlockType.TRANSFER)) {
+            reasons.add("CROSS_SCENE_TRANSFER");
+        }
+        if (feedback != null && feedback.reason() != PrescriptionFeedbackReason.LEARNING_SIGNAL) {
             reasons.add("USER_FEEDBACK_" + feedback.reason().name());
         }
+        if (feedback != null && feedback.reason() == PrescriptionFeedbackReason.LEARNING_SIGNAL) {
+            reasons.add("LEARNING_SIGNAL_RECOMPOSED");
+        }
         return List.copyOf(reasons);
+    }
+
+    private static String learningSignal(LearnerPlanningSnapshot learner) {
+        String skills = learner.skillStates().stream().sorted(Comparator.comparing(PrescriptionSkillState::skillKey))
+                .map(state -> state.skillKey() + ":" + state.mastery() + ":" + state.confidence() + ":" + state.evidenceCount()
+                        + ":" + state.lastEvidenceAt()).collect(Collectors.joining("|"));
+        String errors = learner.learnerMemory().weakPoints().stream()
+                .map(point -> point.errorTag() + ":" + point.skillKey() + ":" + point.frequency() + ":" + point.severity())
+                .sorted().collect(Collectors.joining("|"));
+        String expressions = learner.learnerMemory().expressions().stream()
+                .map(expression -> expression.normalizedExpression() + ":" + expression.state() + ":" + expression.confidence())
+                .sorted().collect(Collectors.joining("|"));
+        String reviews = learner.learnerMemory().dueReviews().stream()
+                .map(review -> review.targetType() + ":" + review.targetKey() + ":" + review.dueAt() + ":" + review.forgettingRisk())
+                .sorted().collect(Collectors.joining("|"));
+        return requestHash("LEARNER_SIGNAL", skills + "#" + errors + "#" + expressions + "#" + reviews);
     }
 
     private static boolean hasGeneralFallback(List<PublishedResourceCandidate> candidates) {
@@ -693,6 +793,7 @@ public final class PrescriptionApplicationService {
             PublishedResourceCandidate resource,
             SkillUnitVariant variant,
             TrainingType trainingType,
+            BlockType blockType,
             PrescriptionRankingPolicy.Factors factors
     ) {
     }

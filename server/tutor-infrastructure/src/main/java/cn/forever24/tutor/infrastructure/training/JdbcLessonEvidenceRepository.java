@@ -164,6 +164,14 @@ public final class JdbcLessonEvidenceRepository implements LessonEvidenceReposit
                 upsertErrorMemory(row.userId(), row.attemptDbId(), skill, correction, now);
             }
         }
+        if (attempt.analysis().corrections().isEmpty() && score.compareTo(new BigDecimal("0.90000")) >= 0) {
+            for (Skill skill : memorySkills) {
+                jdbcTemplate.update("""
+                        UPDATE learner_error_memory SET status = 'RESOLVED', version = version + 1
+                        WHERE user_id = ? AND related_skill_id = ? AND status = 'ACTIVE'
+                        """, row.userId(), skill.id());
+            }
+        }
         for (int index = 0; index < skills.size(); index++) {
             upsertReview(row.userId(), "SKILL", skills.get(index).id(), null,
                     skillStates.get(index).confidence(), score, attempt.submittedAt());

@@ -5,6 +5,8 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Completed V2-T19: learner evidence, due review and memory now invalidate and deterministically
+  recompose today’s prescription, with error/review/transfer explanations and cross-episode transfer routing.
 - Completed V2-T18: added atomic V25 error/expression/review memory projections, deterministic
   confidence decay and due-review queries for the next prescription loop without retaining raw learner text.
 - Completed V2-T15–T17: strict structured speaking analysis with durable retry jobs,

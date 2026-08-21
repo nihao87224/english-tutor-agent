@@ -228,6 +228,48 @@ class PrescriptionApplicationServiceTest {
         assertEquals("PRESCRIPTION_STALE", stale.code());
     }
 
+    @Test
+    void learnerMemorySignalRecomposesActivePrescriptionWithExplainableErrorAndReviewFactors() {
+        Fixture fixture = fixture("0.30", candidates(), passAll());
+        DailyLearningPrescription initial = fixture.service().getOrGenerateToday(USER.value(), TODAY, null);
+        fixture.learner().setMemory(new LearnerMemory(
+                List.of(new LearnerMemory.WeakPoint("missing_confirmation", "speaking", 2, "HIGH", NOW)),
+                List.of(),
+                List.of(new LearnerMemory.DueReview("SKILL", "speaking", NOW.minusSeconds(60), new BigDecimal("0.9000")))));
+
+        DailyLearningPrescription recomposed = fixture.service().getOrGenerateToday(USER.value(), TODAY, null);
+
+        assertEquals(initial.version() + 1, recomposed.version());
+        assertEquals(new BigDecimal("1.0000"), recomposed.blocks().getFirst().recommendationFactors().get("ERROR_MATCH"));
+        assertTrue(recomposed.reasonCodes().contains("REVIEW_DUE"));
+        assertTrue(recomposed.reasonCodes().contains("LEARNING_SIGNAL_RECOMPOSED"));
+    }
+
+    @Test
+    void highFrequencyCriticalMemoryReducesScaffoldingForTheNextAttempt() {
+        Fixture fixture = fixture("0.30", candidates(), passAll());
+        fixture.learner().setMemory(new LearnerMemory(
+                List.of(new LearnerMemory.WeakPoint("missing_confirmation", "speaking", 2, "HIGH", NOW)),
+                List.of(), List.of()));
+
+        DailyLearningPrescription prescription = fixture.service().getOrGenerateToday(USER.value(), TODAY, null);
+
+        assertEquals(ScaffoldingLevel.HIGH, prescription.blocks().getFirst().scaffolding());
+    }
+
+    @Test
+    void topicRejectionReplacesTheRejectedResource() {
+        Fixture fixture = fixture("0.30", candidates(), passAll());
+        DailyLearningPrescription initial = fixture.service().getOrGenerateToday(USER.value(), TODAY, null);
+
+        PrescriptionMutationResult result = fixture.service().regenerate(USER.value(), new RegeneratePrescriptionCommand(
+                initial.prescriptionId(), initial.version(), PrescriptionFeedbackReason.TOPIC_REJECTED,
+                null, null, "another topic"), "reject-topic");
+
+        assertNotEquals(initial.blocks().getFirst().resource().resourceKey(),
+                result.prescription().blocks().getFirst().resource().resourceKey());
+    }
+
     private static Fixture fixture(
             String mastery,
             List<PublishedResourceCandidate> resources,
@@ -240,11 +282,7 @@ class PrescriptionApplicationServiceTest {
         when(resource.findPublishedCandidates(any())).thenReturn(resources);
         when(experience.findCatalog()).thenReturn(Optional.of(experience()));
         TestPrescriptionRepository repository = new TestPrescriptionRepository();
-        LearnerSnapshotLoader learner = ignored -> new LearnerPlanningSnapshot(
-                USER, PrimaryGoal.GENERAL, ZoneId.of("Asia/Shanghai"), 20, 7, CefrLevel.A2,
-                List.of(new PrescriptionSkillState(
-                        "speaking", new BigDecimal(mastery), new BigDecimal("0.75"),
-                        CefrLevel.A2, 2, NOW.minusSeconds(86_400))));
+        MutableLearnerSnapshotLoader learner = new MutableLearnerSnapshotLoader(mastery);
         AtomicInteger keys = new AtomicInteger();
         PrescriptionKeyGenerator keyGenerator = new PrescriptionKeyGenerator() {
             @Override
@@ -277,7 +315,7 @@ class PrescriptionApplicationServiceTest {
         PrescriptionApplicationService service = new PrescriptionApplicationService(
                 learner, curriculum, resource, accessFilter, experience, repository, media, keyGenerator,
                 Clock.fixed(NOW, ZoneOffset.UTC));
-        return new Fixture(service, repository);
+        return new Fixture(service, repository, learner);
     }
 
     private static PrescriptionCandidateAccessFilter passAll() {
@@ -312,7 +350,12 @@ class PrescriptionApplicationServiceTest {
                 "season1.ep006.gate-change.a2", "1.0.0", "internal", "public-season1",
                 ResourceType.SCENARIO_LESSON, "Airport gate confirmation", CefrLevel.A2,
                 "airport", "GATE_CHANGE", "Confirm changed boarding information",
-                AccessScope.PUBLIC, 5, Set.of("travel.confirm-information.a2"), hero, List.of(hero)));
+                AccessScope.PUBLIC, 5, Set.of("travel.confirm-information.a2"), hero, List.of(hero)),
+                new PublishedResourceCandidate(
+                        "season1.ep009.hotel-confirmation.a2", "1.0.0", "internal", "public-season1",
+                        ResourceType.SCENARIO_LESSON, "Hotel booking confirmation", CefrLevel.A2,
+                        "hotel", "BOOKING", "Confirm a hotel booking",
+                        AccessScope.PUBLIC, 5, Set.of("travel.confirm-information.a2"), hero, List.of(hero)));
     }
 
     private static ResourceAsset hero() {
@@ -350,11 +393,33 @@ class PrescriptionApplicationServiceTest {
                 new ExperienceFitInputs(Set.of("general"), Set.of("airport"), Set.of("clarification"), Set.of()),
                 null,
                 ExperienceStatus.ACTIVE,
-                List.of(new MappingResourceReference("season1.ep006.gate-change.a2", "1.0.0", 0)));
+                List.of(new MappingResourceReference("season1.ep006.gate-change.a2", "1.0.0", 0),
+                        new MappingResourceReference("season1.ep009.hotel-confirmation.a2", "1.0.0", 1)));
         return new ExperienceCatalog(List.of(season), List.of(episode), List.of(scene), List.of(mapping));
     }
 
-    private record Fixture(PrescriptionApplicationService service, TestPrescriptionRepository repository) {
+    private record Fixture(PrescriptionApplicationService service, TestPrescriptionRepository repository,
+                           MutableLearnerSnapshotLoader learner) {
+    }
+
+    private static final class MutableLearnerSnapshotLoader implements LearnerSnapshotLoader {
+        private final String mastery;
+        private volatile LearnerMemory memory = LearnerMemory.empty();
+
+        private MutableLearnerSnapshotLoader(String mastery) {
+            this.mastery = mastery;
+        }
+
+        void setMemory(LearnerMemory memory) {
+            this.memory = memory;
+        }
+
+        @Override
+        public LearnerPlanningSnapshot load(UserKey ignored) {
+            return new LearnerPlanningSnapshot(USER, PrimaryGoal.GENERAL, ZoneId.of("Asia/Shanghai"), 20, 7, CefrLevel.A2,
+                    List.of(new PrescriptionSkillState("speaking", new BigDecimal(mastery), new BigDecimal("0.75"),
+                            CefrLevel.A2, 2, NOW.minusSeconds(86_400))), memory);
+        }
     }
 
     private static final class TestPrescriptionRepository implements PrescriptionRepository {

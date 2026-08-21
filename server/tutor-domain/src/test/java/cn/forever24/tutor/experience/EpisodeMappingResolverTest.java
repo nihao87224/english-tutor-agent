@@ -80,6 +80,15 @@ class EpisodeMappingResolverTest {
     }
 
     @Test
+    void transferSelectsAnEligibleDifferentEpisodeInsteadOfReplayingTheCurrentStoryScene() {
+        ExperienceResolution resolution = resolver.resolveInDifferentEpisode(catalog(), request(
+                "communication.confirm_information.b1", Set.of("work_communication"), Set.of("meeting"), "EP009", null), "EP009");
+
+        assertEquals("EP002", resolution.mapping().orElseThrow().episodeKey());
+        assertEquals("TRANSFER_DIFFERENT_EPISODE", resolution.reasonCode());
+    }
+
+    @Test
     void returnsExplicitNoMappingForUnknownVariant() {
         ExperienceResolution resolution = resolver.resolve(catalog(), request(
                 "unknown.variant.b1", Set.of(), Set.of(), null, null));
