@@ -1,6 +1,7 @@
 package cn.forever24.tutor.api.resource;
 
 import cn.forever24.tutor.application.resource.CatalogApplicationException;
+import cn.forever24.tutor.application.entitlement.EntitlementApplicationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -9,11 +10,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
 
-@RestControllerAdvice(assignableTypes = {LearningResourceController.class, AdminCatalogController.class})
+@RestControllerAdvice(assignableTypes = {LearningResourceController.class, AdminCatalogController.class, AdminContentManagementController.class})
 public class CatalogExceptionHandler {
 
     @ExceptionHandler(CatalogApplicationException.class)
     ResponseEntity<ProblemDetail> handleCatalog(CatalogApplicationException exception) {
+        return problem(exception.status(), exception.code(), exception.getMessage());
+    }
+
+    @ExceptionHandler(EntitlementApplicationException.class)
+    ResponseEntity<ProblemDetail> handleEntitlement(EntitlementApplicationException exception) {
         return problem(exception.status(), exception.code(), exception.getMessage());
     }
 

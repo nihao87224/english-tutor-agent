@@ -23,6 +23,10 @@ public final class CatalogApplicationException extends RuntimeException {
         return new CatalogApplicationException(code, 404, message);
     }
 
+    public static CatalogApplicationException conflict(String code, String message) {
+        return new CatalogApplicationException(code, 409, message);
+    }
+
     public String code() {
         return code;
     }

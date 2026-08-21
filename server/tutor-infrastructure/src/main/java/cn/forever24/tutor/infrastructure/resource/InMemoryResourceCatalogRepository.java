@@ -133,6 +133,24 @@ public class InMemoryResourceCatalogRepository implements ResourceCatalogReposit
     }
 
     @Override
+    public synchronized void replacePublicationState(ResourceCatalogEntry entry) {
+        VersionKey key = new VersionKey(entry.resource().resourceKey(), entry.resourceVersion().semanticVersion());
+        if (!versions.containsKey(key)) {
+            throw new ResourceCatalogConflictException("resource version does not exist: " + key);
+        }
+        versions.put(key, entry);
+        resources.put(entry.resource().resourceKey(), entry.resource());
+    }
+
+    @Override
+    public synchronized void replaceCollection(ResourceCollection collection) {
+        if (!collections.containsKey(collection.collectionKey())) {
+            throw new ResourceCatalogConflictException("collection does not exist: " + collection.collectionKey());
+        }
+        collections.put(collection.collectionKey(), collection);
+    }
+
+    @Override
     public synchronized Optional<ContentProvider> findProvider(String providerCode) {
         return Optional.ofNullable(providers.get(providerCode));
     }

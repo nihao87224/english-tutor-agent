@@ -20,4 +20,13 @@ public interface ResourceCatalogRepository
     List<ResourceCatalogEntry> findResourceVersions(String resourceKey);
 
     List<ResourceCollection> findCollections();
+
+    /** Updates only mutable publication fields; manifest and asset data stay immutable. */
+    default void replacePublicationState(ResourceCatalogEntry entry) {
+        throw new UnsupportedOperationException("catalog publication state updates are not supported");
+    }
+
+    default void replaceCollection(ResourceCollection collection) {
+        throw new UnsupportedOperationException("collection state updates are not supported");
+    }
 }

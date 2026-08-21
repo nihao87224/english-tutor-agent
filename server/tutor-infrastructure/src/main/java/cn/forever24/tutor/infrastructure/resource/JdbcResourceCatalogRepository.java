@@ -263,6 +263,41 @@ public class JdbcResourceCatalogRepository implements ResourceCatalogRepository 
     }
 
     @Override
+    @Transactional
+    public void replacePublicationState(ResourceCatalogEntry entry) {
+        Long resourceId = queryId("SELECT id FROM learning_resource WHERE resource_key = ?", entry.resource().resourceKey())
+                .orElseThrow(() -> new ResourceCatalogConflictException("resource does not exist"));
+        Long versionId = queryId("SELECT id FROM learning_resource_version WHERE resource_id = ? AND semantic_version = ?",
+                resourceId, entry.resourceVersion().semanticVersion())
+                .orElseThrow(() -> new ResourceCatalogConflictException("resource version does not exist"));
+        LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+        jdbcTemplate.update("UPDATE learning_resource_version SET status = ?, published_at_utc = ?, version = version + 1 WHERE id = ?",
+                entry.resourceVersion().status().name(),
+                entry.resourceVersion().publishedAt() == null ? null : Timestamp.from(entry.resourceVersion().publishedAt()), versionId);
+        jdbcTemplate.update("""
+                        UPDATE learning_resource
+                        SET access_scope = ?, publish_status = ?, active_version_id = ?, updated_at_utc = ?, version = version + 1
+                        WHERE id = ?
+                        """,
+                entry.resource().accessScope().name(), entry.resource().publishStatus().name(),
+                entry.resource().activeVersion() == null ? null : versionId, now, resourceId);
+    }
+
+    @Override
+    @Transactional
+    public void replaceCollection(ResourceCollection collection) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE resource_collection
+                        SET access_scope = ?, status = ?, updated_at_utc = ?, version = version + 1
+                        WHERE collection_key = ?
+                        """, collection.accessScope().name(), collection.status().name(),
+                LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC), collection.collectionKey());
+        if (updated != 1) {
+            throw new ResourceCatalogConflictException("collection does not exist: " + collection.collectionKey());
+        }
+    }
+
+    @Override
     public Optional<ContentProvider> findProvider(String providerCode) {
         return jdbcTemplate.query(
                 "SELECT provider_code, display_name, provider_type FROM content_provider WHERE provider_code = ?",

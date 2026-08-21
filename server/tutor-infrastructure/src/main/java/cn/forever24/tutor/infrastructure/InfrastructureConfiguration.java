@@ -48,6 +48,8 @@ import cn.forever24.tutor.application.provider.AiProviderConnectionTestResult;
 import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
 import cn.forever24.tutor.application.provider.AiProviderConfigurationRepository;
 import cn.forever24.tutor.application.resource.ResourceCatalogApplicationService;
+import cn.forever24.tutor.application.resource.CatalogManagementApplicationService;
+import cn.forever24.tutor.application.resource.CatalogManagementAuditPort;
 import cn.forever24.tutor.application.resource.ResourceCatalogRepository;
 import cn.forever24.tutor.application.resource.CatalogQueryApplicationService;
 import cn.forever24.tutor.application.resource.HistoricalResourceAccessRepository;
@@ -124,6 +126,8 @@ import cn.forever24.tutor.infrastructure.quota.JdbcDailyQuotaRepository;
 import cn.forever24.tutor.infrastructure.resource.DenyHistoricalResourceAccessRepository;
 import cn.forever24.tutor.infrastructure.resource.HmacMediaAccessUrlIssuer;
 import cn.forever24.tutor.infrastructure.resource.InMemoryResourceCatalogRepository;
+import cn.forever24.tutor.infrastructure.resource.InMemoryCatalogManagementAuditPort;
+import cn.forever24.tutor.infrastructure.resource.JdbcCatalogManagementAuditPort;
 import cn.forever24.tutor.infrastructure.resource.JdbcHistoricalResourceAccessRepository;
 import cn.forever24.tutor.infrastructure.resource.JdbcResourceCatalogRepository;
 import cn.forever24.tutor.infrastructure.roleplay.InMemoryRolePlayTurnRepository;
@@ -394,6 +398,50 @@ public class InfrastructureConfiguration {
             ResourceCatalogRepository resourceCatalogRepository
     ) {
         return new ResourceCatalogApplicationService(resourceCatalogRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(cn.forever24.tutor.application.content.ContentImportRepository.class)
+    public cn.forever24.tutor.application.content.ContentImportRepository contentImportRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null
+                ? new cn.forever24.tutor.infrastructure.content.InMemoryContentImportRepository()
+                : new cn.forever24.tutor.infrastructure.content.JdbcContentImportRepository(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(cn.forever24.tutor.application.content.ContentManifestValidator.class)
+    public cn.forever24.tutor.application.content.ContentManifestValidator contentManifestValidator(ObjectMapper objectMapper) {
+        return new cn.forever24.tutor.infrastructure.content.JacksonContentManifestValidator(objectMapper);
+    }
+
+    @Bean
+    public cn.forever24.tutor.application.content.ContentImportApplicationService contentImportApplicationService(
+            cn.forever24.tutor.application.content.ContentManifestValidator validator,
+            cn.forever24.tutor.application.content.ContentImportRepository contentImportRepository,
+            ResourceCatalogRepository resourceCatalogRepository,
+            Clock clock
+    ) {
+        return new cn.forever24.tutor.application.content.ContentImportApplicationService(
+                validator, contentImportRepository, resourceCatalogRepository, clock);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CatalogManagementAuditPort.class)
+    public CatalogManagementAuditPort catalogManagementAuditPort(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null ? new InMemoryCatalogManagementAuditPort() : new JdbcCatalogManagementAuditPort(jdbcTemplate);
+    }
+
+    @Bean
+    public CatalogManagementApplicationService catalogManagementApplicationService(
+            ResourceCatalogRepository resourceCatalogRepository,
+            CatalogManagementAuditPort catalogManagementAuditPort,
+            Clock clock
+    ) {
+        return new CatalogManagementApplicationService(resourceCatalogRepository, catalogManagementAuditPort, clock);
     }
 
     @Bean

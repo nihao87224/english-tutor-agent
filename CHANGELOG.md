@@ -5,6 +5,9 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Completed V2-T22: added RBAC-protected content import, exact-version publication controls,
+  collection availability and entitlement management APIs, manifest-hash preconditions, audit events,
+  OpenAPI contract and a minimal administration script.
 - Completed V2-T21: added hash-verified content-object staging/finalization, metadata-failure compensation,
   revocable private media grants and referenced-object-safe cleanup.
 - Completed V2-T20: added V27 idempotent content-import batches, structured validation issues and draft-only catalog ingestion.

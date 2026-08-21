@@ -67,7 +67,7 @@ Codex 每次任务必须：
 | V2-T19 | 处方反馈、迁移与闭环 | T18 | DONE |
 | V2-T20 | 内容 Import / Validation Pipeline | T01,T03,T04,T15 | DONE |
 | V2-T21 | 媒体发布与受保护访问 | T05,T20 | DONE |
-| V2-T22 | 内容管理 API / Script | T20,T21 | TODO |
+| V2-T22 | 内容管理 API / Script | T20,T21 | DONE |
 | V2-T23 | B1 24 个资源发布验证 | T19,T22 | TODO |
 | V2-T24 | 完整 72 个资源发布 | T23 | TODO |
 | V2-T25 | Private Collection / 随心学 | T05,T06,T21 | TODO |
@@ -429,6 +429,8 @@ Codex 每次任务必须：
 测试：admin permission、version conflict、validation failure、duplicate command、audit rollback、publish cache invalidation。
 
 验收：管理员可从标准 package 安全发布和下架精确资源版本。
+
+完成记录（2026-08-21）：新增受 RBAC 保护的内容导入、精确版本发布/下架/禁用、合集可用性与 Entitlement grant/revoke 管理 API；导入持续按 manifest 内容哈希幂等，状态变更强制 `If-Match` 等于已导入 manifest SHA-256，防止错误版本被发布。目录状态写入以事务执行，并把资源/合集变更写入管理员审计日志；授予与撤销复用既有 entitlement 审计和缓存失效链路。提供 `scripts/admin-content.ps1` 作为最小 Windows/CI 调用入口，并扩展 OpenAPI 契约和发布条件回归测试。
 
 ### V2-T23 B1 24 个资源发布验证
 
