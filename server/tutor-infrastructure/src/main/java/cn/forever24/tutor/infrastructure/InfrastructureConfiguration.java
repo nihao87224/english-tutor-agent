@@ -330,11 +330,11 @@ public class InfrastructureConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(LearnerSnapshotLoader.class)
-    public LearnerSnapshotLoader learnerSnapshotLoader(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+    public LearnerSnapshotLoader learnerSnapshotLoader(ObjectProvider<JdbcTemplate> jdbcTemplateProvider, Clock clock) {
         JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
         return jdbcTemplate == null
                 ? new InMemoryLearnerSnapshotLoader()
-                : new JdbcLearnerSnapshotLoader(jdbcTemplate);
+                : new JdbcLearnerSnapshotLoader(jdbcTemplate, clock);
     }
 
     @Bean
@@ -637,11 +637,11 @@ public class InfrastructureConfiguration {
     @Bean
     @ConditionalOnMissingBean(LessonEvidenceRepository.class)
     public LessonEvidenceRepository lessonEvidenceRepository(
-            ObjectProvider<JdbcTemplate> jdbcTemplateProvider, ObjectProvider<ObjectMapper> objectMapperProvider
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider, ObjectProvider<ObjectMapper> objectMapperProvider, Clock clock
     ) {
         JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
-        return jdbcTemplate == null ? new InMemoryLessonEvidenceRepository()
-                : new JdbcLessonEvidenceRepository(jdbcTemplate, objectMapperProvider.getIfAvailable(ObjectMapper::new));
+        return jdbcTemplate == null ? new InMemoryLessonEvidenceRepository(clock)
+                : new JdbcLessonEvidenceRepository(jdbcTemplate, objectMapperProvider.getIfAvailable(ObjectMapper::new), clock);
     }
 
     @Bean

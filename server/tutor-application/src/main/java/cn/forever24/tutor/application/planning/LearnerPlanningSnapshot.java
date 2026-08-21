@@ -15,7 +15,8 @@ public record LearnerPlanningSnapshot(
         int dailyMinutes,
         long profileVersion,
         CefrLevel currentLevel,
-        List<PrescriptionSkillState> skillStates
+        List<PrescriptionSkillState> skillStates,
+        LearnerMemory learnerMemory
 ) {
 
     public LearnerPlanningSnapshot {
@@ -27,5 +28,12 @@ public record LearnerPlanningSnapshot(
             throw new IllegalArgumentException("learner skill states are required");
         }
         skillStates = List.copyOf(skillStates);
+        learnerMemory = learnerMemory == null ? LearnerMemory.empty() : learnerMemory;
+    }
+
+    public LearnerPlanningSnapshot(UserKey userKey, PrimaryGoal primaryGoal, ZoneId timezone, int dailyMinutes,
+                                   long profileVersion, CefrLevel currentLevel,
+                                   List<PrescriptionSkillState> skillStates) {
+        this(userKey, primaryGoal, timezone, dailyMinutes, profileVersion, currentLevel, skillStates, LearnerMemory.empty());
     }
 }

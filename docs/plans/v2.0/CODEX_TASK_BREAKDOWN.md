@@ -60,10 +60,10 @@ Codex 每次任务必须：
 | V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | DONE |
 | V2-T13 | Audio Upload / ASR 确认 | T10 | DONE |
 | V2-T14 | Role Play SSE | T12,T13 | DONE |
-| V2-T15 | Correction / Retry / Attempt 状态 | T12,T14 | TODO |
-| V2-T16 | Evidence / Skill State 原子更新 | T15 | TODO |
-| V2-T17 | Web Feedback / Retry / Completion | T15,T16 | TODO |
-| V2-T18 | Error / Expression Memory / Review | T16 | TODO |
+| V2-T15 | Correction / Retry / Attempt 状态 | T12,T14 | DONE |
+| V2-T16 | Evidence / Skill State 原子更新 | T15 | DONE |
+| V2-T17 | Web Feedback / Retry / Completion | T15,T16 | DONE |
+| V2-T18 | Error / Expression Memory / Review | T16 | DONE |
 | V2-T19 | 处方反馈、迁移与闭环 | T18 | TODO |
 | V2-T20 | 内容 Import / Validation Pipeline | T01,T03,T04,T15 | TODO |
 | V2-T21 | 媒体发布与受保护访问 | T05,T20 | TODO |
@@ -377,6 +377,8 @@ Codex 每次任务必须：
 测试：error aggregation、expression state transition、review due、confidence decay、privacy、duplicate Evidence、rollback。
 
 验收：Planner 可读取结构化 weak point、expression transfer 和 due review。
+
+完成记录（2026-08-21）：新增不可变 Flyway V25，持久化 `learner_error_memory`、`learner_expression_memory` 和 `learner_review_state`。已接受 Evidence 在既有事务中按 Attempt 幂等键更新错误聚合、表达状态和技能/表达复习计划；重复 Evidence 直接复用既有 receipt，不会重复累积学习状态。错误记忆仅保留 error category、严重度和关联技能，明确不写入学习者原句、建议改写、转写或 Provider 原始输出；表达记忆仅保留标准化表达。`PROMPTED` 表达在后续强 Evidence 下进入 `INDEPENDENT`，置信度按确定性规则衰减，Spacing Policy 生成可查询的到期复习。`LearnerPlanningSnapshot` 现包含结构化 weak point、expression 与 due review 投影，供 T19 处方闭环消费。领域/内存仓储测试覆盖错误聚合、状态迁移、到期复习、衰减、隐私、重复 Evidence；事务测试覆盖 Evidence consumer 随 Attempt 状态转换失败一起回滚。
 
 ### V2-T19 处方反馈、迁移与闭环
 
