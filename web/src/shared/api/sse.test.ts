@@ -40,6 +40,23 @@ describe("parseSseStream", () => {
 
     expect(events[0]).toMatchObject({ event: "text_delta", data: { delta: "hello\n" } });
   });
+
+  it("parses the role-play accepted delta completed pending and error protocol", async () => {
+    const events: SseEvent[] = [];
+    const stream = streamFromChunks([
+      'event: turn.accepted\ndata: {"attemptId":"a","turnId":"t","replayed":false}\n\n',
+      'event: reply.delta\ndata: {"sequence":1,"text":"Hi"}\n\n',
+      'event: reply.completed\ndata: {"turnId":"t","messageId":"m"}\n\n',
+      'event: analysis.pending\ndata: {"attemptId":"a"}\n\n',
+      'event: stream.error\ndata: {"code":"AI_TEMPORARILY_UNAVAILABLE","retryable":true,"traceId":""}\n\n',
+    ]);
+
+    await parseSseStream(stream, (event) => events.push(event));
+
+    expect(events.map((event) => event.event)).toEqual([
+      "turn.accepted", "reply.delta", "reply.completed", "analysis.pending", "stream.error",
+    ]);
+  });
 });
 
 function streamFromChunks(chunks: string[]): ReadableStream<Uint8Array> {

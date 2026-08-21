@@ -24,6 +24,15 @@ export interface GuidedSpeakingPractice {
   scaffolding: string[];
 }
 
+export interface RolePlayPractice {
+  taskId: string;
+  goal: string;
+  userRole: string;
+  aiRole: string;
+  successCriteria: string[];
+  openingLine: string;
+}
+
 export interface ScenarioLessonViewModel {
   resourceId: string;
   resourceVersion: string;
@@ -40,6 +49,7 @@ export interface ScenarioLessonViewModel {
   expressions: LessonExpression[];
   questions: LessonQuestion[];
   guidedSpeaking?: GuidedSpeakingPractice;
+  rolePlay?: RolePlayPractice;
   taskHero: {
     assetId: string;
     altText: string;
@@ -97,8 +107,22 @@ export function buildScenarioLesson(resource: LearningResourceDetail): ScenarioL
     expressions: arrayField(lessonPackage.expressions, parseExpression, "expressions"),
     questions: arrayField(lessonPackage.questions, parseQuestion, "questions"),
     guidedSpeaking: parseGuidedSpeaking(lessonPackage.practice),
+    rolePlay: parseRolePlay(lessonPackage.rolePlay),
     taskHero,
     audioAssetId: audio?.assetId,
+  };
+}
+
+function parseRolePlay(value: unknown): RolePlayPractice | undefined {
+  if (value == null) return undefined;
+  const rolePlay = asObject(value, "rolePlay");
+  return {
+    taskId: stringField(rolePlay, "taskId"),
+    goal: stringField(rolePlay, "goal"),
+    userRole: stringField(rolePlay, "userRole"),
+    aiRole: stringField(rolePlay, "aiRole"),
+    successCriteria: stringArray(rolePlay.successCriteria, "successCriteria"),
+    openingLine: stringField(rolePlay, "openingLine"),
   };
 }
 

@@ -59,7 +59,7 @@ Codex 每次任务必须：
 | V2-T11 | Web 场景引导与媒体输入 | T10 | DONE |
 | V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | DONE |
 | V2-T13 | Audio Upload / ASR 确认 | T10 | DONE |
-| V2-T14 | Role Play SSE | T12,T13 | TODO |
+| V2-T14 | Role Play SSE | T12,T13 | DONE |
 | V2-T15 | Correction / Retry / Attempt 状态 | T12,T14 | TODO |
 | V2-T16 | Evidence / Skill State 原子更新 | T15 | TODO |
 | V2-T17 | Web Feedback / Retry / Completion | T15,T16 | TODO |
@@ -325,6 +325,8 @@ Codex 每次任务必须：
 测试：role/goal boundary、prompt injection fixture、stream delta/completed/error、disconnect、duplicate turn、quota/provider failure、invalid provider response。
 
 验收：SSE 断开不丢已接受 Attempt，Episode/角色不能改变 target skill。
+
+完成记录（2026-08-21）：新增 V24.2 `role_play_turn` 持久化与 owner-scoped 对账 API；每轮先复用 T13 创建幂等 Attempt，再保存 Turn，最后预留配额并调用 `RolePlayResponder`。`role-play-lin-muen-v1` Prompt 固定 Lin Muen 身份，并锁定 resource/version、Skill Unit Variant、Episode Mapping、任务目标、双方角色和 Success Criteria；用户输入以 untrusted Base64 数据隔离，不能通过 Prompt Injection 改写目标。SSE 输出 `turn.accepted/reply.delta/reply.completed/analysis.pending/stream.error`，重复完成请求重放持久化结果，Provider/配额失败保留可恢复状态，连接发送失败不回滚业务事实。Audio Turn 复用低置信度确认门禁。Web 在持续展示 Lin Muen 场景主图的同时提供多轮对话、流式文本、断线重连和 GET turns 刷新恢复。后端边界/幂等/配额/Provider/非法输出/JDBC/API 测试、Web 单测/构建和三条 Chrome Scenario Lesson E2E 均通过；结构化 Correction 与步骤推进留给 T15。
 
 ### V2-T15 Correction / Retry / Attempt 状态
 

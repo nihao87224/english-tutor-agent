@@ -1,6 +1,7 @@
 package cn.forever24.tutor.api.training;
 
 import cn.forever24.tutor.application.training.LessonSessionApplicationException;
+import cn.forever24.tutor.api.roleplay.RolePlayController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
 
-@RestControllerAdvice(assignableTypes = {LessonSessionController.class, LessonAttemptController.class})
+@RestControllerAdvice(assignableTypes = {
+        LessonSessionController.class, LessonAttemptController.class, RolePlayController.class})
 public class LessonSessionExceptionHandler {
 
     @ExceptionHandler(LessonSessionApplicationException.class)

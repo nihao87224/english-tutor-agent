@@ -242,6 +242,16 @@ public final class LessonAttemptApplicationService {
                         .orElseThrow(LessonSessionApplicationException::audioAssetNotFound);
                 status = LessonAttemptStatus.TRANSCRIPTION_PENDING;
             } else status = LessonAttemptStatus.ANALYSIS_PENDING;
+        } else if (session.currentStep() == LessonStep.ROLE_PLAY && content.rolePlayTask() != null) {
+            if (!content.rolePlayTask().taskId().equals(command.taskId())) {
+                throw LessonSessionApplicationException.stateConflict(
+                        "task does not belong to this lesson role-play step");
+            }
+            if (command.inputType() == TaskAttemptInputType.AUDIO) {
+                audioAssetRepository.findById(userKey, command.audioAssetId()).filter(UserAudioAsset::ready)
+                        .orElseThrow(LessonSessionApplicationException::audioAssetNotFound);
+                status = LessonAttemptStatus.TRANSCRIPTION_PENDING;
+            } else status = LessonAttemptStatus.ANALYSIS_PENDING;
         } else throw LessonSessionApplicationException.stateConflict("current lesson step does not accept this attempt");
         return new LessonAttempt(keyGenerator.nextKey(), session.sessionId(), command.taskId(), command.inputType(),
                 command.text(), command.audioAssetId(), null, null, false, status, result, clock.instant(), 1);

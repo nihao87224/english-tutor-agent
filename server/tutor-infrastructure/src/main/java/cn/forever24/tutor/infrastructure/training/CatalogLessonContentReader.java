@@ -1,6 +1,7 @@
 package cn.forever24.tutor.infrastructure.training;
 
 import cn.forever24.tutor.application.resource.ResourceCatalogRepository;
+import cn.forever24.tutor.application.roleplay.RolePlayTask;
 import cn.forever24.tutor.application.training.ComprehensionQuestion;
 import cn.forever24.tutor.application.training.GuidedSpeakingTask;
 import cn.forever24.tutor.application.training.LessonContent;
@@ -39,7 +40,12 @@ public final class CatalogLessonContentReader implements LessonContentReader {
             } else if (practice.isObject()) {
                 addGuided(practice, guided);
             }
-            return new LessonContent(questions, guided);
+            JsonNode rolePlay = lessonPackage.path("rolePlay");
+            RolePlayTask rolePlayTask = rolePlay.isObject() ? new RolePlayTask(
+                    required(rolePlay, "taskId"), required(rolePlay, "goal"),
+                    required(rolePlay, "userRole"), required(rolePlay, "aiRole"),
+                    strings(rolePlay.path("successCriteria")), required(rolePlay, "openingLine")) : null;
+            return new LessonContent(questions, guided, rolePlayTask);
         } catch (RuntimeException | com.fasterxml.jackson.core.JsonProcessingException exception) {
             throw new IllegalStateException("locked lesson content is invalid", exception);
         }

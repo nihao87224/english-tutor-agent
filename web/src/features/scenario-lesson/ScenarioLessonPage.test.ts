@@ -62,6 +62,16 @@ describe("ScenarioLessonContent", () => {
     expect(html).toContain("录音仅用于本次学习");
   });
 
+  it("keeps the Lin Muen scene visible around the bounded role-play dialogue", () => {
+    const html = render("ROLE_PLAY");
+
+    expect(html).toContain("cdn.test/hero.webp");
+    expect(html).toContain("和 Lin Muen 一起完成真实对话");
+    expect(html).toContain("Traveler helping Lin Muen");
+    expect(html).toContain("Airport agent");
+    expect(html).toContain("How can I help you and Lin Muen?");
+  });
+
   it("renders the first server-owned remaining comprehension question", () => {
     const html = render("COMPREHENSION");
 
@@ -105,6 +115,8 @@ function renderValue(value: ReturnType<typeof lessonLoaded>, withVoice = false):
       onSubmitAttempt: vi.fn(),
       onSubmitAudioAttempt: withVoice ? vi.fn() : undefined,
       onConfirmTranscript: withVoice ? vi.fn() : undefined,
+      onListRolePlayTurns: vi.fn().mockResolvedValue([]),
+      onStreamRolePlayMessage: vi.fn().mockResolvedValue(undefined),
     }),
   }));
 }

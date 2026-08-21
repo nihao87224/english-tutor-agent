@@ -31,6 +31,10 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added V2-T14 durable multi-turn Role Play with the versioned Lin Muen boundary
+  prompt, owner-scoped Attempt/turn persistence, idempotent SSE replay and reconciliation,
+  quota/provider failure recovery, prompt-injection isolation, and a scene-preserving Web
+  dialogue experience with Chrome end-to-end coverage.
 - Added V2-T13 protected multipart audio upload, owner-scoped audio assets and
   privacy retention metadata, half-duplex Web Push-to-Talk, ASR use-case/provider
   separation, low-confidence transcript confirmation/correction/re-record gates,

@@ -189,6 +189,28 @@ describe("createApiClient", () => {
     expect(events).toEqual([{ event: "text_delta", data: { delta: "Hi" } }]);
   });
 
+  it("streams protected lesson role-play events and reconciles persisted turns", async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce(new Response(streamFromChunks([
+        'event: turn.accepted\ndata: {"attemptId":"att-1","turnId":"turn-1","replayed":false}\n\n',
+        'event: reply.delta\ndata: {"sequence":1,"text":"Gate 24."}\n\n',
+      ]), { status: 200, headers: { "Content-Type": "text/event-stream" } }))
+      .mockResolvedValueOnce(jsonResponse({ items: [{ turnId: "turn-1", status: "COMPLETED" }] }));
+    const client = createApiClient({ baseUrl: "http://api.test", accessToken: "token", fetchFn });
+    const events: SseEvent[] = [];
+
+    await client.streamRolePlayMessage("lesson/1", {
+      taskId: "gate-role", text: "Gate 24?", conversationTurnId: "turn-1",
+    }, (event) => events.push(event), { idempotencyKey: "turn-1" });
+    const turns = await client.listRolePlayTurns("lesson/1");
+
+    expect(String(fetchFn.mock.calls[0][0])).toContain("lesson-sessions/lesson%2F1/role-play/messages/stream");
+    expect((fetchFn.mock.calls[0][1]?.headers as Headers).get("Idempotency-Key")).toBe("turn-1");
+    expect(events.map((event) => event.event)).toEqual(["turn.accepted", "reply.delta"]);
+    expect(turns.items[0].status).toBe("COMPLETED");
+    expect(String(fetchFn.mock.calls[1][0])).toContain("lesson-sessions/lesson%2F1/role-play/turns");
+  });
+
   it("does not send legacy identity headers when no access token is configured", async () => {
     const fetchFn = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       jsonResponse({ planId: "p1", date: "2026-08-10", totalMinutes: 10, tasks: [], reasons: [] }),

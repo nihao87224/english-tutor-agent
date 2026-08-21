@@ -534,6 +534,21 @@ Grant/Revoke 与 Audit 在一个事务中提交；提交后失效 Redis cache。
 
 Application 传入明确 Skill、Role、Dialogue Boundary、Evidence Criteria、PromptVersion；Agent adapter 不可自行加载或修改学习状态。
 
+V2 Role Play 每一轮采用 durable-before-provider 顺序：
+
+1. 在 Session 锁定的 `resourceVersion` 中解析 `RolePlayTask`；
+2. 校验 CurrentActor、`ROLE_PLAY` 当前步骤、taskId、Skill Unit Variant 和 Episode Mapping；
+3. 先以独立幂等键保存 `TaskAttempt`，再保存 owner-scoped `RolePlayTurn(ACCEPTED)`；
+4. Audio Attempt 复用低置信度 ASR 确认门禁，未确认前 Turn 为 `AWAITING_TRANSCRIPT`；
+5. 配额预留后调用版本化 `RolePlayResponder`，用户原文必须作为 untrusted data 隔离；
+6. Provider 输出先验证非空、长度和 trace 元数据，再将完整回复与 Prompt/Provider 版本持久化；
+7. 最终 SSE 从已持久化事实映射，断开不得回滚 Attempt/Turn；客户端 GET turns 对账；
+8. Provider/配额失败保存 `FAILED_RETRYABLE`，非法输出保存 `FAILED_FINAL`，均不改变 target skill；
+9. T14 完成回复后 Attempt 保持 `ANALYSIS_PENDING` 且 Session 仍在 `ROLE_PLAY`，由 T15 的分析/Correction 状态机决定后续步骤。
+
+`RolePlayResponder` 的边界输入必须包含 resource/version、skillUnitVariantId、episodeMappingId、
+goal、learner/AI role、success criteria、opening line 和已完成历史。Episode 或角色体验不可覆盖这些字段。
+
 ### 5.7 EvidenceApplicationService
 
 输入：已完成业务校验的 `ValidatedAttemptAnalysis`。
@@ -580,6 +595,7 @@ createImportBatch
 - `EpisodeRepository` / `EpisodeMappingRepository`；
 - `LessonSessionRepository`；
 - `TaskAttemptRepository`；
+- `RolePlayTurnRepository`；
 - `LearningEvidenceRepository`；
 - `ErrorMemoryRepository`；
 - `ExpressionMemoryRepository`；

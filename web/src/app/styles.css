@@ -6,6 +6,94 @@
     sans-serif;
 }
 
+.role-play-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.role-play-boundary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-play-boundary span {
+  padding: 8px 12px;
+  border: 1px solid rgba(56, 87, 79, 0.18);
+  border-radius: 999px;
+  background: #f3f7f5;
+  color: #35574e;
+  font-size: 0.86rem;
+}
+
+.role-play-criteria {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: #5a665f;
+}
+
+.role-play-dialogue {
+  display: grid;
+  gap: 12px;
+  max-height: 360px;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid rgba(56, 87, 79, 0.16);
+  border-radius: 20px;
+  background: rgba(247, 249, 247, 0.82);
+}
+
+.role-play-turn {
+  display: contents;
+}
+
+.role-play-message {
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 16px;
+}
+
+.role-play-message strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+  color: #567068;
+}
+
+.role-play-message p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.role-play-message.is-ai {
+  justify-self: start;
+  border-bottom-left-radius: 4px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(39, 65, 57, 0.08);
+}
+
+.role-play-message.is-learner {
+  justify-self: end;
+  border-bottom-right-radius: 4px;
+  background: #dcece6;
+}
+
+.role-play-message.is-streaming::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  margin-left: 4px;
+  background: #557d70;
+  animation: role-play-caret 0.8s steps(1) infinite;
+}
+
+@keyframes role-play-caret {
+  50% { opacity: 0; }
+}
+
 * {
   box-sizing: border-box;
 }

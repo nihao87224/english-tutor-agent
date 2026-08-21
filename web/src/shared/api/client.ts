@@ -53,6 +53,8 @@ import type {
   TrainingSession,
   TrainingSessionCompletion,
   TranscriptConfirmationRequest,
+  RolePlayMessageRequest,
+  RolePlayTurnPage,
 } from "./types";
 
 const DEFAULT_BASE_URL = "http://localhost:8080";
@@ -124,6 +126,13 @@ export interface ApiClient {
     options?: RequestOptions,
   ): Promise<LessonAttemptReceipt>;
   getLessonAttempt(sessionId: string, attemptId: string, options?: RequestOptions): Promise<LessonAttemptReceipt>;
+  listRolePlayTurns(sessionId: string, options?: RequestOptions): Promise<RolePlayTurnPage>;
+  streamRolePlayMessage(
+    sessionId: string,
+    request: RolePlayMessageRequest,
+    onEvent: SseEventHandler,
+    options?: RequestOptions,
+  ): Promise<void>;
   getLearningResourceVersion(resourceId: string, version: string, options?: RequestOptions): Promise<LearningResourceDetail>;
   createLearningResourceMediaAccess(
     resourceId: string,
@@ -475,6 +484,32 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         `/api/v1/learning-resources/${encodeURIComponent(resourceId)}/versions/${encodeURIComponent(version)}`,
         requestOptions,
       );
+    },
+    listRolePlayTurns(sessionId, requestOptions) {
+      return requestJson<RolePlayTurnPage>(
+        `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/role-play/turns`, requestOptions,
+      );
+    },
+    async streamRolePlayMessage(sessionId, request, onEvent, requestOptions) {
+      const optionsWithIdempotency = mutationOptions(requestOptions);
+      const path = `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/role-play/messages/stream`;
+      let response = await fetchFn(`${baseUrl}${path}`, {
+        method: "POST",
+        headers: buildHeaders(options, optionsWithIdempotency, "POST", "application/json"),
+        body: JSON.stringify(request),
+        signal: requestOptions?.signal,
+        credentials: "include",
+      });
+      if (response.status === 401 && options.onUnauthorized && await options.onUnauthorized()) {
+        response = await fetchFn(`${baseUrl}${path}`, {
+          method: "POST",
+          headers: buildHeaders(options, optionsWithIdempotency, "POST", "application/json"),
+          body: JSON.stringify(request), signal: requestOptions?.signal, credentials: "include",
+        });
+      }
+      if (!response.ok) throw await toApiError(response);
+      if (!response.body) throw new ApiError("SSE response body is empty", response.status);
+      await parseSseStream(response.body, onEvent);
     },
     createLearningResourceMediaAccess(resourceId, request, requestOptions) {
       return requestJson<MediaAccessResponse>(

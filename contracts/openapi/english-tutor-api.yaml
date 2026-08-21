@@ -1406,6 +1406,66 @@ paths:
         '429':
           $ref: '#/components/responses/Problem'
 
+  /api/v1/lesson-sessions/{sessionId}/role-play/messages/stream:
+    post:
+      tags: [RolePlay]
+      summary: Accept one locked lesson role-play turn and stream the counterpart reply
+      description: >-
+        Persists the owned Attempt and turn before provider work. Disconnecting the SSE response never
+        retracts accepted input. The Episode mapping, Lin Muen identity, task goal and target skill remain
+        locked to the Lesson Session. Reusing the same key and payload replays the durable turn.
+      operationId: streamLessonRolePlayMessage
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/SessionIdPath'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RolePlayMessageRequest'}
+      responses:
+        '200':
+          description: >-
+            SSE events in order: turn.accepted, zero or more reply.delta, then reply.completed and
+            analysis.pending; failures after acceptance end with stream.error.
+          content:
+            text/event-stream:
+              schema: {type: string}
+              examples:
+                completed:
+                  value: |
+                    event: turn.accepted
+                    data: {"attemptId":"att_02","turnId":"turn_03","replayed":false}
+
+                    event: reply.delta
+                    data: {"sequence":1,"text":"Let me check that for you."}
+
+                    event: reply.completed
+                    data: {"turnId":"turn_03","messageId":"turn_03:reply"}
+
+                    event: analysis.pending
+                    data: {"attemptId":"att_02"}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}/role-play/turns:
+    get:
+      tags: [RolePlay]
+      summary: Reconcile persisted role-play turns after refresh or stream disconnect
+      operationId: listLessonRolePlayTurns
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: '#/components/parameters/SessionIdPath'
+      responses:
+        '200':
+          description: Owned turns ordered by acceptance time
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RolePlayTurnPage'}
+        '404': {$ref: '#/components/responses/Problem'}
+
   /api/v1/audio/uploads:
     post:
       tags: [Audio]
@@ -2296,6 +2356,50 @@ components:
             confidence: {type: [number, 'null'], minimum: 0, maximum: 1}
             confirmationRequired: {type: boolean}
         stepProgress: {$ref: '#/components/schemas/LessonAttemptProgress'}
+        version: {type: integer, format: int64, minimum: 1}
+
+    RolePlayMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [taskId, conversationTurnId]
+      oneOf:
+        - required: [text]
+          properties:
+            audioAssetId: {type: 'null'}
+        - required: [audioAssetId]
+          properties:
+            text: {type: 'null'}
+      properties:
+        taskId: {type: string, minLength: 1, maxLength: 128}
+        text: {type: [string, 'null'], minLength: 1, maxLength: 4000}
+        audioAssetId: {type: [string, 'null'], minLength: 1, maxLength: 96}
+        conversationTurnId: {type: string, minLength: 1, maxLength: 128}
+
+    RolePlayTurnPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/RolePlayTurn'}
+
+    RolePlayTurn:
+      type: object
+      additionalProperties: false
+      required: [turnId, attemptId, taskId, status, acceptedAt, version]
+      properties:
+        turnId: {type: string, maxLength: 128}
+        attemptId: {type: string, maxLength: 64}
+        taskId: {type: string, maxLength: 128}
+        learnerText: {type: [string, 'null'], maxLength: 4000}
+        replyText: {type: [string, 'null'], maxLength: 2000}
+        status:
+          type: string
+          enum: [ACCEPTED, AWAITING_TRANSCRIPT, COMPLETED, FAILED_RETRYABLE, FAILED_FINAL]
+        errorCode: {type: [string, 'null'], maxLength: 64}
+        acceptedAt: {type: string, format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
         version: {type: integer, format: int64, minimum: 1}
 
     LessonStep:

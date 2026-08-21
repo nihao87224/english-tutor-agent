@@ -3,6 +3,11 @@ import type {
   DoneEventData,
   StatusEventData,
   TextDeltaEventData,
+  RolePlayAnalysisPendingEventData,
+  RolePlayReplyCompletedEventData,
+  RolePlayReplyDeltaEventData,
+  RolePlayStreamErrorEventData,
+  RolePlayTurnAcceptedEventData,
 } from "./types";
 
 export type SseEvent =
@@ -10,6 +15,11 @@ export type SseEvent =
   | { id?: string; event: "text_delta"; data: TextDeltaEventData }
   | { id?: string; event: "correction_ready"; data: CorrectionReadyEventData }
   | { id?: string; event: "done"; data: DoneEventData }
+  | { id?: string; event: "turn.accepted"; data: RolePlayTurnAcceptedEventData }
+  | { id?: string; event: "reply.delta"; data: RolePlayReplyDeltaEventData }
+  | { id?: string; event: "reply.completed"; data: RolePlayReplyCompletedEventData }
+  | { id?: string; event: "analysis.pending"; data: RolePlayAnalysisPendingEventData }
+  | { id?: string; event: "stream.error"; data: RolePlayStreamErrorEventData }
   | { id?: string; event: "unknown"; originalEvent: string; data: unknown };
 
 export type SseEventHandler = (event: SseEvent) => void;
@@ -99,6 +109,11 @@ function toTypedEvent(rawEvent: RawSseEvent): SseEvent {
   if (rawEvent.event === "done") {
     return { id: rawEvent.id, event: "done", data: data as DoneEventData };
   }
+  if (rawEvent.event === "turn.accepted") return { id: rawEvent.id, event: "turn.accepted", data: data as RolePlayTurnAcceptedEventData };
+  if (rawEvent.event === "reply.delta") return { id: rawEvent.id, event: "reply.delta", data: data as RolePlayReplyDeltaEventData };
+  if (rawEvent.event === "reply.completed") return { id: rawEvent.id, event: "reply.completed", data: data as RolePlayReplyCompletedEventData };
+  if (rawEvent.event === "analysis.pending") return { id: rawEvent.id, event: "analysis.pending", data: data as RolePlayAnalysisPendingEventData };
+  if (rawEvent.event === "stream.error") return { id: rawEvent.id, event: "stream.error", data: data as RolePlayStreamErrorEventData };
   return { id: rawEvent.id, event: "unknown", originalEvent: rawEvent.event, data };
 }
 

@@ -454,6 +454,36 @@ export interface TranscriptConfirmationRequest {
   correctedText?: string | null;
 }
 
+export interface RolePlayMessageRequest {
+  taskId: string;
+  text?: string | null;
+  audioAssetId?: string | null;
+  conversationTurnId: string;
+}
+
+export interface RolePlayTurn {
+  turnId: string;
+  attemptId: string;
+  taskId: string;
+  learnerText?: string | null;
+  replyText?: string | null;
+  status: "ACCEPTED" | "AWAITING_TRANSCRIPT" | "COMPLETED" | "FAILED_RETRYABLE" | "FAILED_FINAL";
+  errorCode?: string | null;
+  acceptedAt: string;
+  completedAt?: string | null;
+  version: number;
+}
+
+export interface RolePlayTurnPage {
+  items: RolePlayTurn[];
+}
+
+export interface RolePlayTurnAcceptedEventData { attemptId: string; turnId: string; replayed: boolean }
+export interface RolePlayReplyDeltaEventData { sequence: number; text: string }
+export interface RolePlayReplyCompletedEventData { turnId: string; messageId: string }
+export interface RolePlayAnalysisPendingEventData { attemptId: string }
+export interface RolePlayStreamErrorEventData { code: string; retryable: boolean; traceId: string }
+
 export interface CatalogAsset {
   assetId: string;
   assetVersion: string;

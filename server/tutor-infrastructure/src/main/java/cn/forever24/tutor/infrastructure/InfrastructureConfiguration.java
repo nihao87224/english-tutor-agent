@@ -52,6 +52,9 @@ import cn.forever24.tutor.application.resource.ResourceCatalogRepository;
 import cn.forever24.tutor.application.resource.CatalogQueryApplicationService;
 import cn.forever24.tutor.application.resource.HistoricalResourceAccessRepository;
 import cn.forever24.tutor.application.resource.MediaAccessUrlIssuer;
+import cn.forever24.tutor.application.roleplay.RolePlayApplicationService;
+import cn.forever24.tutor.application.roleplay.RolePlayResponder;
+import cn.forever24.tutor.application.roleplay.RolePlayTurnRepository;
 import cn.forever24.tutor.application.quota.DailyQuotaApplicationService;
 import cn.forever24.tutor.application.quota.DailyQuotaRepository;
 import cn.forever24.tutor.application.training.TrainingSessionApplicationService;
@@ -118,6 +121,8 @@ import cn.forever24.tutor.infrastructure.resource.HmacMediaAccessUrlIssuer;
 import cn.forever24.tutor.infrastructure.resource.InMemoryResourceCatalogRepository;
 import cn.forever24.tutor.infrastructure.resource.JdbcHistoricalResourceAccessRepository;
 import cn.forever24.tutor.infrastructure.resource.JdbcResourceCatalogRepository;
+import cn.forever24.tutor.infrastructure.roleplay.InMemoryRolePlayTurnRepository;
+import cn.forever24.tutor.infrastructure.roleplay.JdbcRolePlayTurnRepository;
 import cn.forever24.tutor.infrastructure.training.InMemoryTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcTrainingSessionRepository;
 import cn.forever24.tutor.infrastructure.training.DirectLessonSessionTransactionOperations;
@@ -620,6 +625,16 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(RolePlayTurnRepository.class)
+    public RolePlayTurnRepository rolePlayTurnRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider, Clock clock
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null ? new InMemoryRolePlayTurnRepository()
+                : new JdbcRolePlayTurnRepository(jdbcTemplate, clock);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(AudioAssetRepository.class)
     public AudioAssetRepository audioAssetRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
         JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
@@ -864,6 +879,23 @@ public class InfrastructureConfiguration {
                 environment.getProperty("tutor.audio.asr-confirmation-threshold", Double.class,
                         LessonAttemptApplicationService.defaultAsrConfirmationThreshold()),
                 clock);
+    }
+
+    @Bean
+    public RolePlayApplicationService rolePlayApplicationService(
+            LessonSessionRepository lessonSessionRepository,
+            LessonAttemptApplicationService lessonAttemptApplicationService,
+            LessonContentReader lessonContentReader,
+            RolePlayTurnRepository rolePlayTurnRepository,
+            LessonSessionTransactionOperations lessonSessionTransactionOperations,
+            RolePlayResponder rolePlayResponder,
+            DailyQuotaApplicationService dailyQuotaApplicationService,
+            Clock clock
+    ) {
+        return new RolePlayApplicationService(
+                lessonSessionRepository, lessonAttemptApplicationService, lessonContentReader,
+                rolePlayTurnRepository, lessonSessionTransactionOperations, rolePlayResponder,
+                dailyQuotaApplicationService, clock);
     }
 
     @Bean

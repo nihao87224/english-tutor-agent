@@ -45,7 +45,7 @@ test("starts and resumes the responsive Lin Muen airport scenario with hidden-fi
   await expect(page.getByRole("heading", { name: "把关键信息说给 Lin Muen" })).toBeVisible();
   await page.getByLabel("用英文组织你的回答").fill("Your flight leaves from Gate 24. Boarding begins at 3:20.");
   await page.getByRole("button", { name: "提交口语文本" }).click();
-  await expect(page.getByText(/AI 私教正在分析/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "和 Lin Muen 一起完成真实对话" })).toBeVisible();
 
   const dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, content: document.documentElement.scrollWidth }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
@@ -86,7 +86,29 @@ test("records half-duplex audio and blocks low-confidence ASR until correction",
   await expect(page.getByRole("heading", { name: "把关键信息说给 Lin Muen" })).toBeVisible();
   await page.getByLabel("识别到的英文").fill("Your flight leaves from Gate 24.");
   await page.getByRole("button", { name: "修改后确认" }).click();
-  await expect(page.getByText(/AI 私教正在分析/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "和 Lin Muen 一起完成真实对话" })).toBeVisible();
+  await expect(page.locator("vite-error-overlay, #webpack-dev-server-client-overlay, [data-nextjs-dialog]")).toHaveCount(0);
+  expect(consoleErrors).toEqual([]);
+});
+
+test("streams and reconciles a bounded multi-turn role play without hiding the Lin Muen scene", async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
+  await seedAuthenticatedLearner(page);
+  let session = lessonSession("ROLE_PLAY");
+  await mockBackend(page, () => session, (next) => { session = next; });
+
+  await page.goto("/lesson-sessions/lesson-session-ep006");
+  await expect(page.getByRole("img", { name: /Lin Muen stands full body near an airport boarding gate/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "和 Lin Muen 一起完成真实对话" })).toBeVisible();
+  await expect(page.getByText("Traveler helping Lin Muen")).toBeVisible();
+  await page.getByLabel("用英文回应").fill("Could you confirm Gate 24 and boarding at 3:20?");
+  await page.getByRole("button", { name: "发送这一轮" }).click();
+  await expect(page.getByText("Yes. Gate 24 is correct, and boarding begins at 3:20.")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("Could you confirm Gate 24 and boarding at 3:20?")).toBeVisible();
+  await expect(page.getByText("Yes. Gate 24 is correct, and boarding begins at 3:20.")).toBeVisible();
   await expect(page.locator("vite-error-overlay, #webpack-dev-server-client-overlay, [data-nextjs-dialog]")).toHaveCount(0);
   expect(consoleErrors).toEqual([]);
 });
@@ -114,6 +136,7 @@ async function mockBackend(
   current: () => ReturnType<typeof lessonSession>,
   update: (session: ReturnType<typeof lessonSession>) => void,
 ) {
+  const rolePlayTurns: Array<Record<string, unknown>> = [];
   await page.route("**/api/v1/users/me/progress", (route) => json(route, { nextStep: "READY_FOR_PLAN", onboardingStep: "COMPLETE" }));
   await page.route("**/api/v1/me/quota", (route) => json(route, {
     quotaDate: "2026-08-20", dailyLimit: 20, used: 2, bonus: 0, remaining: 18, unlimited: false,
@@ -168,6 +191,29 @@ async function mockBackend(
     expect(route.request().headers()["content-type"]).toContain("multipart/form-data");
     await json(route, { audioAssetId: "usr_audio_1", uploadStatus: "READY", mimeType: "audio/webm",
       durationMs: 100, contentHash: `sha256:${"0".repeat(64)}` }, 201);
+  });
+  await page.route("**/api/v1/lesson-sessions/lesson-session-ep006/role-play/turns", (route) =>
+    json(route, { items: rolePlayTurns }));
+  await page.route("**/api/v1/lesson-sessions/lesson-session-ep006/role-play/messages/stream", async (route) => {
+    expect(route.request().headers()["idempotency-key"]).toBeTruthy();
+    const request = await route.request().postDataJSON();
+    rolePlayTurns.splice(0, rolePlayTurns.length, {
+      turnId: request.conversationTurnId,
+      attemptId: "att-role-1",
+      taskId: request.taskId,
+      learnerText: request.text,
+      replyText: "Yes. Gate 24 is correct, and boarding begins at 3:20.",
+      status: "COMPLETED",
+      acceptedAt: "2026-08-21T01:00:00Z",
+      completedAt: "2026-08-21T01:00:01Z",
+      version: 2,
+    });
+    await route.fulfill({ status: 200, contentType: "text/event-stream", body: [
+      `event: turn.accepted\ndata: {"attemptId":"att-role-1","turnId":"${request.conversationTurnId}","replayed":false}\n\n`,
+      'event: reply.delta\ndata: {"sequence":1,"text":"Yes. Gate 24 is correct, and boarding begins at 3:20."}\n\n',
+      `event: reply.completed\ndata: {"turnId":"${request.conversationTurnId}","messageId":"reply-1"}\n\n`,
+      'event: analysis.pending\ndata: {"attemptId":"att-role-1"}\n\n',
+    ].join("") });
   });
   await page.route("**/api/v1/lesson-sessions/lesson-session-ep006/attempts/lat-audio/transcript-confirmations", async (route) => {
     expect(await route.request().postDataJSON()).toEqual({
@@ -299,6 +345,14 @@ function learningResource() {
         successCriteria: ["State Gate 24", "State 3:20"],
         scaffolding: ["Your flight leaves from...", "Boarding begins at..."],
       }],
+      rolePlay: {
+        taskId: "gate-roleplay-1",
+        goal: "Confirm the changed gate and boarding time with the airport agent.",
+        userRole: "Traveler helping Lin Muen",
+        aiRole: "Airport agent",
+        successCriteria: ["Confirm Gate 24", "Confirm boarding at 3:20"],
+        openingLine: "Good afternoon. How can I help you and Lin Muen?",
+      },
     } },
     assets: [], publishedAt: "2026-08-20T00:00:00Z",
   };

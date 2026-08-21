@@ -422,7 +422,10 @@ event: stream.error
 data: {"code":"AI_TEMPORARILY_UNAVAILABLE","retryable":true,"traceId":"trc_01"}
 ```
 
-SSE 断开不撤销已接受 Attempt；客户端通过 GET Attempt/Session 对账。heartbeat 使用 comment，不作为业务 event。
+SSE 断开不撤销已接受 Attempt/Turn；客户端通过 GET Attempt/Session 以及
+`GET /api/v1/lesson-sessions/{sessionId}/role-play/turns` 对账。turns 仅返回 CurrentActor
+拥有的 Session 数据，按 acceptedAt 排序；完成的重复请求重放持久化回复，失败重试继续使用同一 Turn。
+heartbeat 使用 comment，不作为业务 event。
 
 ## 8. Private Collection API
 
@@ -741,6 +744,18 @@ V23 同步新增处方反馈与幂等记录表，字段包括 actor、原处方�
 Unique `(session_id,idempotency_key)`；通用 actor + operation 级 replay/conflict 由 V26 `api_idempotency_record` 负责。Index `(attempt_status,updated_at_utc)`、`(retry_of_attempt_id)`。
 
 现有 `result` 在兼容期保留，由 adapter 映射新状态；后续单独 migration 清理。
+
+### V24.2 `role_play_turn`
+
+字段：`turn_key`、session/attempt/user FK、`task_key`、learner/reply text、status、
+`idempotency_key`、`request_hash`、Prompt/Provider/model/trace 版本、error code、UTC 时间和 optimistic version。
+
+- Unique `(session_id,turn_key)`、`(session_id,idempotency_key)`、`attempt_id`；
+- status：`ACCEPTED/AWAITING_TRANSCRIPT/COMPLETED/FAILED_RETRYABLE/FAILED_FINAL`；
+- Index `(user_id,session_id,accepted_at_utc)` 用于断线对账；
+- Index `(status,updated_at_utc)` 用于后续恢复 worker；
+- Turn 与 Attempt 先于 Provider 调用持久化；SSE 发送异常不删除记录；
+- `prompt_version` 和脱敏 Provider trace 只在 Provider 回复通过业务校验后写入。
 
 ### `learning_evidence` 新增
 

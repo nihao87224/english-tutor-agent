@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { ApiClient, LessonAttemptReceipt, LessonSession, LessonStep } from "../../shared/api";
+import type {
+  ApiClient, LessonAttemptReceipt, LessonSession, LessonStep, RolePlayMessageRequest,
+  RolePlayTurn, SseEvent, SseEventHandler,
+} from "../../shared/api";
 import { useI18n } from "../../shared/i18n";
 import {
   buildScenarioLesson,
@@ -153,6 +156,10 @@ export function ScenarioLessonPage({
       onSubmitAttempt={submitAttempt}
       onSubmitAudioAttempt={submitAudioAttempt}
       onConfirmTranscript={confirmTranscript}
+      onListRolePlayTurns={() => apiClient.listRolePlayTurns(sessionId).then((page) => page.items)}
+      onStreamRolePlayMessage={(request, onEvent, idempotencyKey) => apiClient.streamRolePlayMessage(
+        sessionId, request, onEvent, { idempotencyKey },
+      )}
     />
   );
 }
@@ -168,6 +175,8 @@ export function ScenarioLessonContent({
   onSubmitAttempt,
   onSubmitAudioAttempt,
   onConfirmTranscript,
+  onListRolePlayTurns,
+  onStreamRolePlayMessage,
 }: {
   value: ScenarioLessonLoadedState;
   onBack: () => void;
@@ -183,6 +192,12 @@ export function ScenarioLessonContent({
     decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
     correctedText?: string,
   ) => Promise<LessonAttemptReceipt>;
+  onListRolePlayTurns: () => Promise<RolePlayTurn[]>;
+  onStreamRolePlayMessage: (
+    request: RolePlayMessageRequest,
+    onEvent: SseEventHandler,
+    idempotencyKey: string,
+  ) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [transcriptVisible, setTranscriptVisible] = useState(false);
@@ -273,7 +288,8 @@ export function ScenarioLessonContent({
             onAudioError={onAudioError} attemptText={attemptText} setAttemptText={setAttemptText}
             attemptSubmitting={attemptSubmitting} attemptError={attemptError} objectiveResult={objectiveResult}
             activeQuestion={activeQuestion} onSubmitAttempt={submitCurrentAttempt}
-            onSubmitAudioAttempt={onSubmitAudioAttempt} onConfirmTranscript={onConfirmTranscript} />
+            onSubmitAudioAttempt={onSubmitAudioAttempt} onConfirmTranscript={onConfirmTranscript}
+            onListRolePlayTurns={onListRolePlayTurns} onStreamRolePlayMessage={onStreamRolePlayMessage} />
           {session.step.clientCompletable ? (
             <button className="scenario-primary-action" type="button" disabled={isPaused || advancing} onClick={completeStep}>
               {advancing ? t("lesson.advancing") : t(`lesson.continue.${session.currentStep}`)}
@@ -301,6 +317,8 @@ function StepContent({
   onSubmitAttempt,
   onSubmitAudioAttempt,
   onConfirmTranscript,
+  onListRolePlayTurns,
+  onStreamRolePlayMessage,
 }: {
   value: ScenarioLessonLoadedState;
   transcriptVisible: boolean;
@@ -319,6 +337,12 @@ function StepContent({
     decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
     correctedText?: string,
   ) => Promise<LessonAttemptReceipt>;
+  onListRolePlayTurns: () => Promise<RolePlayTurn[]>;
+  onStreamRolePlayMessage: (
+    request: RolePlayMessageRequest,
+    onEvent: SseEventHandler,
+    idempotencyKey: string,
+  ) => Promise<void>;
 }) {
   const { t } = useI18n();
   const recorder = useRef<MediaRecorder | null>(null);
@@ -501,6 +525,11 @@ function StepContent({
     );
   }
 
+  if (session.currentStep === "ROLE_PLAY" && lesson.rolePlay) {
+    return <RolePlayPanel lesson={lesson.rolePlay} paused={session.status === "PAUSED"}
+      onListTurns={onListRolePlayTurns} onStream={onStreamRolePlayMessage} />;
+  }
+
   return (
     <>
       <p className="scene-kicker">{t(`lesson.step.${session.currentStep}`)}</p>
@@ -550,6 +579,131 @@ function StepContent({
         </section>
       ) : null}
     </>
+  );
+}
+
+function RolePlayPanel({
+  lesson,
+  paused,
+  onListTurns,
+  onStream,
+}: {
+  lesson: NonNullable<ScenarioLessonLoadedState["lesson"]["rolePlay"]>;
+  paused: boolean;
+  onListTurns: () => Promise<RolePlayTurn[]>;
+  onStream: (request: RolePlayMessageRequest, onEvent: SseEventHandler, idempotencyKey: string) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const [turns, setTurns] = useState<RolePlayTurn[]>([]);
+  const [message, setMessage] = useState("");
+  const [replyDraft, setReplyDraft] = useState("");
+  const [phase, setPhase] = useState<"loading" | "idle" | "streaming" | "reconnecting" | "error">("loading");
+  const [error, setError] = useState<string>();
+  const pending = useRef<{ request: RolePlayMessageRequest; idempotencyKey: string } | undefined>(undefined);
+
+  const reconcile = useCallback(async () => {
+    const values = await onListTurns();
+    setTurns(values);
+    return values;
+  }, [onListTurns]);
+
+  useEffect(() => {
+    let active = true;
+    void reconcile().then(() => { if (active) setPhase("idle"); })
+      .catch((reason) => {
+        if (!active) return;
+        setError(reason instanceof Error ? reason.message : t("lesson.rolePlay.loadError"));
+        setPhase("error");
+      });
+    return () => { active = false; };
+  }, [reconcile, t]);
+
+  async function run(request: RolePlayMessageRequest, idempotencyKey: string) {
+    pending.current = { request, idempotencyKey };
+    setPhase("streaming");
+    setError(undefined);
+    setReplyDraft("");
+    let streamError: { code: string; retryable: boolean } | undefined;
+    try {
+      await onStream(request, (event: SseEvent) => {
+        if (event.event === "reply.delta") setReplyDraft((current) => current + event.data.text);
+        if (event.event === "stream.error") streamError = event.data;
+      }, idempotencyKey);
+      const values = await reconcile();
+      const accepted = values.find((turn) => turn.turnId === request.conversationTurnId);
+      if (streamError || (accepted && accepted.status !== "COMPLETED")) {
+        const retryable = streamError?.retryable ?? accepted?.status === "FAILED_RETRYABLE";
+        setError(t(retryable ? "lesson.rolePlay.retryable" : "lesson.rolePlay.failed"));
+        setPhase(retryable ? "reconnecting" : "error");
+      } else {
+        pending.current = undefined;
+        setMessage("");
+        setReplyDraft("");
+        setPhase("idle");
+      }
+    } catch (reason) {
+      setPhase("reconnecting");
+      setError(t("lesson.rolePlay.disconnected"));
+      try {
+        const values = await reconcile();
+        if (values.some((turn) => turn.turnId === request.conversationTurnId && turn.status === "COMPLETED")) {
+          pending.current = undefined;
+          setMessage("");
+          setReplyDraft("");
+          setPhase("idle");
+          setError(undefined);
+        }
+      } catch {
+        // Keep the reconnect action available; the accepted turn remains server-side.
+      }
+    }
+  }
+
+  function submit() {
+    const text = message.trim();
+    if (!text || paused || phase === "streaming") return;
+    const turnId = globalThis.crypto?.randomUUID?.() ?? `turn-${Date.now()}`;
+    void run({ taskId: lesson.taskId, text, conversationTurnId: turnId }, turnId);
+  }
+
+  return (
+    <section className="role-play-panel" aria-labelledby="scenario-lesson-title">
+      <p className="scene-kicker">{t("lesson.step.ROLE_PLAY")}</p>
+      <h1 id="scenario-lesson-title">{t("lesson.rolePlay.title")}</h1>
+      <p className="scenario-context">{lesson.goal}</p>
+      <div className="role-play-boundary">
+        <span>{t("lesson.rolePlay.youAre")}: <strong>{lesson.userRole}</strong></span>
+        <span>{t("lesson.rolePlay.aiIs")}: <strong>{lesson.aiRole}</strong></span>
+      </div>
+      <ul className="role-play-criteria">
+        {lesson.successCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}
+      </ul>
+      <div className="role-play-dialogue" aria-live="polite">
+        <div className="role-play-message is-ai"><strong>{lesson.aiRole}</strong><p>{lesson.openingLine}</p></div>
+        {turns.map((turn) => (
+          <div className="role-play-turn" key={turn.turnId}>
+            {turn.learnerText ? <div className="role-play-message is-learner"><strong>{t("lesson.rolePlay.you")}</strong><p>{turn.learnerText}</p></div> : null}
+            {turn.replyText ? <div className="role-play-message is-ai"><strong>{lesson.aiRole}</strong><p>{turn.replyText}</p></div> : null}
+          </div>
+        ))}
+        {replyDraft ? <div className="role-play-message is-ai is-streaming"><strong>{lesson.aiRole}</strong><p>{replyDraft}</p></div> : null}
+        {phase === "loading" ? <p role="status">{t("lesson.rolePlay.loading")}</p> : null}
+      </div>
+      {error ? <p className="lesson-attempt-error" role="alert">{error}</p> : null}
+      {phase === "reconnecting" && pending.current ? (
+        <button type="button" className="secondary-action" onClick={() => void run(
+          pending.current!.request, pending.current!.idempotencyKey,
+        )}>{t("lesson.rolePlay.reconnect")}</button>
+      ) : null}
+      <label className="lesson-attempt-field">
+        <span>{t("lesson.rolePlay.response")}</span>
+        <textarea rows={4} value={message} onChange={(event) => setMessage(event.target.value)}
+          disabled={paused || phase === "loading" || phase === "streaming"} />
+      </label>
+      <button className="scenario-primary-action" type="button"
+        disabled={!message.trim() || paused || phase === "loading" || phase === "streaming"}
+        onClick={submit}>{phase === "streaming" ? t("lesson.rolePlay.streaming") : t("lesson.rolePlay.send")}</button>
+    </section>
   );
 }
 
