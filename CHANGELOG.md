@@ -5,6 +5,8 @@ All notable project changes are recorded here.
 ## [Unreleased]
 
 ### Changed
+- Completed V2-T15–T17: strict structured speaking analysis with durable retry jobs,
+  atomic evidence/skill-state recording, and Scenario Lesson feedback, retry and completion UI.
 - Rebased V2.0 around a dual-core product model: an evidence-driven
   Personalized Tutor Core selects Skill Units and teaching strategies first,
   then maps them into Lin Muen Season/Episode immersive experiences.

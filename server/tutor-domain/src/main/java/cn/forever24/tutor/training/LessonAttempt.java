@@ -6,6 +6,7 @@ public record LessonAttempt(
         String attemptId,
         String sessionId,
         String taskId,
+        String retryOfAttemptId,
         TaskAttemptInputType inputType,
         String text,
         String audioAssetId,
@@ -14,6 +15,8 @@ public record LessonAttempt(
         boolean transcriptConfirmed,
         LessonAttemptStatus status,
         LessonObjectiveResult objectiveResult,
+        AttemptAnalysis analysis,
+        String analysisErrorCode,
         Instant submittedAt,
         long version
 ) {
@@ -21,6 +24,9 @@ public record LessonAttempt(
         requireText(attemptId, "attemptId");
         requireText(sessionId, "sessionId");
         requireText(taskId, "taskId");
+        if (retryOfAttemptId != null && retryOfAttemptId.isBlank()) {
+            throw new IllegalArgumentException("retryOfAttemptId must not be blank");
+        }
         if (inputType == null || status == null || submittedAt == null) {
             throw new IllegalArgumentException("attempt type, status and submittedAt are required");
         }
@@ -39,6 +45,18 @@ public record LessonAttempt(
         if (version < 1) {
             throw new IllegalArgumentException("version must be positive");
         }
+        if (analysisErrorCode != null && (analysisErrorCode.isBlank() || analysisErrorCode.length() > 64)) {
+            throw new IllegalArgumentException("analysisErrorCode must be nonblank and at most 64 characters");
+        }
+    }
+
+    public LessonAttempt(
+            String attemptId, String sessionId, String taskId, TaskAttemptInputType inputType, String text,
+            String audioAssetId, String transcript, Double asrConfidence, boolean transcriptConfirmed,
+            LessonAttemptStatus status, LessonObjectiveResult objectiveResult, Instant submittedAt, long version
+    ) {
+        this(attemptId, sessionId, taskId, null, inputType, text, audioAssetId, transcript, asrConfidence,
+                transcriptConfirmed, status, objectiveResult, null, null, submittedAt, version);
     }
 
     public LessonAttempt withTranscription(
@@ -48,8 +66,27 @@ public record LessonAttempt(
             LessonAttemptStatus nextStatus
     ) {
         return new LessonAttempt(
-                attemptId, sessionId, taskId, inputType, text, audioAssetId, value, confidence,
-                confirmed, nextStatus, objectiveResult, submittedAt, version + 1);
+                attemptId, sessionId, taskId, retryOfAttemptId, inputType, text, audioAssetId, value, confidence,
+                confirmed, nextStatus, objectiveResult, analysis, analysisErrorCode, submittedAt, version + 1);
+    }
+
+    public LessonAttempt withAnalysis(AttemptAnalysis value, LessonAttemptStatus nextStatus) {
+        if (value == null || nextStatus == null) throw new IllegalArgumentException("analysis and status are required");
+        return new LessonAttempt(attemptId, sessionId, taskId, retryOfAttemptId, inputType, text, audioAssetId, transcript,
+                asrConfidence, transcriptConfirmed, nextStatus, objectiveResult, value, null, submittedAt, version + 1);
+    }
+
+    public LessonAttempt withAnalysisFailure(String errorCode, boolean retryable) {
+        return new LessonAttempt(attemptId, sessionId, taskId, retryOfAttemptId, inputType, text, audioAssetId, transcript,
+                asrConfidence, transcriptConfirmed,
+                retryable ? LessonAttemptStatus.ANALYSIS_RETRYABLE : LessonAttemptStatus.ANALYSIS_FAILED,
+                objectiveResult, null, errorCode, submittedAt, version + 1);
+    }
+
+    public LessonAttempt withEvidenceRecorded() {
+        return new LessonAttempt(attemptId, sessionId, taskId, retryOfAttemptId, inputType, text, audioAssetId, transcript,
+                asrConfidence, transcriptConfirmed, LessonAttemptStatus.EVIDENCE_RECORDED,
+                objectiveResult, analysis, null, submittedAt, version + 1);
     }
 
     private static void requireText(String value, String field) {

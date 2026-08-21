@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type {
   ApiClient, LessonAttemptReceipt, LessonSession, LessonStep, RolePlayMessageRequest,
-  RolePlayTurn, SseEvent, SseEventHandler,
+  RolePlayTurn, SseEvent, SseEventHandler, LessonFeedbackCompletion,
 } from "../../shared/api";
 import { useI18n } from "../../shared/i18n";
+import { FeedbackPanel } from "./FeedbackPanel";
 import {
   buildScenarioLesson,
   isSpeakingStep,
@@ -140,6 +141,15 @@ export function ScenarioLessonPage({
     return receipt;
   }
 
+  async function completeFeedback(attemptId: string): Promise<LessonFeedbackCompletion> {
+    if (state.status !== "content") throw new Error(t("lesson.error.desc"));
+    const current = state.value;
+    const completion = await apiClient.completeLessonFeedback(current.session.sessionId, attemptId);
+    const session = await apiClient.getLessonSession(current.session.sessionId);
+    setState({ status: "content", value: { ...current, session } });
+    return completion;
+  }
+
   return (
     <ScenarioLessonContent
       value={state.value}
@@ -156,6 +166,9 @@ export function ScenarioLessonPage({
       onSubmitAttempt={submitAttempt}
       onSubmitAudioAttempt={submitAudioAttempt}
       onConfirmTranscript={confirmTranscript}
+      onGetAttempt={(attemptId) => apiClient.getLessonAttempt(sessionId, attemptId)}
+      onCompleteFeedback={completeFeedback}
+      onRefreshSession={() => updateSession((session) => apiClient.getLessonSession(session.sessionId))}
       onListRolePlayTurns={() => apiClient.listRolePlayTurns(sessionId).then((page) => page.items)}
       onStreamRolePlayMessage={(request, onEvent, idempotencyKey) => apiClient.streamRolePlayMessage(
         sessionId, request, onEvent, { idempotencyKey },
@@ -175,6 +188,9 @@ export function ScenarioLessonContent({
   onSubmitAttempt,
   onSubmitAudioAttempt,
   onConfirmTranscript,
+  onGetAttempt,
+  onCompleteFeedback,
+  onRefreshSession,
   onListRolePlayTurns,
   onStreamRolePlayMessage,
 }: {
@@ -192,6 +208,9 @@ export function ScenarioLessonContent({
     decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
     correctedText?: string,
   ) => Promise<LessonAttemptReceipt>;
+  onGetAttempt: (attemptId: string) => Promise<LessonAttemptReceipt>;
+  onCompleteFeedback: (attemptId: string) => Promise<LessonFeedbackCompletion>;
+  onRefreshSession: () => Promise<void>;
   onListRolePlayTurns: () => Promise<RolePlayTurn[]>;
   onStreamRolePlayMessage: (
     request: RolePlayMessageRequest,
@@ -206,6 +225,8 @@ export function ScenarioLessonContent({
   const [attemptSubmitting, setAttemptSubmitting] = useState(false);
   const [attemptError, setAttemptError] = useState<string>();
   const [objectiveResult, setObjectiveResult] = useState<LessonAttemptReceipt["objectiveResult"]>();
+  const [feedbackAttempt, setFeedbackAttempt] = useState<LessonAttemptReceipt>();
+  const [evidenceSummary, setEvidenceSummary] = useState<LessonFeedbackCompletion>();
   const { session, lesson } = value;
   const heroStyle = taskHeroStyle(lesson.taskHero);
   const isPaused = session.status === "PAUSED";
@@ -229,6 +250,7 @@ export function ScenarioLessonContent({
     try {
       const receipt = await onSubmitAttempt(taskId, attemptText.trim());
       setObjectiveResult(receipt.objectiveResult);
+      setFeedbackAttempt(receipt);
       setAttemptText("");
     } catch (error) {
       setAttemptError(error instanceof Error ? error.message : t("lesson.attempt.error"));
@@ -289,7 +311,10 @@ export function ScenarioLessonContent({
             attemptSubmitting={attemptSubmitting} attemptError={attemptError} objectiveResult={objectiveResult}
             activeQuestion={activeQuestion} onSubmitAttempt={submitCurrentAttempt}
             onSubmitAudioAttempt={onSubmitAudioAttempt} onConfirmTranscript={onConfirmTranscript}
-            onListRolePlayTurns={onListRolePlayTurns} onStreamRolePlayMessage={onStreamRolePlayMessage} />
+            onListRolePlayTurns={onListRolePlayTurns} onStreamRolePlayMessage={onStreamRolePlayMessage}
+            feedbackAttempt={feedbackAttempt} onGetAttempt={onGetAttempt}
+            onCompleteFeedback={async (attemptId) => { const summary = await onCompleteFeedback(attemptId); setEvidenceSummary(summary); }}
+            evidenceSummary={evidenceSummary} onRolePlayAttempt={setFeedbackAttempt} onRefreshSession={onRefreshSession} />
           {session.step.clientCompletable ? (
             <button className="scenario-primary-action" type="button" disabled={isPaused || advancing} onClick={completeStep}>
               {advancing ? t("lesson.advancing") : t(`lesson.continue.${session.currentStep}`)}
@@ -317,6 +342,12 @@ function StepContent({
   onSubmitAttempt,
   onSubmitAudioAttempt,
   onConfirmTranscript,
+  feedbackAttempt,
+  onGetAttempt,
+  onCompleteFeedback,
+  evidenceSummary,
+  onRolePlayAttempt,
+  onRefreshSession,
   onListRolePlayTurns,
   onStreamRolePlayMessage,
 }: {
@@ -337,6 +368,12 @@ function StepContent({
     decision: "CONFIRM" | "CORRECT" | "RE_RECORD",
     correctedText?: string,
   ) => Promise<LessonAttemptReceipt>;
+  feedbackAttempt?: LessonAttemptReceipt;
+  onGetAttempt: (attemptId: string) => Promise<LessonAttemptReceipt>;
+  onCompleteFeedback: (attemptId: string) => Promise<void>;
+  evidenceSummary?: LessonFeedbackCompletion;
+  onRolePlayAttempt: (attempt: LessonAttemptReceipt) => void;
+  onRefreshSession: () => Promise<void>;
   onListRolePlayTurns: () => Promise<RolePlayTurn[]>;
   onStreamRolePlayMessage: (
     request: RolePlayMessageRequest,
@@ -357,6 +394,11 @@ function StepContent({
   const { lesson, session } = value;
   const showListening = session.currentStep === "FIRST_LISTEN";
   const showLanguage = session.currentStep === "TRANSCRIPT_EXPRESSIONS" || showListening || value.audioUnavailable;
+
+  if (session.currentStep === "FEEDBACK") {
+    return <FeedbackPanel attempt={feedbackAttempt} evidenceSummary={evidenceSummary}
+      onGetAttempt={onGetAttempt} onComplete={onCompleteFeedback} />;
+  }
 
   useEffect(() => () => {
     if (recordingTimeout.current !== null) window.clearTimeout(recordingTimeout.current);
@@ -527,7 +569,8 @@ function StepContent({
 
   if (session.currentStep === "ROLE_PLAY" && lesson.rolePlay) {
     return <RolePlayPanel lesson={lesson.rolePlay} paused={session.status === "PAUSED"}
-      onListTurns={onListRolePlayTurns} onStream={onStreamRolePlayMessage} />;
+      onListTurns={onListRolePlayTurns} onStream={onStreamRolePlayMessage}
+      onAnalysisReady={async (attemptId) => { onRolePlayAttempt(await onGetAttempt(attemptId)); await onRefreshSession(); }} />;
   }
 
   return (
@@ -587,11 +630,13 @@ function RolePlayPanel({
   paused,
   onListTurns,
   onStream,
+  onAnalysisReady,
 }: {
   lesson: NonNullable<ScenarioLessonLoadedState["lesson"]["rolePlay"]>;
   paused: boolean;
   onListTurns: () => Promise<RolePlayTurn[]>;
   onStream: (request: RolePlayMessageRequest, onEvent: SseEventHandler, idempotencyKey: string) => Promise<void>;
+  onAnalysisReady: (attemptId: string) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [turns, setTurns] = useState<RolePlayTurn[]>([]);
@@ -631,6 +676,7 @@ function RolePlayPanel({
       }, idempotencyKey);
       const values = await reconcile();
       const accepted = values.find((turn) => turn.turnId === request.conversationTurnId);
+      if (accepted?.attemptId) await onAnalysisReady(accepted.attemptId);
       if (streamError || (accepted && accepted.status !== "COMPLETED")) {
         const retryable = streamError?.retryable ?? accepted?.status === "FAILED_RETRYABLE";
         setError(t(retryable ? "lesson.rolePlay.retryable" : "lesson.rolePlay.failed"));

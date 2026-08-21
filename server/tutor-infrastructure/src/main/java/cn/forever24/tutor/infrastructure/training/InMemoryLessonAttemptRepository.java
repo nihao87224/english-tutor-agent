@@ -67,6 +67,11 @@ public final class InMemoryLessonAttemptRepository implements LessonAttemptRepos
                 new LessonAttemptStoreRecord(requestHash, attempt));
     }
 
+    @Override
+    public synchronized void updateAnalysis(UserKey userKey, LessonAttempt attempt, long expectedVersion) {
+        update(userKey, attempt, expectedVersion);
+    }
+
     private void update(UserKey userKey, LessonAttempt attempt, long expectedVersion) {
         StoredAttempt stored = attempts.get(attempt.attemptId());
         if (stored == null || !stored.owner().equals(userKey) || stored.attempt().version() != expectedVersion) {

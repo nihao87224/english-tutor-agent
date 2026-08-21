@@ -12,6 +12,8 @@ import cn.forever24.tutor.training.LessonSession;
 import cn.forever24.tutor.training.LessonStep;
 import cn.forever24.tutor.training.ObjectiveAnswerScorer;
 import cn.forever24.tutor.training.TaskAttemptInputType;
+import cn.forever24.tutor.training.AttemptAnalysis;
+import cn.forever24.tutor.training.AttemptCriterionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +81,7 @@ class LessonAttemptApplicationServiceTest {
 
         var result = service.submit("usr-1", "lsn-1", command("guided-1", "Gate 24. Boarding is at 3:20."), "guided");
         assertEquals(LessonAttemptStatus.ANALYSIS_PENDING, result.attempt().status());
-        assertEquals(LessonStep.ROLE_PLAY, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+        assertEquals(LessonStep.GUIDED_SPEAKING, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
         assertEquals("SESSION_NOT_FOUND", assertThrows(LessonSessionApplicationException.class,
                 () -> service.get("usr-2", "lsn-1", result.attempt().attemptId())).code());
     }
@@ -99,7 +102,7 @@ class LessonAttemptApplicationServiceTest {
                 new ConfirmTranscriptCommand(TranscriptConfirmationDecision.CORRECT, "Gate 24"), "confirm-1");
         assertTrue(confirmed.attempt().transcriptConfirmed());
         assertEquals("Gate 24", confirmed.attempt().transcript());
-        assertEquals(LessonStep.ROLE_PLAY, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+        assertEquals(LessonStep.GUIDED_SPEAKING, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
         assertTrue(service.confirmTranscript("usr-1", "lsn-1", received.attempt().attemptId(),
                 new ConfirmTranscriptCommand(TranscriptConfirmationDecision.CORRECT, "Gate 24"), "confirm-1").replayed());
     }
@@ -130,6 +133,33 @@ class LessonAttemptApplicationServiceTest {
                 () -> service.submit("usr-1", "lsn-1", audioCommand(), "foreign")).code());
     }
 
+    @Test
+    void acceptsOnlyValidatedAnalysisAndAdvancesTheSpeakingStep() {
+        seed(guidedSession());
+        service = analyzedService(context -> new AttemptAnalysis("Clear response.", List.of(
+                new AttemptCriterionResult("guided-1:criterion:1", true, "The gate is clear.")), List.of(),
+                List.of("The gate is now 24."), "test-prompt", "test", "test", "trace-1"));
+
+        var result = service.submit("usr-1", "lsn-1", command("guided-1", "The gate is 24."), "analysis-ok");
+
+        assertEquals(LessonAttemptStatus.ACCEPTED, result.attempt().status());
+        assertEquals(LessonStep.ROLE_PLAY, sessions.findById(USER, "lsn-1").orElseThrow().currentStep());
+        assertEquals("Clear response.", result.attempt().analysis().summary());
+    }
+
+    @Test
+    void rejectsProviderCriteriaOutsideTheLockedLesson() {
+        seed(guidedSession());
+        service = analyzedService(context -> new AttemptAnalysis("Wrong rubric.", List.of(
+                new AttemptCriterionResult("other", true, "No.")), List.of(), List.of(),
+                "test-prompt", "test", "test", "trace-2"));
+
+        var result = service.submit("usr-1", "lsn-1", command("guided-1", "The gate is 24."), "analysis-invalid");
+
+        assertEquals(LessonAttemptStatus.ANALYSIS_FAILED, result.attempt().status());
+        assertEquals("AI_OUTPUT_INVALID", result.attempt().analysisErrorCode());
+    }
+
     private LessonAttemptApplicationService audioService(AudioAssetRepository audio, AudioTranscriber transcriber) {
         return new LessonAttemptApplicationService(sessions, attempts, (resource, version) -> content(),
                 new DirectTransactions(), () -> "lat-" + (attempts.values.size() + 1), new ObjectiveAnswerScorer(),
@@ -138,6 +168,17 @@ class LessonAttemptApplicationServiceTest {
                     public byte[] read(String key) { return new byte[]{1, 2, 3}; }
                     public void delete(String key) { }
                 }, transcriber, 0.8, Clock.fixed(Instant.parse("2026-08-21T01:00:00Z"), ZoneOffset.UTC));
+    }
+
+    private LessonAttemptApplicationService analyzedService(SpeakingAttemptAnalyzer analyzer) {
+        return new LessonAttemptApplicationService(sessions, attempts, (resource, version) -> content(),
+                new DirectTransactions(), () -> "lat-" + (attempts.values.size() + 1), new ObjectiveAnswerScorer(),
+                new FakeAudioRepository(), new PrivateAudioObjectStorage() {
+                    public void put(String key, byte[] content) { }
+                    public byte[] read(String key) { return new byte[]{1}; }
+                    public void delete(String key) { }
+                }, request -> new AudioTranscription("unused", 1.0), 0.8, analyzer, Clock.fixed(
+                        Instant.parse("2026-08-21T01:00:00Z"), ZoneOffset.UTC));
     }
 
     private static SubmitLessonAttemptCommand audioCommand() {
@@ -269,6 +310,11 @@ class LessonAttemptApplicationServiceTest {
             replace(attempt, expectedVersion);
             confirmations.put(userKey.value() + attempt.sessionId() + attempt.attemptId() + key,
                     new LessonAttemptStoreRecord(hash, attempt));
+        }
+
+        @Override
+        public void updateAnalysis(UserKey userKey, cn.forever24.tutor.training.LessonAttempt attempt, long expectedVersion) {
+            replace(attempt, expectedVersion);
         }
 
         private void replace(cn.forever24.tutor.training.LessonAttempt attempt, long expectedVersion) {

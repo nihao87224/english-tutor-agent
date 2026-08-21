@@ -31,6 +31,7 @@ import type {
   LearningResourceDetail,
   LessonSession,
   LessonAttemptReceipt,
+  LessonFeedbackCompletion,
   LessonStep,
   MediaAccessRequest,
   MediaAccessResponse,
@@ -126,6 +127,7 @@ export interface ApiClient {
     options?: RequestOptions,
   ): Promise<LessonAttemptReceipt>;
   getLessonAttempt(sessionId: string, attemptId: string, options?: RequestOptions): Promise<LessonAttemptReceipt>;
+  completeLessonFeedback(sessionId: string, attemptId: string, options?: RequestOptions): Promise<LessonFeedbackCompletion>;
   listRolePlayTurns(sessionId: string, options?: RequestOptions): Promise<RolePlayTurnPage>;
   streamRolePlayMessage(
     sessionId: string,
@@ -477,6 +479,12 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       return requestJson<LessonAttemptReceipt>(
         `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/attempts/${encodeURIComponent(attemptId)}`,
         requestOptions,
+      );
+    },
+    completeLessonFeedback(sessionId, attemptId, requestOptions) {
+      return requestJson<LessonFeedbackCompletion>(
+        `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/attempts/${encodeURIComponent(attemptId)}/feedback-completions`,
+        { ...mutationOptions(requestOptions), method: "POST" },
       );
     },
     getLearningResourceVersion(resourceId, version, requestOptions) {

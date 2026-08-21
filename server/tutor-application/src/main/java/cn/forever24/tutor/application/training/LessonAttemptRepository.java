@@ -22,4 +22,7 @@ public interface LessonAttemptRepository {
             UserKey userKey, LessonAttempt attempt, long expectedVersion, String idempotencyKey, String requestHash) {
         throw new UnsupportedOperationException("transcript confirmations are not supported");
     }
+    default void updateAnalysis(UserKey userKey, LessonAttempt attempt, long expectedVersion) {
+        throw new UnsupportedOperationException("analysis updates are not supported");
+    }
 }

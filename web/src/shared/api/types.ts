@@ -430,8 +430,22 @@ export interface LessonAttemptReceipt {
   pollAfterMs?: number | null;
   objectiveResult?: { correct: boolean; expectedAnswer: string; explanation: string } | null;
   transcript?: { text: string; confidence?: number | null; confirmationRequired: boolean } | null;
+  analysis?: {
+    summary: string;
+    criteria: { criterionKey: string; satisfied: boolean; feedback: string }[];
+    corrections: { sourceText: string; suggestedText: string; category: string; critical: boolean; explanation: string }[];
+    naturalExpressions: string[];
+  } | null;
+  analysisErrorCode?: string | null;
   stepProgress: LessonAttemptProgress;
   version: number;
+}
+
+export interface LessonFeedbackCompletion {
+  attemptId: string;
+  evidenceCount: number;
+  affectedSkills: string[];
+  nextFocus: string;
 }
 
 export interface AudioUploadRequest {

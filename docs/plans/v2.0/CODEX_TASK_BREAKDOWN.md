@@ -338,6 +338,8 @@ Codex 每次任务必须：
 
 验收：AI 失败保留 Attempt；未经校验结果不改变学习状态。
 
+完成记录（2026-08-21）：新增版本化 `SpeakingAttemptAnalyzer`，Provider 输出以严格 JSON 字段白名单解析，并与锁定课程的 criterion key 精确比对；未知、缺失或额外字段均以 `AI_OUTPUT_INVALID` 终止，未通过验证的输出无法写入学习状态。Attempt 保存结构化 correction、natural expressions、脱敏 Provider trace、失败码与真实 `retry_of_attempt_id`；失败先保留 Attempt，V26 `analysis_retry_job` 以租约、退避和上限恢复 retryable 分析。Role Play 在回复已持久化后才触发分析。领域测试覆盖有效分析与 rubric 越界，完整后端回归通过。
+
 ### V2-T16 Evidence / Skill State 原子更新
 
 目标：完成 V24 Evidence 扩展和原子学习状态更新。
@@ -348,6 +350,8 @@ Codex 每次任务必须：
 
 验收：Evidence、Skill/Error/Expression/Review 更新原子或可安全重放。
 
+完成记录（2026-08-21）：新增 `EvidenceApplicationService`，仅接收已校验且 `ACCEPTED` 的 Attempt；在一个事务内写入单 Attempt 唯一 Evidence header、目标/支持技能关系、确定性 Skill State 更新、Attempt `EVIDENCE_RECORDED` 与 Session 完成。V26 增加精确资源/Variant 引用、criterion results 和 `learning_evidence_skill`；重复完成返回既有 Evidence receipt，不将完成等同于即时 Mastery。内存/JDBC 实现均遵守 Attempt 幂等边界，完整后端回归通过。
+
 ### V2-T17 Web Feedback / Retry / Completion
 
 目标：实现交互稿反馈页和闭环完成体验。
@@ -357,6 +361,8 @@ Codex 每次任务必须：
 测试：retry required/optional、analysis pending、provider final failure、session incomplete、summary、mobile/a11y。
 
 验收：用户能看到本次改进及对后续计划的影响，不展示虚假的即时 Mastery 跳升。
+
+完成记录（2026-08-21）：Scenario Lesson Web 新增可刷新 Feedback 页，分别呈现分析中/安全重试/最终失败、聚焦 correction、natural expression 与 retry 提示；接受反馈后调用 canonical feedback-completion API，展示 Evidence 数量、受影响技能和 next focus，同时明确不表示即时 Mastery。文本、低置信度语音确认和 Role Play 均回到服务端 Session 状态；Web 单测、类型检查和生产构建通过。
 
 ---
 

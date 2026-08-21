@@ -67,6 +67,11 @@ import cn.forever24.tutor.application.training.LessonAttemptApplicationService;
 import cn.forever24.tutor.application.training.LessonAttemptKeyGenerator;
 import cn.forever24.tutor.application.training.LessonAttemptRepository;
 import cn.forever24.tutor.application.training.LessonContentReader;
+import cn.forever24.tutor.application.training.SpeakingAttemptAnalyzer;
+import cn.forever24.tutor.application.training.LessonEvidenceRepository;
+import cn.forever24.tutor.application.training.EvidenceApplicationService;
+import cn.forever24.tutor.application.training.AnalysisRetryJobRepository;
+import cn.forever24.tutor.application.training.AnalysisRetryApplicationService;
 import cn.forever24.tutor.entitlement.AccessPolicy;
 import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
 import cn.forever24.tutor.infrastructure.audio.FileSystemPrivateAudioObjectStorage;
@@ -132,6 +137,11 @@ import cn.forever24.tutor.infrastructure.training.SpringLessonSessionTransaction
 import cn.forever24.tutor.infrastructure.training.CatalogLessonContentReader;
 import cn.forever24.tutor.infrastructure.training.InMemoryLessonAttemptRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcLessonAttemptRepository;
+import cn.forever24.tutor.infrastructure.training.InMemoryLessonEvidenceRepository;
+import cn.forever24.tutor.infrastructure.training.JdbcLessonEvidenceRepository;
+import cn.forever24.tutor.infrastructure.training.InMemoryAnalysisRetryJobRepository;
+import cn.forever24.tutor.infrastructure.training.JdbcAnalysisRetryJobRepository;
+import cn.forever24.tutor.infrastructure.training.AnalysisRetryScheduler;
 import cn.forever24.tutor.training.ObjectiveAnswerScorer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -625,6 +635,23 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(LessonEvidenceRepository.class)
+    public LessonEvidenceRepository lessonEvidenceRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider, ObjectProvider<ObjectMapper> objectMapperProvider
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null ? new InMemoryLessonEvidenceRepository()
+                : new JdbcLessonEvidenceRepository(jdbcTemplate, objectMapperProvider.getIfAvailable(ObjectMapper::new));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AnalysisRetryJobRepository.class)
+    public AnalysisRetryJobRepository analysisRetryJobRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        return jdbcTemplate == null ? new InMemoryAnalysisRetryJobRepository() : new JdbcAnalysisRetryJobRepository(jdbcTemplate);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(RolePlayTurnRepository.class)
     public RolePlayTurnRepository rolePlayTurnRepository(
             ObjectProvider<JdbcTemplate> jdbcTemplateProvider, Clock clock
@@ -863,6 +890,8 @@ public class InfrastructureConfiguration {
             AudioAssetRepository audioAssetRepository,
             PrivateAudioObjectStorage privateAudioObjectStorage,
             AudioTranscriber audioTranscriber,
+            SpeakingAttemptAnalyzer speakingAttemptAnalyzer,
+            AnalysisRetryJobRepository analysisRetryJobRepository,
             Environment environment,
             Clock clock
     ) {
@@ -878,7 +907,31 @@ public class InfrastructureConfiguration {
                 audioTranscriber,
                 environment.getProperty("tutor.audio.asr-confirmation-threshold", Double.class,
                         LessonAttemptApplicationService.defaultAsrConfirmationThreshold()),
+                speakingAttemptAnalyzer,
+                analysisRetryJobRepository,
                 clock);
+    }
+
+    @Bean
+    public AnalysisRetryApplicationService analysisRetryApplicationService(
+            AnalysisRetryJobRepository analysisRetryJobRepository, LessonAttemptApplicationService lessonAttemptApplicationService,
+            Clock clock) {
+        return new AnalysisRetryApplicationService(analysisRetryJobRepository, lessonAttemptApplicationService, clock);
+    }
+
+    @Bean
+    public AnalysisRetryScheduler analysisRetryScheduler(AnalysisRetryApplicationService service) {
+        return new AnalysisRetryScheduler(service);
+    }
+
+    @Bean
+    public EvidenceApplicationService evidenceApplicationService(
+            LessonSessionRepository lessonSessionRepository, LessonAttemptRepository lessonAttemptRepository,
+            LessonEvidenceRepository lessonEvidenceRepository,
+            LessonSessionTransactionOperations lessonSessionTransactionOperations, Clock clock
+    ) {
+        return new EvidenceApplicationService(lessonSessionRepository, lessonAttemptRepository,
+                lessonEvidenceRepository, lessonSessionTransactionOperations, clock);
     }
 
     @Bean

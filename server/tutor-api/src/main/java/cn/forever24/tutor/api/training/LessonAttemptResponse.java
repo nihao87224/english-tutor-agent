@@ -13,6 +13,8 @@ public record LessonAttemptResponse(
         Integer pollAfterMs,
         Transcript transcript,
         ObjectiveResult objectiveResult,
+        Analysis analysis,
+        String analysisErrorCode,
         LessonSessionResponse.AttemptProgress stepProgress,
         long version
 ) {
@@ -26,6 +28,13 @@ public record LessonAttemptResponse(
                 attempt.objectiveResult() == null ? null : new ObjectiveResult(
                         attempt.objectiveResult().correct(), attempt.objectiveResult().expectedAnswer(),
                         attempt.objectiveResult().explanation()),
+                attempt.analysis() == null ? null : new Analysis(attempt.analysis().summary(),
+                        attempt.analysis().criteria().stream().map(value -> new Criterion(
+                                value.criterionKey(), value.satisfied(), value.feedback())).toList(),
+                        attempt.analysis().corrections().stream().map(value -> new Correction(value.sourceText(),
+                                value.suggestedText(), value.category(), value.critical(), value.explanation())).toList(),
+                        attempt.analysis().naturalExpressions()),
+                attempt.analysisErrorCode(),
                 LessonSessionResponse.AttemptProgress.from(result.progress()), attempt.version());
     }
 
@@ -33,4 +42,8 @@ public record LessonAttemptResponse(
     }
 
     public record Transcript(String text, Double confidence, boolean confirmationRequired) { }
+    public record Analysis(String summary, java.util.List<Criterion> criteria,
+                           java.util.List<Correction> corrections, java.util.List<String> naturalExpressions) { }
+    public record Criterion(String criterionKey, boolean satisfied, String feedback) { }
+    public record Correction(String sourceText, String suggestedText, String category, boolean critical, String explanation) { }
 }

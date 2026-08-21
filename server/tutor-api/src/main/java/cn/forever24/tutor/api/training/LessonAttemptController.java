@@ -2,8 +2,10 @@ package cn.forever24.tutor.api.training;
 
 import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.training.LessonAttemptApplicationService;
+import cn.forever24.tutor.application.training.EvidenceApplicationService;
 import cn.forever24.tutor.training.LessonAttemptStatus;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,13 +20,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class LessonAttemptController {
     private final LessonAttemptApplicationService service;
     private final CurrentUserKeyResolver currentUserKeyResolver;
+    private final EvidenceApplicationService evidenceService;
 
+    @Autowired
     public LessonAttemptController(
             LessonAttemptApplicationService service,
             CurrentUserKeyResolver currentUserKeyResolver
     ) {
+        this(service, currentUserKeyResolver, null);
+    }
+
+    public LessonAttemptController(
+            LessonAttemptApplicationService service,
+            CurrentUserKeyResolver currentUserKeyResolver,
+            EvidenceApplicationService evidenceService
+    ) {
         this.service = service;
         this.currentUserKeyResolver = currentUserKeyResolver;
+        this.evidenceService = evidenceService;
     }
 
     @PostMapping
@@ -62,5 +75,14 @@ public class LessonAttemptController {
                 request.toCommand(), idempotencyKey);
         return ResponseEntity.ok().header("Idempotency-Replayed", Boolean.toString(result.replayed()))
                 .body(LessonAttemptResponse.from(result));
+    }
+
+    @PostMapping("/{attemptId}/feedback-completions")
+    public LessonFeedbackCompletionResponse completeFeedback(
+            @PathVariable String sessionId, @PathVariable String attemptId
+    ) {
+        if (evidenceService == null) throw new IllegalStateException("evidence service is not configured");
+        return LessonFeedbackCompletionResponse.from(evidenceService.finalizeFeedback(
+                currentUserKeyResolver.resolve(), sessionId, attemptId));
     }
 }

@@ -127,6 +127,8 @@ public final class RolePlayApplicationService {
                     session.skillUnitVariantId(), session.episodeMappingId(), task, learnerText, history));
             RolePlayTurn completed = complete(userKey, turn, response);
             quotaService.commit(reservation);
+            // Analyze only after the learner turn and counterpart reply are durable. A failure leaves the turn intact.
+            attemptService.analyzePending(userKey.value(), sid, attempt.attemptId());
             return completedEvents(completed, replayed);
         } catch (QuotaException exception) {
             RolePlayTurn failed = fail(userKey, turn, "QUOTA_EXCEEDED", true);

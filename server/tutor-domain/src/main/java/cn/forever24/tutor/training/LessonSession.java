@@ -129,6 +129,39 @@ public record LessonSession(
         return copy(status, requiredSteps.get(index + 1), completed, pausedAt, completedAt);
     }
 
+    /** Server-only transition after validated feedback asks the learner to try again. */
+    public LessonSession requireRetry() {
+        requireStatus(LessonSessionStatus.IN_PROGRESS, "require a retry");
+        if (currentStep != LessonStep.FEEDBACK || !requiredSteps.contains(LessonStep.RETRY)) {
+            throw new IllegalStateException("lesson feedback cannot require a retry");
+        }
+        List<LessonStep> completed = new ArrayList<>(completedSteps);
+        if (!completed.contains(LessonStep.FEEDBACK)) completed.add(LessonStep.FEEDBACK);
+        return copy(status, LessonStep.RETRY, completed, pausedAt, completedAt);
+    }
+
+    public LessonSession beginEvidence() {
+        requireStatus(LessonSessionStatus.IN_PROGRESS, "begin evidence recording");
+        if (currentStep != LessonStep.FEEDBACK || !requiredSteps.contains(LessonStep.EVIDENCE)) {
+            throw new IllegalStateException("lesson feedback cannot begin evidence recording");
+        }
+        List<LessonStep> completed = new ArrayList<>(completedSteps);
+        if (!completed.contains(LessonStep.FEEDBACK)) completed.add(LessonStep.FEEDBACK);
+        return copy(status, LessonStep.EVIDENCE, completed, pausedAt, completedAt);
+    }
+
+    /** Evidence is the final server-owned step and is never a claim of instant mastery. */
+    public LessonSession completeEvidence(Instant now) {
+        requireStatus(LessonSessionStatus.IN_PROGRESS, "record evidence");
+        if (currentStep != LessonStep.EVIDENCE) {
+            throw new IllegalStateException("lesson is not ready to record evidence");
+        }
+        List<LessonStep> completed = new ArrayList<>(completedSteps);
+        if (!completed.contains(LessonStep.EVIDENCE)) completed.add(LessonStep.EVIDENCE);
+        if (!completed.contains(LessonStep.COMPLETE)) completed.add(LessonStep.COMPLETE);
+        return copy(LessonSessionStatus.COMPLETED, LessonStep.COMPLETE, completed, pausedAt, now);
+    }
+
     public int totalRequiredSteps() {
         return requiredSteps.size() - 1;
     }

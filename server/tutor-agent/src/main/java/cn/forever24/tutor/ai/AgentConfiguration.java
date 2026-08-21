@@ -19,6 +19,8 @@ import cn.forever24.tutor.application.provider.AiProviderConfigurationApplicatio
 import cn.forever24.tutor.application.provider.AiProviderConnectionTester;
 import cn.forever24.tutor.application.roleplay.RolePlayResponder;
 import cn.forever24.tutor.ai.roleplay.ProviderRolePlayResponder;
+import cn.forever24.tutor.ai.training.ProviderSpeakingAttemptAnalyzer;
+import cn.forever24.tutor.application.training.SpeakingAttemptAnalyzer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -86,5 +88,11 @@ public class AgentConfiguration {
     @ConditionalOnMissingBean(RolePlayResponder.class)
     RolePlayResponder rolePlayResponder(ChatProvider chatProvider) {
         return new ProviderRolePlayResponder(chatProvider);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SpeakingAttemptAnalyzer.class)
+    SpeakingAttemptAnalyzer speakingAttemptAnalyzer(ChatProvider chatProvider, ObjectMapper objectMapper) {
+        return new ProviderSpeakingAttemptAnalyzer(chatProvider, objectMapper);
     }
 }
