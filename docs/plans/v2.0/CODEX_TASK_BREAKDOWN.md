@@ -65,7 +65,7 @@ Codex 每次任务必须：
 | V2-T17 | Web Feedback / Retry / Completion | T15,T16 | DONE |
 | V2-T18 | Error / Expression Memory / Review | T16 | DONE |
 | V2-T19 | 处方反馈、迁移与闭环 | T18 | DONE |
-| V2-T20 | 内容 Import / Validation Pipeline | T01,T03,T04,T15 | TODO |
+| V2-T20 | 内容 Import / Validation Pipeline | T01,T03,T04,T15 | DONE |
 | V2-T21 | 媒体发布与受保护访问 | T05,T20 | TODO |
 | V2-T22 | 内容管理 API / Script | T20,T21 | TODO |
 | V2-T23 | B1 24 个资源发布验证 | T19,T22 | TODO |
@@ -405,6 +405,8 @@ Codex 每次任务必须：
 测试：有效包、unknown property、bad reference、hash mismatch、wrong Lin Muen、missing/duplicate task hero、Audio/Transcript mismatch、same/different hash import。
 
 验收：非法课程不能进入 publish candidate。
+
+完成记录（2026-08-21）：新增 V27 `content_import_batch/content_import_issue` 和受控 Application 导入用例。导入首先按内容 SHA-256 查重，再通过严格 JSON 顶层字段、版本、Lin Muen、resource/version、Evidence、任务主图、映射和音频/转写一致性校验；失败批次持久化结构化 issue，且绝不写入资源目录。通过校验的包仅写入 DRAFT Resource Version，不能成为 publish candidate；同一内容哈希重放返回原 batch，不重复写入。公开管理 API 留给 V2-T22。
 
 ### V2-T21 媒体发布与受保护访问
 
