@@ -13,5 +13,9 @@ public interface LessonSessionRepository {
 
     Optional<LessonSession> findById(UserKey userKey, String sessionId);
 
+    default Optional<LessonSession> findByIdForUpdate(UserKey userKey, String sessionId) {
+        return findById(userKey, sessionId);
+    }
+
     LessonSession save(UserKey userKey, long expectedVersion, LessonSession session);
 }

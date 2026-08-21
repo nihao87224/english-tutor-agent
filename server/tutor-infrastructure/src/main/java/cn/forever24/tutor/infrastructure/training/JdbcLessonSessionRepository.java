@@ -104,6 +104,17 @@ public final class JdbcLessonSessionRepository implements LessonSessionRepositor
     }
 
     @Override
+    public Optional<LessonSession> findByIdForUpdate(UserKey userKey, String sessionId) {
+        try {
+            return Optional.of(jdbcTemplate.queryForObject(
+                    lessonSelect() + " AND ts.session_key = ? FOR UPDATE",
+                    (resultSet, rowNum) -> map(resultSet), userKey.value(), sessionId));
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public LessonSession save(UserKey userKey, long expectedVersion, LessonSession session) {
         int updated = jdbcTemplate.update(
                 """

@@ -12,6 +12,18 @@ export interface LessonExpression {
   usage: string;
 }
 
+export interface LessonQuestion {
+  questionId: string;
+  prompt: string;
+}
+
+export interface GuidedSpeakingPractice {
+  taskId: string;
+  prompt: string;
+  successCriteria: string[];
+  scaffolding: string[];
+}
+
 export interface ScenarioLessonViewModel {
   resourceId: string;
   resourceVersion: string;
@@ -26,6 +38,8 @@ export interface ScenarioLessonViewModel {
   story: { title: string; context: string; mission: string };
   transcript: LessonSentence[];
   expressions: LessonExpression[];
+  questions: LessonQuestion[];
+  guidedSpeaking?: GuidedSpeakingPractice;
   taskHero: {
     assetId: string;
     altText: string;
@@ -81,6 +95,8 @@ export function buildScenarioLesson(resource: LearningResourceDetail): ScenarioL
     },
     transcript: arrayField(transcript.sentences, parseSentence, "transcript.sentences"),
     expressions: arrayField(lessonPackage.expressions, parseExpression, "expressions"),
+    questions: arrayField(lessonPackage.questions, parseQuestion, "questions"),
+    guidedSpeaking: parseGuidedSpeaking(lessonPackage.practice),
     taskHero,
     audioAssetId: audio?.assetId,
   };
@@ -172,6 +188,25 @@ function parseExpression(value: unknown): LessonExpression {
   };
 }
 
+function parseQuestion(value: unknown): LessonQuestion {
+  const question = asObject(value, "question");
+  return { questionId: stringField(question, "questionId"), prompt: stringField(question, "prompt") };
+}
+
+function parseGuidedSpeaking(value: unknown): GuidedSpeakingPractice | undefined {
+  if (!value || (typeof value !== "object" && !Array.isArray(value))) return undefined;
+  const practices = Array.isArray(value) ? value : [value];
+  const practice = practices.map((item) => asObject(item, "practice"))
+    .find((item) => normalized(stringField(item, "type")) === "guided_speaking");
+  if (!practice) return undefined;
+  return {
+    taskId: stringField(practice, "taskId"),
+    prompt: stringField(practice, "prompt"),
+    successCriteria: stringArray(practice.successCriteria, "successCriteria"),
+    scaffolding: stringArray(practice.scaffolding, "scaffolding"),
+  };
+}
+
 function metadataString(asset: CatalogAsset, key: string): string {
   return stringField(asset.metadata, key);
 }
@@ -220,4 +255,11 @@ function arrayField<T>(value: unknown, parser: (item: unknown) => T, field: stri
     throw new ScenarioLessonContentError(`${field} must be an array`);
   }
   return value.map(parser);
+}
+
+function stringArray(value: unknown, field: string): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim())) {
+    throw new ScenarioLessonContentError(`${field} must be a non-empty string array`);
+  }
+  return value as string[];
 }

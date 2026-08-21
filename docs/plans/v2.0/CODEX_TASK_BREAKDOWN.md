@@ -57,7 +57,7 @@ Codex 每次任务必须：
 | V2-T09 | Web 今日处方 | T08 | DONE |
 | V2-T10 | Scenario Lesson Session 基线 | T06,T08 | DONE |
 | V2-T11 | Web 场景引导与媒体输入 | T10 | DONE |
-| V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | TODO |
+| V2-T12 | Comprehension 与 Guided Speaking | T10,T11 | DONE |
 | V2-T13 | Audio Upload / ASR 确认 | T10 | TODO |
 | V2-T14 | Role Play SSE | T12,T13 | TODO |
 | V2-T15 | Correction / Retry / Attempt 状态 | T12,T14 | TODO |
@@ -301,6 +301,8 @@ Codex 每次任务必须：
 测试：answer boundary、duplicate idempotency、wrong session/task、ownership、retryable status、Web loading/error/pending。
 
 验收：完成输入、核心理解检查和至少一次 Speaking 才可继续完成。
+
+完成记录（2026-08-21）：新增 Session-scoped Lesson Attempt 契约与状态机，理解题使用 Unicode/大小写/空白/句末标点归一化后的确定性精确评分，不调用 LLM 且不接受子串误匹配；所有资源清单中的理解题完成后服务端才推进到 Transcript/Expressions。Guided Speaking 文本先以 `ANALYSIS_PENDING` 原子持久化，再完成步骤门禁，Session 查询同时返回已完成题、剩余题和待分析 Attempt，支持刷新与跨设备恢复。API 覆盖幂等重放/冲突、Session/Task/Owner 校验及 Attempt 状态查询；JDBC 复用 V24 `task_attempt` 字段并覆盖事务回滚。Web 已接入题目、答案反馈、支架提示、文本口语、提交中/错误/待分析状态，并持续显示 Lin Muen 情景主图。OpenAPI、后端单元/API/JDBC 测试、Web 单元/构建及 Playwright 场景闭环均通过；音频、ASR、AI 分析和 Retry 仍分别留给 T13 与 T15。
 
 ### V2-T13 Audio Upload / ASR 确认
 

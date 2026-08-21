@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.net.URI;
 
-@RestControllerAdvice(assignableTypes = LessonSessionController.class)
+@RestControllerAdvice(assignableTypes = {LessonSessionController.class, LessonAttemptController.class})
 public class LessonSessionExceptionHandler {
 
     @ExceptionHandler(LessonSessionApplicationException.class)

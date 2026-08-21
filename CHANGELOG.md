@@ -31,6 +31,10 @@ All notable project changes are recorded here.
 
 
 ### Added
+- Added V2-T12 comprehension and text Guided Speaking attempts with deterministic
+  objective scoring, idempotent owner-scoped persistence, server-owned step gates,
+  resumable attempt progress, pending-analysis receipts, Web question/speaking states,
+  and API/JDBC/browser regression coverage.
 - Added the V2.0 Web Scenario Lesson entry flow with server-owned session resume,
   scene-specific environmental Lin Muen task-hero validation, focal-point responsive
   staging, structured scene overlays, first-listen audio, hidden-first transcript and

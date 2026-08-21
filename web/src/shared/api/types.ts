@@ -397,6 +397,38 @@ export interface LessonSession {
     clientCompletable: boolean;
   };
   progress: { completedSteps: number; totalRequiredSteps: number };
+  attemptProgress?: LessonAttemptProgress | null;
+  version: number;
+}
+
+export interface LessonAttemptProgress {
+  stepId: LessonStep;
+  completedTaskIds: string[];
+  remainingTaskIds: string[];
+  nextStepEligible: boolean;
+  pendingAttemptId?: string | null;
+}
+
+export interface SubmitLessonAttemptRequest {
+  taskId: string;
+  inputType: "TEXT";
+  text: string;
+  retryOfAttemptId?: string | null;
+  clientStartedAt?: string | null;
+  clientDurationMs?: number | null;
+}
+
+export interface LessonAttemptReceipt {
+  attemptId: string;
+  taskId: string;
+  inputType: "TEXT" | "AUDIO" | "OPTION";
+  status: "RECEIVED" | "TRANSCRIPTION_PENDING" | "TRANSCRIPTION_RETRYABLE" | "TRANSCRIPTION_FAILED"
+    | "ANALYSIS_PENDING" | "ANALYSIS_RETRYABLE" | "ANALYSIS_FAILED" | "ANALYZED"
+    | "RETRY_REQUIRED" | "ACCEPTED" | "EVIDENCE_RECORDED";
+  submittedAt: string;
+  pollAfterMs?: number | null;
+  objectiveResult?: { correct: boolean; expectedAnswer: string; explanation: string } | null;
+  stepProgress: LessonAttemptProgress;
   version: number;
 }
 

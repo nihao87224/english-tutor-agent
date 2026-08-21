@@ -28,6 +28,7 @@ import type {
   LearningPlan,
   LearningResourceDetail,
   LessonSession,
+  LessonAttemptReceipt,
   LessonStep,
   MediaAccessRequest,
   MediaAccessResponse,
@@ -44,6 +45,7 @@ import type {
   QuotaStatus,
   StartTrainingSessionRequest,
   StartLessonSessionRequest,
+  SubmitLessonAttemptRequest,
   TaskAttemptReceipt,
   TaskAttemptRequest,
   TrainingSession,
@@ -110,6 +112,8 @@ export interface ApiClient {
   pauseLessonSession(sessionId: string, options?: RequestOptions): Promise<LessonSession>;
   resumeLessonSession(sessionId: string, options?: RequestOptions): Promise<LessonSession>;
   completeLessonStep(sessionId: string, stepId: LessonStep, options?: RequestOptions): Promise<LessonSession>;
+  submitLessonAttempt(sessionId: string, request: SubmitLessonAttemptRequest, options?: RequestOptions): Promise<LessonAttemptReceipt>;
+  getLessonAttempt(sessionId: string, attemptId: string, options?: RequestOptions): Promise<LessonAttemptReceipt>;
   getLearningResourceVersion(resourceId: string, version: string, options?: RequestOptions): Promise<LearningResourceDetail>;
   createLearningResourceMediaAccess(
     resourceId: string,
@@ -413,6 +417,18 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       return requestJson<LessonSession>(
         `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/steps/${encodeURIComponent(stepId)}/completions`,
         { ...mutationOptions(requestOptions), method: "POST" },
+      );
+    },
+    submitLessonAttempt(sessionId, request, requestOptions) {
+      return requestJson<LessonAttemptReceipt>(
+        `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/attempts`,
+        { ...mutationOptions(requestOptions), method: "POST", body: request },
+      );
+    },
+    getLessonAttempt(sessionId, attemptId, requestOptions) {
+      return requestJson<LessonAttemptReceipt>(
+        `/api/v1/lesson-sessions/${encodeURIComponent(sessionId)}/attempts/${encodeURIComponent(attemptId)}`,
+        requestOptions,
       );
     },
     getLearningResourceVersion(resourceId, version, requestOptions) {

@@ -113,6 +113,22 @@ public record LessonSession(
         return copy(status, requiredSteps.get(index + 1), completed, pausedAt, completedAt);
     }
 
+    public LessonSession completeAttemptStep(LessonStep step) {
+        requireStatus(LessonSessionStatus.IN_PROGRESS, "complete an attempt step");
+        if (step != currentStep || step.completionMode() != LessonStep.CompletionMode.ATTEMPT_REQUIRED) {
+            throw new IllegalStateException("only the current attempt-required step can be completed");
+        }
+        int index = requiredSteps.indexOf(step);
+        if (index < 0 || index + 1 >= requiredSteps.size()) {
+            throw new IllegalStateException("attempt step cannot advance this lesson");
+        }
+        List<LessonStep> completed = new ArrayList<>(completedSteps);
+        if (!completed.contains(step)) {
+            completed.add(step);
+        }
+        return copy(status, requiredSteps.get(index + 1), completed, pausedAt, completedAt);
+    }
+
     public int totalRequiredSteps() {
         return requiredSteps.size() - 1;
     }

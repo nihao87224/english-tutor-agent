@@ -44,7 +44,17 @@ describe("ScenarioLessonContent", () => {
     const html = render("GUIDED_SPEAKING");
 
     expect(html).toContain("cdn.test/hero.webp");
-    expect(html).toContain("Speaking 训练区会继续保留当前 Lin Muen 场景图");
+    expect(html).toContain("把关键信息说给 Lin Muen");
+    expect(html).toContain("Your flight leaves from...");
+    expect(html).toContain("提交口语文本");
+  });
+
+  it("renders the first server-owned remaining comprehension question", () => {
+    const html = render("COMPREHENSION");
+
+    expect(html).toContain("Which gate should Lin Muen use?");
+    expect(html).toContain("提交理解答案");
+    expect(html).toContain("disabled");
   });
 
   it("renders the server-paused state with an explicit resume action", () => {
@@ -79,6 +89,7 @@ function renderValue(value: ReturnType<typeof lessonLoaded>): string {
       onPause: vi.fn(),
       onResume: vi.fn(),
       onCompleteStep: vi.fn(),
+      onSubmitAttempt: vi.fn(),
     }),
   }));
 }

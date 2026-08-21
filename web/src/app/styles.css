@@ -2043,6 +2043,40 @@ legend {
   opacity: 0.62;
 }
 
+.lesson-attempt-field {
+  display: grid;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.lesson-attempt-field input,
+.lesson-attempt-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #b9b3a8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  color: #17221f;
+  font: inherit;
+  resize: vertical;
+}
+
+.lesson-attempt-result,
+.lesson-attempt-error {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-left: 4px solid #236457;
+  background: #edf7f3;
+}
+
+.lesson-attempt-error {
+  border-left-color: #b64d3d;
+  background: #fff1ee;
+  color: #7a2d22;
+}
+
 .lesson-paused,
 .media-fallback-notice,
 .scenario-step-gate {

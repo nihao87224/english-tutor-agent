@@ -1124,6 +1124,57 @@ paths:
         '404': {$ref: '#/components/responses/Problem'}
         '409': {$ref: '#/components/responses/Problem'}
 
+  /api/v1/lesson-sessions/{sessionId}/attempts:
+    post:
+      tags: [Training]
+      summary: Submit a comprehension or guided-speaking attempt for the current lesson step
+      description: Comprehension is scored deterministically. Text guided speaking is durably accepted for asynchronous analysis.
+      operationId: submitLessonAttempt
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubmitLessonAttemptRequest'}
+      responses:
+        '200':
+          description: Deterministic comprehension result
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonAttemptResponse'}
+        '202':
+          description: Guided-speaking text accepted and awaiting analysis
+          headers:
+            Idempotency-Replayed: {schema: {type: boolean}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonAttemptResponse'}
+        '400': {$ref: '#/components/responses/Problem'}
+        '404': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+
+  /api/v1/lesson-sessions/{sessionId}/attempts/{attemptId}:
+    get:
+      tags: [Training]
+      summary: Get an owned lesson attempt and its retryable or terminal status
+      operationId: getLessonAttempt
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: sessionId, in: path, required: true, schema: {type: string, maxLength: 64}}
+        - {name: attemptId, in: path, required: true, schema: {type: string, maxLength: 64}}
+      responses:
+        '200':
+          description: Current attempt state
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonAttemptResponse'}
+        '404': {$ref: '#/components/responses/Problem'}
+
   /api/v1/plans/today/adjustments:
     post:
       tags: [Planning]
@@ -2156,6 +2207,58 @@ components:
           properties:
             completedSteps: {type: integer, minimum: 0}
             totalRequiredSteps: {type: integer, minimum: 1}
+        attemptProgress:
+          oneOf:
+            - {$ref: '#/components/schemas/LessonAttemptProgress'}
+            - {type: 'null'}
+        version: {type: integer, format: int64, minimum: 1}
+
+    LessonAttemptProgress:
+      type: object
+      additionalProperties: false
+      required: [stepId, completedTaskIds, remainingTaskIds, nextStepEligible]
+      properties:
+        stepId: {$ref: '#/components/schemas/LessonStep'}
+        completedTaskIds: {type: array, items: {type: string}}
+        remainingTaskIds: {type: array, items: {type: string}}
+        nextStepEligible: {type: boolean}
+        pendingAttemptId: {type: [string, 'null'], maxLength: 64}
+
+    SubmitLessonAttemptRequest:
+      type: object
+      additionalProperties: false
+      required: [taskId, inputType, text]
+      properties:
+        taskId: {type: string, minLength: 1, maxLength: 128}
+        inputType: {type: string, enum: [TEXT]}
+        text: {type: string, minLength: 1, maxLength: 4000}
+        audioAssetId: {type: [string, 'null'], description: Reserved for V2-T13}
+        retryOfAttemptId: {type: [string, 'null'], maxLength: 64}
+        clientStartedAt: {type: [string, 'null'], format: date-time}
+        clientDurationMs: {type: [integer, 'null'], minimum: 0}
+
+    LessonAttemptResponse:
+      type: object
+      additionalProperties: false
+      required: [attemptId, taskId, inputType, status, submittedAt, stepProgress, version]
+      properties:
+        attemptId: {type: string, maxLength: 64}
+        taskId: {type: string, maxLength: 128}
+        inputType: {type: string, enum: [TEXT, AUDIO, OPTION]}
+        status:
+          type: string
+          enum: [RECEIVED, TRANSCRIPTION_PENDING, TRANSCRIPTION_RETRYABLE, TRANSCRIPTION_FAILED, ANALYSIS_PENDING, ANALYSIS_RETRYABLE, ANALYSIS_FAILED, ANALYZED, RETRY_REQUIRED, ACCEPTED, EVIDENCE_RECORDED]
+        submittedAt: {type: string, format: date-time}
+        pollAfterMs: {type: [integer, 'null'], minimum: 0}
+        objectiveResult:
+          type: [object, 'null']
+          additionalProperties: false
+          required: [correct, expectedAnswer, explanation]
+          properties:
+            correct: {type: boolean}
+            expectedAnswer: {type: string}
+            explanation: {type: string}
+        stepProgress: {$ref: '#/components/schemas/LessonAttemptProgress'}
         version: {type: integer, format: int64, minimum: 1}
 
     LessonStep:

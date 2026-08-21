@@ -1,6 +1,7 @@
 package cn.forever24.tutor.api.training;
 
 import cn.forever24.tutor.training.LessonSession;
+import cn.forever24.tutor.application.training.LessonAttemptProgress;
 
 public record LessonSessionResponse(
         String sessionId,
@@ -15,6 +16,7 @@ public record LessonSessionResponse(
         String currentStep,
         StepPayload step,
         Progress progress,
+        AttemptProgress attemptProgress,
         long version
 ) {
 
@@ -29,8 +31,16 @@ public record LessonSessionResponse(
                         session.currentStep().name(),
                         session.currentStep().completionMode().name(),
                         session.currentStep().clientCompletable()),
-                new Progress(session.completedSteps().size(), session.totalRequiredSteps()),
+                new Progress(session.completedSteps().size(), session.totalRequiredSteps()), null,
                 session.version());
+    }
+
+    static LessonSessionResponse from(LessonSession session, LessonAttemptProgress attemptProgress) {
+        LessonSessionResponse base = from(session);
+        return new LessonSessionResponse(
+                base.sessionId(), base.prescriptionId(), base.prescriptionVersion(), base.blockId(), base.status(),
+                base.resource(), base.skillUnitVariantId(), base.episodeMappingId(), base.inputMode(),
+                base.currentStep(), base.step(), base.progress(), AttemptProgress.from(attemptProgress), base.version());
     }
 
     public record ResourceReference(String resourceId, String resourceVersion) {
@@ -40,5 +50,19 @@ public record LessonSessionResponse(
     }
 
     public record Progress(int completedSteps, int totalRequiredSteps) {
+    }
+
+    public record AttemptProgress(
+            String stepId,
+            java.util.List<String> completedTaskIds,
+            java.util.List<String> remainingTaskIds,
+            boolean nextStepEligible,
+            String pendingAttemptId
+    ) {
+        static AttemptProgress from(LessonAttemptProgress progress) {
+            return new AttemptProgress(
+                    progress.step().name(), progress.completedTaskIds(), progress.remainingTaskIds(),
+                    progress.nextStepEligible(), progress.pendingAttemptId());
+        }
     }
 }

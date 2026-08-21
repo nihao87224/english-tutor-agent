@@ -39,6 +39,13 @@ public final class InMemoryLessonSessionRepository implements LessonSessionRepos
     }
 
     @Override
+    public Optional<LessonSession> findByIdForUpdate(UserKey userKey, String sessionId) {
+        synchronized (monitor) {
+            return findById(userKey, sessionId);
+        }
+    }
+
+    @Override
     public LessonSession save(UserKey userKey, long expectedVersion, LessonSession session) {
         synchronized (monitor) {
             StoredSession stored = sessions.get(session.sessionId());

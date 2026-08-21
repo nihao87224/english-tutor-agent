@@ -1,6 +1,8 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 test("starts and resumes the responsive Lin Muen airport scenario with hidden-first transcript", async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   await page.setViewportSize({ width: 390, height: 844 });
   await seedAuthenticatedLearner(page);
   let session = lessonSession("SCENE_CONTEXT");
@@ -27,13 +29,28 @@ test("starts and resumes the responsive Lin Muen airport scenario with hidden-fi
   await expect(page.getByText("Could you help me check?", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("你能帮我确认一下吗？")).toBeVisible();
 
+  session = lessonSession("COMPREHENSION");
+  await page.reload();
+  await expect(page.getByText("Which gate should Lin Muen use?")).toBeVisible();
+  await page.getByLabel("你的答案").fill("Gate 24.");
+  await page.getByRole("button", { name: "提交理解答案" }).click();
+  await expect(page.getByText("When does boarding begin?")).toBeVisible();
+  await page.getByLabel("你的答案").fill("3:20");
+  await page.getByRole("button", { name: "提交理解答案" }).click();
+  await expect(page.getByRole("heading", { name: "对照文本，提取可复用表达" })).toBeVisible();
+
   session = lessonSession("GUIDED_SPEAKING");
   await page.reload();
   await expect(taskHero).toBeVisible();
-  await expect(page.getByText("Speaking 训练区会继续保留当前 Lin Muen 场景图").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "把关键信息说给 Lin Muen" })).toBeVisible();
+  await page.getByLabel("用英文组织你的回答").fill("Your flight leaves from Gate 24. Boarding begins at 3:20.");
+  await page.getByRole("button", { name: "提交口语文本" }).click();
+  await expect(page.getByText(/AI 私教正在分析/)).toBeVisible();
 
   const dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, content: document.documentElement.scrollWidth }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  await expect(page.locator("vite-error-overlay, #webpack-dev-server-client-overlay, [data-nextjs-dialog]")).toHaveCount(0);
+  expect(consoleErrors).toEqual([]);
 });
 
 async function seedAuthenticatedLearner(page: Page) {
@@ -80,6 +97,25 @@ async function mockBackend(
     update(next);
     await json(route, next);
   });
+  await page.route("**/api/v1/lesson-sessions/lesson-session-ep006/attempts", async (route) => {
+    const request = await route.request().postDataJSON();
+    expect(route.request().headers()["idempotency-key"]).toBeTruthy();
+    if (request.taskId === "gate-q1") {
+      const next = lessonSession("COMPREHENSION", ["gate-q1"], ["gate-q2"]);
+      update(next);
+      await json(route, attemptReceipt("lat-q1", "gate-q1", "ANALYZED", next, true), 200);
+      return;
+    }
+    if (request.taskId === "gate-q2") {
+      const next = lessonSession("TRANSCRIPT_EXPRESSIONS");
+      update(next);
+      await json(route, attemptReceipt("lat-q2", "gate-q2", "ANALYZED", next, true), 200);
+      return;
+    }
+    const next = lessonSession("ROLE_PLAY", [], [], "lat-guided");
+    update(next);
+    await json(route, attemptReceipt("lat-guided", "gate-guided-1", "ANALYSIS_PENDING", next), 202);
+  });
   await page.route("**/api/v1/learning-resources/season1.ep006.gate_change.b1/versions/1.0.0", (route) => json(route, learningResource()));
   await page.route("**/api/v1/learning-resources/season1.ep006.gate_change.b1/media-access", async (route) => {
     const request = await route.request().postDataJSON();
@@ -99,8 +135,13 @@ async function json(route: Route, body: unknown, status = 200) {
   await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 }
 
-function lessonSession(step: "SCENE_CONTEXT" | "FIRST_LISTEN" | "GUIDED_SPEAKING") {
-  const clientCompletable = step !== "GUIDED_SPEAKING";
+function lessonSession(
+  step: "SCENE_CONTEXT" | "FIRST_LISTEN" | "COMPREHENSION" | "TRANSCRIPT_EXPRESSIONS" | "GUIDED_SPEAKING" | "ROLE_PLAY",
+  completedTaskIds: string[] = [],
+  remainingTaskIds: string[] = step === "COMPREHENSION" ? ["gate-q1", "gate-q2"] : [],
+  pendingAttemptId?: string,
+) {
+  const clientCompletable = ["SCENE_CONTEXT", "FIRST_LISTEN", "TRANSCRIPT_EXPRESSIONS"].includes(step);
   return {
     sessionId: "lesson-session-ep006",
     prescriptionId: "prx-airport",
@@ -114,6 +155,13 @@ function lessonSession(step: "SCENE_CONTEXT" | "FIRST_LISTEN" | "GUIDED_SPEAKING
     currentStep: step,
     step: { stepId: step, completionMode: clientCompletable ? "CLIENT_ACKNOWLEDGEMENT" : "ATTEMPT_REQUIRED", clientCompletable },
     progress: { completedSteps: step === "SCENE_CONTEXT" ? 0 : 1, totalRequiredSteps: 9 },
+    attemptProgress: {
+      stepId: step,
+      completedTaskIds,
+      remainingTaskIds,
+      nextStepEligible: step !== "COMPREHENSION" || remainingTaskIds.length === 0,
+      pendingAttemptId,
+    },
     version: step === "SCENE_CONTEXT" ? 1 : 2,
   };
 }
@@ -175,7 +223,33 @@ function learningResource() {
         { sentenceId: "gate-002", speaker: "Airport Agent", text: "Your flight now departs from Gate 24." },
       ] },
       expressions: [{ expression: "Could you help me check?", meaningZh: "你能帮我确认一下吗？", usage: "Polite request" }],
+      questions: [
+        { questionId: "gate-q1", prompt: "Which gate should Lin Muen use?", answer: "Gate 24" },
+        { questionId: "gate-q2", prompt: "When does boarding begin?", answer: "At 3:20" },
+      ],
+      practice: [{
+        taskId: "gate-guided-1", type: "guided_speaking",
+        prompt: "Tell Lin Muen the new gate and boarding time in one clear response.",
+        successCriteria: ["State Gate 24", "State 3:20"],
+        scaffolding: ["Your flight leaves from...", "Boarding begins at..."],
+      }],
     } },
     assets: [], publishedAt: "2026-08-20T00:00:00Z",
+  };
+}
+
+function attemptReceipt(
+  attemptId: string,
+  taskId: string,
+  status: "ANALYZED" | "ANALYSIS_PENDING",
+  session: ReturnType<typeof lessonSession>,
+  correct = false,
+) {
+  return {
+    attemptId, taskId, inputType: "TEXT", status, submittedAt: "2026-08-21T01:00:00Z",
+    pollAfterMs: status === "ANALYSIS_PENDING" ? 1000 : null,
+    objectiveResult: status === "ANALYZED" ? { correct, expectedAnswer: taskId === "gate-q1" ? "Gate 24" : "At 3:20", explanation: "Answer confirmed." } : null,
+    stepProgress: session.attemptProgress,
+    version: 1,
   };
 }

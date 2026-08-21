@@ -3,6 +3,7 @@ package cn.forever24.tutor.api.training;
 import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.training.LessonSessionApplicationService;
 import cn.forever24.tutor.application.training.LessonSessionMutationResult;
+import cn.forever24.tutor.application.training.LessonAttemptApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,12 +20,15 @@ public class LessonSessionController {
 
     private final LessonSessionApplicationService service;
     private final CurrentUserKeyResolver currentUserKeyResolver;
+    private final LessonAttemptApplicationService attemptService;
 
     public LessonSessionController(
             LessonSessionApplicationService service,
+            LessonAttemptApplicationService attemptService,
             CurrentUserKeyResolver currentUserKeyResolver
     ) {
         this.service = service;
+        this.attemptService = attemptService;
         this.currentUserKeyResolver = currentUserKeyResolver;
     }
 
@@ -42,7 +46,9 @@ public class LessonSessionController {
 
     @GetMapping("/{sessionId}")
     public LessonSessionResponse get(@PathVariable String sessionId) {
-        return LessonSessionResponse.from(service.get(currentUserKeyResolver.resolve(), sessionId));
+        String userKey = currentUserKeyResolver.resolve();
+        var session = service.get(userKey, sessionId);
+        return LessonSessionResponse.from(session, attemptService.progress(userKey, session));
     }
 
     @PostMapping("/{sessionId}/pause")

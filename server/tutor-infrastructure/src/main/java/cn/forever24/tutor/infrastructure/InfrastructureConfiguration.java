@@ -54,6 +54,10 @@ import cn.forever24.tutor.application.training.LessonSessionApplicationService;
 import cn.forever24.tutor.application.training.LessonSessionKeyGenerator;
 import cn.forever24.tutor.application.training.LessonSessionRepository;
 import cn.forever24.tutor.application.training.LessonSessionTransactionOperations;
+import cn.forever24.tutor.application.training.LessonAttemptApplicationService;
+import cn.forever24.tutor.application.training.LessonAttemptKeyGenerator;
+import cn.forever24.tutor.application.training.LessonAttemptRepository;
+import cn.forever24.tutor.application.training.LessonContentReader;
 import cn.forever24.tutor.entitlement.AccessPolicy;
 import cn.forever24.tutor.infrastructure.auth.BcryptPasswordHasher;
 import cn.forever24.tutor.infrastructure.auth.HmacJwtAccessTokenService;
@@ -110,6 +114,10 @@ import cn.forever24.tutor.infrastructure.training.DirectLessonSessionTransaction
 import cn.forever24.tutor.infrastructure.training.InMemoryLessonSessionRepository;
 import cn.forever24.tutor.infrastructure.training.JdbcLessonSessionRepository;
 import cn.forever24.tutor.infrastructure.training.SpringLessonSessionTransactionOperations;
+import cn.forever24.tutor.infrastructure.training.CatalogLessonContentReader;
+import cn.forever24.tutor.infrastructure.training.InMemoryLessonAttemptRepository;
+import cn.forever24.tutor.infrastructure.training.JdbcLessonAttemptRepository;
+import cn.forever24.tutor.training.ObjectiveAnswerScorer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.beans.factory.ObjectProvider;
@@ -585,6 +593,34 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(LessonAttemptRepository.class)
+    public LessonAttemptRepository lessonAttemptRepository(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider
+    ) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate == null) {
+            return new InMemoryLessonAttemptRepository();
+        }
+        return new JdbcLessonAttemptRepository(
+                jdbcTemplate, objectMapperProvider.getIfAvailable(ObjectMapper::new));
+    }
+
+    @Bean
+    public LessonContentReader lessonContentReader(
+            ResourceCatalogRepository resourceCatalogRepository,
+            ObjectProvider<ObjectMapper> objectMapperProvider
+    ) {
+        return new CatalogLessonContentReader(
+                resourceCatalogRepository, objectMapperProvider.getIfAvailable(ObjectMapper::new));
+    }
+
+    @Bean
+    public LessonAttemptKeyGenerator lessonAttemptKeyGenerator() {
+        return () -> "lat_" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    @Bean
     @ConditionalOnMissingBean(DailyQuotaRepository.class)
     public DailyQuotaRepository dailyQuotaRepository(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
         JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
@@ -749,6 +785,25 @@ public class InfrastructureConfiguration {
                 lessonSessionRepository,
                 lessonSessionTransactionOperations,
                 lessonSessionKeyGenerator,
+                clock);
+    }
+
+    @Bean
+    public LessonAttemptApplicationService lessonAttemptApplicationService(
+            LessonSessionRepository lessonSessionRepository,
+            LessonAttemptRepository lessonAttemptRepository,
+            LessonContentReader lessonContentReader,
+            LessonSessionTransactionOperations lessonSessionTransactionOperations,
+            LessonAttemptKeyGenerator lessonAttemptKeyGenerator,
+            Clock clock
+    ) {
+        return new LessonAttemptApplicationService(
+                lessonSessionRepository,
+                lessonAttemptRepository,
+                lessonContentReader,
+                lessonSessionTransactionOperations,
+                lessonAttemptKeyGenerator,
+                new ObjectiveAnswerScorer(),
                 clock);
     }
 

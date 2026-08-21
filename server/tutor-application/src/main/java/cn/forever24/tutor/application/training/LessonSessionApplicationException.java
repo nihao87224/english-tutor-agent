@@ -36,4 +36,13 @@ public final class LessonSessionApplicationException extends RuntimeException {
         return new LessonSessionApplicationException(
                 "VERSION_CONFLICT", 409, "lesson session changed during this request");
     }
+
+    public static LessonSessionApplicationException attemptNotFound() {
+        return new LessonSessionApplicationException("ATTEMPT_NOT_FOUND", 404, "lesson attempt was not found");
+    }
+
+    public static LessonSessionApplicationException idempotencyConflict(String operation) {
+        return new LessonSessionApplicationException(
+                "IDEMPOTENCY_CONFLICT", 409, "Idempotency-Key was already used for another " + operation);
+    }
 }

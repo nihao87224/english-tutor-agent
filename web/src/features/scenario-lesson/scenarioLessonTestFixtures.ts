@@ -20,6 +20,12 @@ export function fixtureLessonSession(step: LessonStep = "SCENE_CONTEXT"): Lesson
       clientCompletable: ["SCENE_CONTEXT", "FIRST_LISTEN", "TRANSCRIPT_EXPRESSIONS"].includes(step),
     },
     progress: { completedSteps: step === "SCENE_CONTEXT" ? 0 : 1, totalRequiredSteps: 9 },
+    attemptProgress: step === "COMPREHENSION" ? {
+      stepId: "COMPREHENSION",
+      completedTaskIds: [],
+      remainingTaskIds: ["gate-q1", "gate-q2"],
+      nextStepEligible: false,
+    } : null,
     version: 2,
   };
 }
@@ -87,6 +93,17 @@ export function fixtureLearningResource(): LearningResourceDetail {
         },
         transcript: { transcriptId: "ep006-transcript", sentences: transcript },
         expressions: [{ expression: "Could you help me check?", meaningZh: "你能帮我确认一下吗？", usage: "Polite confirmation request" }],
+        questions: [
+          { questionId: "gate-q1", prompt: "Which gate should Lin Muen use?", answer: "Gate 24" },
+          { questionId: "gate-q2", prompt: "When does boarding begin?", answer: "At 3:20" },
+        ],
+        practice: [{
+          taskId: "gate-guided-1",
+          type: "guided_speaking",
+          prompt: "Tell Lin Muen the new gate and boarding time in one clear response.",
+          successCriteria: ["State Gate 24", "State 3:20"],
+          scaffolding: ["Your flight leaves from...", "Boarding begins at..."],
+        }],
       },
     },
     assets: [],

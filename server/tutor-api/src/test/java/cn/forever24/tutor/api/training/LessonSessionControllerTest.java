@@ -3,6 +3,7 @@ package cn.forever24.tutor.api.training;
 import cn.forever24.tutor.api.auth.CurrentUserKeyResolver;
 import cn.forever24.tutor.application.training.LessonSessionApplicationException;
 import cn.forever24.tutor.application.training.LessonSessionApplicationService;
+import cn.forever24.tutor.application.training.LessonAttemptApplicationService;
 import cn.forever24.tutor.application.training.LessonSessionMutationResult;
 import cn.forever24.tutor.application.training.StartLessonSessionCommand;
 import cn.forever24.tutor.curriculum.TrainingType;
@@ -27,13 +28,14 @@ class LessonSessionControllerTest {
     @Test
     void startReturnsReplayStatusHeaderAndExactResourceVersion() {
         LessonSessionApplicationService service = mock(LessonSessionApplicationService.class);
+        LessonAttemptApplicationService attemptService = mock(LessonAttemptApplicationService.class);
         CurrentUserKeyResolver resolver = mock(CurrentUserKeyResolver.class);
         when(resolver.resolve()).thenReturn("usr-1");
         StartLessonSessionRequest request = new StartLessonSessionRequest(
                 "prx-1", 3, "blk-1", LessonInputMode.VOICE_OR_TEXT);
         when(service.start("usr-1", request.toCommand(), "idem-1"))
                 .thenReturn(new LessonSessionMutationResult(session(), true));
-        LessonSessionController controller = new LessonSessionController(service, resolver);
+        LessonSessionController controller = new LessonSessionController(service, attemptService, resolver);
 
         ResponseEntity<LessonSessionResponse> response = controller.start("idem-1", request);
 

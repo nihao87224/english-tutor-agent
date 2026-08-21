@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import type { ApiClient, LessonSession, LessonStep, LearningResourceDetail } from "../../shared/api";
+import type { ApiClient, LessonAttemptReceipt, LessonSession, LessonStep } from "../../shared/api";
 import { useI18n } from "../../shared/i18n";
 import {
   buildScenarioLesson,
@@ -91,6 +91,20 @@ export function ScenarioLessonPage({
     }
   }
 
+  async function submitAttempt(taskId: string, text: string): Promise<LessonAttemptReceipt> {
+    if (state.status !== "content") throw new Error(t("lesson.error.desc"));
+    const current = state.value;
+    const receipt = await apiClient.submitLessonAttempt(current.session.sessionId, {
+      taskId,
+      inputType: "TEXT",
+      text,
+      clientStartedAt: new Date().toISOString(),
+    });
+    const session = await apiClient.getLessonSession(current.session.sessionId);
+    setState({ status: "content", value: { ...current, session } });
+    return receipt;
+  }
+
   return (
     <ScenarioLessonContent
       value={state.value}
@@ -104,6 +118,7 @@ export function ScenarioLessonPage({
       onPause={() => updateSession((session) => apiClient.pauseLessonSession(session.sessionId))}
       onResume={() => updateSession((session) => apiClient.resumeLessonSession(session.sessionId))}
       onCompleteStep={(step) => updateSession((session) => apiClient.completeLessonStep(session.sessionId, step))}
+      onSubmitAttempt={submitAttempt}
     />
   );
 }
@@ -116,6 +131,7 @@ export function ScenarioLessonContent({
   onPause,
   onResume,
   onCompleteStep,
+  onSubmitAttempt,
 }: {
   value: ScenarioLessonLoadedState;
   onBack: () => void;
@@ -124,17 +140,45 @@ export function ScenarioLessonContent({
   onPause: () => void;
   onResume: () => void;
   onCompleteStep: (step: LessonStep) => void;
+  onSubmitAttempt: (taskId: string, text: string) => Promise<LessonAttemptReceipt>;
 }) {
   const { t } = useI18n();
   const [transcriptVisible, setTranscriptVisible] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [attemptText, setAttemptText] = useState("");
+  const [attemptSubmitting, setAttemptSubmitting] = useState(false);
+  const [attemptError, setAttemptError] = useState<string>();
+  const [objectiveResult, setObjectiveResult] = useState<LessonAttemptReceipt["objectiveResult"]>();
   const { session, lesson } = value;
   const heroStyle = taskHeroStyle(lesson.taskHero);
   const isPaused = session.status === "PAUSED";
 
   useEffect(() => {
     setAdvancing(false);
+    setAttemptError(undefined);
+    setObjectiveResult(undefined);
+    setAttemptText("");
   }, [session.currentStep]);
+
+  const remainingQuestionId = session.attemptProgress?.remainingTaskIds[0];
+  const activeQuestion = lesson.questions.find((question) => question.questionId === remainingQuestionId)
+    ?? lesson.questions[0];
+
+  async function submitCurrentAttempt() {
+    const taskId = session.currentStep === "COMPREHENSION" ? activeQuestion?.questionId : lesson.guidedSpeaking?.taskId;
+    if (!taskId || !attemptText.trim() || attemptSubmitting || isPaused) return;
+    setAttemptSubmitting(true);
+    setAttemptError(undefined);
+    try {
+      const receipt = await onSubmitAttempt(taskId, attemptText.trim());
+      setObjectiveResult(receipt.objectiveResult);
+      setAttemptText("");
+    } catch (error) {
+      setAttemptError(error instanceof Error ? error.message : t("lesson.attempt.error"));
+    } finally {
+      setAttemptSubmitting(false);
+    }
+  }
 
   function completeStep() {
     if (!session.step.clientCompletable || advancing || isPaused) return;
@@ -183,14 +227,17 @@ export function ScenarioLessonContent({
 
         <article className="scenario-panel">
           {isPaused ? <div className="lesson-paused" role="status">{t("lesson.paused")}</div> : null}
-          <StepContent value={value} transcriptVisible={transcriptVisible} setTranscriptVisible={setTranscriptVisible} onAudioError={onAudioError} />
+          <StepContent value={value} transcriptVisible={transcriptVisible} setTranscriptVisible={setTranscriptVisible}
+            onAudioError={onAudioError} attemptText={attemptText} setAttemptText={setAttemptText}
+            attemptSubmitting={attemptSubmitting} attemptError={attemptError} objectiveResult={objectiveResult}
+            activeQuestion={activeQuestion} onSubmitAttempt={submitCurrentAttempt} />
           {session.step.clientCompletable ? (
             <button className="scenario-primary-action" type="button" disabled={isPaused || advancing} onClick={completeStep}>
               {advancing ? t("lesson.advancing") : t(`lesson.continue.${session.currentStep}`)}
             </button>
-          ) : (
+          ) : session.currentStep !== "COMPREHENSION" && session.currentStep !== "GUIDED_SPEAKING" ? (
             <p className="scenario-step-gate">{isSpeakingStep(session.currentStep) ? t("lesson.speakingNext") : t("lesson.nextTask")}</p>
-          )}
+          ) : null}
         </article>
       </section>
     </main>
@@ -202,11 +249,25 @@ function StepContent({
   transcriptVisible,
   setTranscriptVisible,
   onAudioError,
+  attemptText,
+  setAttemptText,
+  attemptSubmitting,
+  attemptError,
+  objectiveResult,
+  activeQuestion,
+  onSubmitAttempt,
 }: {
   value: ScenarioLessonLoadedState;
   transcriptVisible: boolean;
   setTranscriptVisible: (visible: boolean) => void;
   onAudioError: () => void;
+  attemptText: string;
+  setAttemptText: (value: string) => void;
+  attemptSubmitting: boolean;
+  attemptError?: string;
+  objectiveResult?: LessonAttemptReceipt["objectiveResult"];
+  activeQuestion?: ScenarioLessonLoadedState["lesson"]["questions"][number];
+  onSubmitAttempt: () => void;
 }) {
   const { t } = useI18n();
   const { lesson, session } = value;
@@ -223,6 +284,51 @@ function StepContent({
           <span aria-hidden="true">→</span>
           <div><h2 id="scenario-mission-title">{t("lesson.mission")}</h2><p>{lesson.story.mission}</p></div>
         </section>
+      </>
+    );
+  }
+
+  if (session.currentStep === "COMPREHENSION" && activeQuestion) {
+    return (
+      <>
+        <p className="scene-kicker">{t("lesson.step.COMPREHENSION")}</p>
+        <h1 id="scenario-lesson-title">{t("lesson.comprehension.title")}</h1>
+        <p className="scenario-context">{activeQuestion.prompt}</p>
+        <label className="lesson-attempt-field">
+          <span>{t("lesson.comprehension.answer")}</span>
+          <input value={attemptText} onChange={(event) => setAttemptText(event.target.value)}
+            disabled={attemptSubmitting || session.status === "PAUSED"} />
+        </label>
+        {objectiveResult ? (
+          <div className="lesson-attempt-result" role="status">
+            <strong>{objectiveResult.correct ? t("lesson.comprehension.correct") : t("lesson.comprehension.review")}</strong>
+            <span>{objectiveResult.correct ? objectiveResult.explanation : `${objectiveResult.explanation} ${objectiveResult.expectedAnswer}`}</span>
+          </div>
+        ) : null}
+        {attemptError ? <p className="lesson-attempt-error" role="alert">{attemptError}</p> : null}
+        <button className="scenario-primary-action" type="button" disabled={!attemptText.trim() || attemptSubmitting || session.status === "PAUSED"}
+          onClick={onSubmitAttempt}>{attemptSubmitting ? t("lesson.attempt.submitting") : t("lesson.comprehension.submit")}</button>
+      </>
+    );
+  }
+
+  if (session.currentStep === "GUIDED_SPEAKING" && lesson.guidedSpeaking) {
+    return (
+      <>
+        <p className="scene-kicker">{t("lesson.step.GUIDED_SPEAKING")}</p>
+        <h1 id="scenario-lesson-title">{t("lesson.guided.title")}</h1>
+        <p className="scenario-context">{lesson.guidedSpeaking.prompt}</p>
+        <ul className="scenario-expressions">
+          {lesson.guidedSpeaking.scaffolding.map((hint) => <li key={hint}><span>{hint}</span></li>)}
+        </ul>
+        <label className="lesson-attempt-field">
+          <span>{t("lesson.guided.response")}</span>
+          <textarea rows={5} value={attemptText} onChange={(event) => setAttemptText(event.target.value)}
+            disabled={attemptSubmitting || session.status === "PAUSED"} />
+        </label>
+        {attemptError ? <p className="lesson-attempt-error" role="alert">{attemptError}</p> : null}
+        <button className="scenario-primary-action" type="button" disabled={!attemptText.trim() || attemptSubmitting || session.status === "PAUSED"}
+          onClick={onSubmitAttempt}>{attemptSubmitting ? t("lesson.attempt.submitting") : t("lesson.guided.submit")}</button>
       </>
     );
   }
@@ -272,6 +378,7 @@ function StepContent({
         <section className="upcoming-lesson-step">
           <h2>{isSpeakingStep(session.currentStep) ? t("lesson.speakingNext") : t("lesson.nextTask")}</h2>
           <p>{lesson.story.mission}</p>
+          {session.attemptProgress?.pendingAttemptId ? <p role="status">{t("lesson.attempt.pending")}</p> : null}
         </section>
       ) : null}
     </>
